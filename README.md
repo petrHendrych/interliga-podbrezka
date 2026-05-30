@@ -25,6 +25,10 @@ Project is deployed on Vercel with URL: https://interliga-podbrezka.vercel.app/.
 **We have a single bonus also:**
 - play over 700 -> 30€ from bank + 10€ from trainer
 
+## Design
+
+- **Mobile-First Focus**: The main and first focus of the design should be mobile view. All components and layouts must be optimized for mobile devices before considering larger screens.
+
 ## Implementation detail
 
 Data are web scraped from the official website of the Slovakian result system https://vysledky.kolky.sk/. Details about if the fault is 2nd to last throw is managed manually.
