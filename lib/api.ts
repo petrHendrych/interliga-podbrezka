@@ -25,6 +25,23 @@ export interface MatchDetail {
 }
 
 export interface PlayerResult {
+  full: number;
+  clean: number;
+  total: number;
+  faults: number;
+  match?: {
+    id: number;
+    date: string;
+    homeTeam?: { club?: { name?: string } };
+    awayTeam?: { club?: { name?: string } };
+  };
+  [key: string]: unknown;
+}
+
+export interface PlayerDetail {
+  id: number;
+  firstName: string;
+  lastName: string;
   [key: string]: unknown;
 }
 
@@ -94,7 +111,17 @@ export async function getPlayerResults(playerId: number, seasonId: number = 12) 
       'results.match.hall',
       'results.match.hall.parent',
       'results.opponent',
+      'results.full',
+      'results.clean',
+      'results.total',
+      'results.faults',
     ],
   });
   return data.list;
+}
+
+export async function getPlayerDetail(playerId: number) {
+  return fetchLeagueApi<PlayerDetail>('/player/detail', {
+    id: playerId,
+  });
 }

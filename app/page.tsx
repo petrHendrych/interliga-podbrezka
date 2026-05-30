@@ -1,6 +1,9 @@
+import Link from 'next/link';
 import {
-  getTeamResults, getMatchDetail, getPlayerResults, TeamResult, MatchDetail, PlayerResult,
+  getTeamResults, getMatchDetail, getPlayerDetail, TeamResult, MatchDetail, PlayerDetail,
 } from '@/lib/api';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 
 type FetchDataResult =
   | { teamResults: TeamResult[]; latestMatch: null }
@@ -8,8 +11,7 @@ type FetchDataResult =
     teamResults: TeamResult[];
     latestMatch: TeamResult;
     matchDetail: MatchDetail;
-    playerIds: number[];
-    allPlayerResults: PlayerResult[][];
+    players: PlayerDetail[];
   };
 
 async function fetchData(teamId: number): Promise<FetchDataResult> {
@@ -31,20 +33,19 @@ async function fetchData(teamId: number): Promise<FetchDataResult> {
   const teamKey = isHome ? 'home' : 'away';
 
   // 4. Extract player IDs
-  const players = matchDetail.lineUp[teamKey];
-  const playerIds: number[] = players
+  const lineup = matchDetail.lineUp[teamKey];
+  const playerIds: number[] = lineup
     .map((p) => p.player?.id)
     .filter((id: number | undefined): id is number => id !== undefined);
 
-  // 5. Fetch player results for each player
-  const allPlayerResults = await Promise.all(playerIds.map((id) => getPlayerResults(id)));
+  // 5. Fetch player details for each player
+  const players = await Promise.all(playerIds.map((id) => getPlayerDetail(id)));
 
   return {
     teamResults,
     latestMatch,
     matchDetail,
-    playerIds,
-    allPlayerResults,
+    players,
   };
 }
 
@@ -63,9 +64,9 @@ export default async function Home() {
     return (
       <main className="p-4 md:p-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4 text-red-600">Error fetching data</h1>
-        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 p-4 rounded-lg">
-          <p className="text-red-700 dark:text-red-300">{errorMsg}</p>
-          <p className="mt-2 text-sm text-red-500 dark:text-red-400">Check your X_APP_ACCESSTOKEN in .env.local</p>
+        <div className="bg-red-950 border border-red-900 p-4 rounded-lg">
+          <p className="text-red-300">{errorMsg}</p>
+          <p className="mt-2 text-sm text-red-400">Check your X_APP_ACCESSTOKEN in .env.local</p>
         </div>
       </main>
     );
@@ -83,51 +84,38 @@ export default async function Home() {
     );
   }
 
-  const {
-    teamResults, latestMatch, matchDetail, playerIds, allPlayerResults,
-  } = data;
+  const { players } = data;
 
   return (
-    <main className="p-4 md:p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Podbrezová - Interliga Scraper</h1>
+    <main className="p-4 md:p-8 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-8 text-center sm:text-left">Our Team</h1>
 
-      <div className="space-y-8">
-        <section>
-          <h2 className="text-xl font-semibold mb-2">
-            Team Results (Team
-            {teamId}
-            )
-          </h2>
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
-            <pre className="text-xs text-gray-800 dark:text-gray-200">{JSON.stringify(teamResults, null, 2)}</pre>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-semibold mb-2">
-            Latest Match Detail (ID:
-            {latestMatch.id}
-            )
-          </h2>
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
-            <pre className="text-xs text-gray-800 dark:text-gray-200">{JSON.stringify(matchDetail, null, 2)}</pre>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-semibold mb-2">Players Results</h2>
-          <div className="space-y-4">
-            {allPlayerResults.map((playerRes, index) => (
-              <div key={playerIds[index]} className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
-                <h3 className="font-mono text-sm font-bold mb-2">
-                  Player ID:
-                  {playerIds[index]}
-                </h3>
-                <pre className="text-xs text-gray-800 dark:text-gray-200">{JSON.stringify(playerRes, null, 2)}</pre>
-              </div>
-            ))}
-          </div>
-        </section>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {players.map((player) => (
+          <Link key={player.id} href={`/player/${player.id}`} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
+            <Card className="overflow-hidden hover:border-primary transition-colors">
+              <CardContent className="p-0">
+                <div className="flex items-center p-4 gap-4">
+                  <Avatar className="w-16 h-16 border-2 border-muted">
+                    <AvatarImage src="/players/3009.JPG" alt={`${player.firstName} ${player.lastName}`} />
+                    <AvatarFallback>
+                      {player.firstName?.[0]}
+                      {player.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="font-bold text-lg leading-tight">
+                      {player.firstName}
+                      <br />
+                      {player.lastName}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">View Detail</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
     </main>
   );
