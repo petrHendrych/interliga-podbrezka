@@ -2,17 +2,24 @@ const BASE_URL = 'https://api.vysledky.kolky.sk';
 
 export interface TeamResult {
   id: number;
+  matchId: number;
+  teamId: number;
   [key: string]: unknown;
 }
 
 export interface MatchDetail {
-  teams: {
-    home: { club: { id: number } };
-    away: { club: { id: number } };
+  id: number;
+  homeTeam: {
+    id: number;
+    club: { id: number };
   };
-  results: {
-    home: { players: { player?: { id: number } }[] };
-    away: { players: { player?: { id: number } }[] };
+  awayTeam: {
+    id: number;
+    club: { id: number };
+  };
+  lineUp: {
+    home: { player: { id: number } }[];
+    away: { player: { id: number } }[];
   };
   [key: string]: unknown;
 }
@@ -50,7 +57,8 @@ async function fetchLeagueApi<T>(endpoint: string, payload: unknown): Promise<T>
 }
 
 export async function getTeamResults(teamId: number) {
-  return fetchLeagueApi<TeamResult[]>('/team/results', { id: teamId });
+  const data = await fetchLeagueApi<{ list: TeamResult[] }>('/team/results', { id: teamId });
+  return data.list;
 }
 
 export async function getMatchDetail(matchId: number) {
@@ -75,7 +83,7 @@ export async function getMatchDetail(matchId: number) {
 }
 
 export async function getPlayerResults(playerId: number, seasonId: number = 12) {
-  return fetchLeagueApi<PlayerResult>('/player/results', {
+  const data = await fetchLeagueApi<{ list: PlayerResult[] }>('/player/results', {
     id: playerId,
     seasonId,
     fields: [
@@ -88,4 +96,5 @@ export async function getPlayerResults(playerId: number, seasonId: number = 12) 
       'results.opponent',
     ],
   });
+  return data.list;
 }

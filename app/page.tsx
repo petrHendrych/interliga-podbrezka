@@ -9,7 +9,7 @@ type FetchDataResult =
     latestMatch: TeamResult;
     matchDetail: MatchDetail;
     playerIds: number[];
-    allPlayerResults: PlayerResult[];
+    allPlayerResults: PlayerResult[][];
   };
 
 async function fetchData(teamId: number): Promise<FetchDataResult> {
@@ -21,19 +21,19 @@ async function fetchData(teamId: number): Promise<FetchDataResult> {
     return { teamResults, latestMatch: null };
   }
 
-  const matchId = latestMatch.id;
+  const { matchId } = latestMatch;
 
   // 2. Fetch match detail
   const matchDetail = await getMatchDetail(matchId);
 
   // 3. Determine if team 4844 is home or away
-  const isHome = matchDetail.teams.home.club.id === teamId;
+  const isHome = matchDetail.homeTeam.club.id === teamId;
   const teamKey = isHome ? 'home' : 'away';
 
   // 4. Extract player IDs
-  const { players } = matchDetail.results[teamKey];
+  const players = matchDetail.lineUp[teamKey];
   const playerIds: number[] = players
-    .map((p: { player?: { id: number } }) => p.player?.id)
+    .map((p) => p.player?.id)
     .filter((id: number | undefined): id is number => id !== undefined);
 
   // 5. Fetch player results for each player
