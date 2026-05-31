@@ -1,4 +1,5 @@
-import { getPlayerDetail, getPlayerResults } from '@/lib/api';
+import { PlayerDetail, PlayerResult } from '@/lib/api';
+import { getScrapedData } from '@/lib/db-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -17,12 +18,18 @@ export default async function PlayerDetailPage({ params }: PageProps) {
   const playerId = parseInt(id, 10);
 
   try {
+    // Fetch data from database instead of directly from API
     const [player, results] = await Promise.all([
-      getPlayerDetail(playerId),
-      getPlayerResults(playerId),
+      getScrapedData<PlayerDetail>('player_detail', playerId),
+      getScrapedData<PlayerResult[]>('player_results', playerId),
     ]);
 
+    if (!player) {
+      throw new Error(`Player data for ID ${playerId} not found in database. Please run the scraping job.`);
+    }
+
     const fullName = `${player.firstName} ${player.lastName}`;
+    const totalFaults = results?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
 
     return (
       <div className="mx-auto py-8 px-4 max-w-4xl w-full">
@@ -35,11 +42,19 @@ export default async function PlayerDetailPage({ params }: PageProps) {
             </AvatarFallback>
           </Avatar>
           <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold">{fullName}</h1>
+            <h1 className="text-3xl font-bold">
+              {fullName}
+            </h1>
             <div className="mt-2 text-muted-foreground">
               <p className="text-lg">
                 Total Payment: 0 €
+                {' '}
                 <span className="text-sm">(Unpaid: 0 €)</span>
+              </p>
+              <p className="text-lg">
+                Total Faults:
+                {' '}
+                {totalFaults}
               </p>
             </div>
           </div>

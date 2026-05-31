@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import {
-  getTeamResults, getMatchDetail, getPlayerDetail, TeamResult, MatchDetail, PlayerDetail,
+  TeamResult, MatchDetail, PlayerDetail,
 } from '@/lib/api';
+import { getScrapedData } from '@/lib/db-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -15,18 +16,22 @@ type FetchDataResult =
   };
 
 async function fetchData(teamId: number): Promise<FetchDataResult> {
-  // 1. Fetch team results
-  const teamResults = await getTeamResults(teamId);
-  const latestMatch = teamResults[0];
+  // 1. Fetch team results from database
+  const teamResults = await getScrapedData<TeamResult[]>('team_results', teamId);
 
-  if (!latestMatch) {
-    return { teamResults, latestMatch: null };
+  if (!teamResults || teamResults.length === 0) {
+    return { teamResults: [], latestMatch: null };
   }
 
+  const latestMatch = teamResults[0];
   const { matchId } = latestMatch;
 
-  // 2. Fetch match detail
-  const matchDetail = await getMatchDetail(matchId);
+  // 2. Fetch match detail from database
+  const matchDetail = await getScrapedData<MatchDetail>('match_detail', matchId);
+
+  if (!matchDetail) {
+    return { teamResults, latestMatch: null };
+  }
 
   // 3. Determine if team 4844 is home or away
   const isHome = matchDetail.homeTeam.club.id === teamId;
@@ -38,14 +43,22 @@ async function fetchData(teamId: number): Promise<FetchDataResult> {
     .map((p) => p.player?.id)
     .filter((id: number | undefined): id is number => id !== undefined);
 
-  // 5. Fetch player details for each player
-  const players = await Promise.all(playerIds.map((id) => getPlayerDetail(id)));
+  // 5. Fetch player details for each player from database
+  const players = await Promise.all(
+    playerIds.map(async (id) => {
+      const detail = await getScrapedData<PlayerDetail>('player_detail', id);
+      return detail;
+    }),
+  );
+
+  // Filter out any players that weren't found in the DB
+  const validPlayers = players.filter((p): p is PlayerDetail => p !== null);
 
   return {
     teamResults,
     latestMatch,
     matchDetail,
-    players,
+    players: validPlayers,
   };
 }
 
