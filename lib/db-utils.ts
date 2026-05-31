@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import sql from './db';
 
 export async function ensureSchema() {
@@ -18,14 +19,25 @@ export async function ensureSchema() {
 }
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
-  await sql`
-    INSERT INTO scraped_data (type, external_id, data, updated_at)
-    VALUES (${type}, ${externalId}, ${data as Record<string, unknown>}, NOW())
-    ON CONFLICT (type, external_id)
-    DO UPDATE SET 
-      data = EXCLUDED.data, 
-      updated_at = NOW();
-  `;
+  if (data === undefined) {
+    console.error(`Attempted to upsert undefined data for ${type}:${externalId}`);
+    return;
+  }
+
+  try {
+    const jsonString = JSON.stringify(data);
+    await sql`
+      INSERT INTO scraped_data (type, external_id, data, updated_at)
+      VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW())
+      ON CONFLICT (type, external_id)
+      DO UPDATE SET 
+        data = EXCLUDED.data, 
+        updated_at = NOW();
+    `;
+  } catch (error) {
+    console.error(`Failed to upsert ${type} for ID ${externalId}:`, error);
+    throw error;
+  }
 }
 
 export async function getScrapedData<T>(type: string, externalId: number): Promise<T | null> {
