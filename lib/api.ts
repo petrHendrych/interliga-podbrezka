@@ -21,6 +21,7 @@ export interface MatchDetail {
     home: { player: { id: number } }[];
     away: { player: { id: number } }[];
   };
+  league?: { seasonId?: number };
   [key: string]: unknown;
 }
 

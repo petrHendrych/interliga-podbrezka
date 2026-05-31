@@ -7,7 +7,8 @@ import {
   getPlayerDetail,
   getPlayerResults,
 } from './api';
-import { ensureSchema, upsertScrapedData } from './db-utils';
+import { ensureSchema, upsertScrapedData, saveSnapshot } from './db-utils';
+import { syncData } from './sync';
 
 const TEAM_ID = 4844;
 
@@ -25,6 +26,7 @@ export async function runScrapingJob() {
     console.log(`Fetching team results for team ${TEAM_ID}...`);
     const teamResults = await getTeamResults(TEAM_ID);
     await upsertScrapedData('team_results', TEAM_ID, teamResults);
+    await saveSnapshot('team_results', TEAM_ID, teamResults);
 
     const playerIds = new Set<number>();
     const matchIds = teamResults.map((m) => m.matchId).filter(Boolean);
@@ -35,6 +37,7 @@ export async function runScrapingJob() {
         console.log(`Fetching match detail for ${matchId}...`);
         const matchDetail = await getMatchDetail(matchId);
         await upsertScrapedData('match_detail', matchId, matchDetail);
+        await saveSnapshot('match_detail', matchId, matchDetail);
 
         // Extract players from Podbrezová lineup in this match
         const isHome = matchDetail.homeTeam?.club?.id === TEAM_ID;
@@ -63,9 +66,11 @@ export async function runScrapingJob() {
 
         const playerDetail = await getPlayerDetail(playerId);
         await upsertScrapedData('player_detail', playerId, playerDetail);
+        await saveSnapshot('player_detail', playerId, playerDetail);
 
         const playerResults = await getPlayerResults(playerId);
         await upsertScrapedData('player_results', playerId, playerResults);
+        await saveSnapshot('player_results', playerId, playerResults);
 
         await new Promise((resolve) => {
           setTimeout(resolve, 500);
@@ -75,7 +80,9 @@ export async function runScrapingJob() {
       }
     }
 
-    console.log('Scraping job completed successfully.');
+    console.log('Scraping job completed successfully. Triggering data sync...');
+    await syncData();
+    console.log('All jobs completed.');
   } catch (error) {
     console.error('Scraping job failed:', error);
     throw error;
