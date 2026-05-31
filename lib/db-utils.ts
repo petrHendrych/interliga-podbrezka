@@ -29,12 +29,21 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
 }
 
 export async function getScrapedData<T>(type: string, externalId: number): Promise<T | null> {
-  const results = await sql`
-    SELECT data FROM scraped_data 
-    WHERE type = ${type} AND external_id = ${externalId}
-    LIMIT 1;
-  `;
+  try {
+    const results = await sql`
+      SELECT data FROM scraped_data 
+      WHERE type = ${type} AND external_id = ${externalId}
+      LIMIT 1;
+    `;
 
-  if (results.length === 0) return null;
-  return results[0].data as T;
+    if (results.length === 0) return null;
+    return results[0].data as T;
+  } catch (error) {
+    // If the table doesn't exist, ensure schema and try again
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      await ensureSchema();
+      return getScrapedData(type, externalId);
+    }
+    throw error;
+  }
 }

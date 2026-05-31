@@ -9,8 +9,9 @@ import { runScrapingJob } from '@/lib/scraper';
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
 
-  // Basic security check to ensure only authorized callers (like Vercel Cron) can trigger this
-  if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Basic security check to ensure only authorized callers can trigger this
+  const isLocal = process.env.NODE_ENV === 'development';
+  if (!isLocal && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 });
   }
 
