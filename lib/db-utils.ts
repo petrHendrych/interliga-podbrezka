@@ -21,8 +21,25 @@ export async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
+      email TEXT UNIQUE,
+      password_hash TEXT,
+      is_approved BOOLEAN DEFAULT FALSE,
       external_player_id BIGINT UNIQUE,
       role TEXT NOT NULL CHECK (role IN ('player', 'trainer', 'admin')),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT FALSE;`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id SERIAL PRIMARY KEY,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
