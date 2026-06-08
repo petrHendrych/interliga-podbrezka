@@ -1,4 +1,11 @@
+---
+name: translations
+description: Guidelines for internationalization (i18n), locale management, and UI string extraction.
+trigger: "user asks about translations, adding new languages, localizing components, or modifying locale files"
+---
+
 # Translation Skill
+
 
 This skill guides Junie in maintaining the internationalization (i18n) system of the Interliga Podbrezová project.
 

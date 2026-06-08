@@ -116,7 +116,7 @@ export default async function Home({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {players.map((player) => (
-          <Link key={player.id} href={`/player/${player.id}`} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
+          <Link key={player.id} href={`/${lang}/player/${player.id}`} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
             <Card className="overflow-hidden hover:border-primary transition-colors">
               <CardContent className="p-0">
                 <div className="flex items-center p-4 gap-4">

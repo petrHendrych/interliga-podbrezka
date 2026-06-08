@@ -27,5 +27,40 @@
     "faults": "Hiba",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"
+  },
+  "auth": {
+    "signInTitle": "Bejelentkezés",
+    "signInDescription": "Add meg az adataidat a fiókodhoz való hozzáféréshez",
+    "signUpTitle": "Fiók létrehozása",
+    "signUpDescription": "Add meg az adataidat a regisztrációhoz",
+    "emailLabel": "Email",
+    "emailPlaceholder": "nev@pelda.hu",
+    "passwordLabel": "Jelszó",
+    "forgotPasswordLink": "Elfelejtetted a jelszavad?",
+    "signInButton": "Bejelentkezés",
+    "signingInButton": "Bejelentkezés...",
+    "noAccountText": "Nincs még fiókod?",
+    "signUpLink": "Regisztrálj",
+    "nameLabel": "Vezeték- és keresztnév",
+    "namePlaceholder": "Minta János",
+    "signUpButton": "Regisztráció",
+    "signingUpButton": "Regisztráció...",
+    "alreadyHaveAccountText": "Van már fiókod?",
+    "signInLink": "Jelentkezz be",
+    "signUpSuccessTitle": "Sikeres regisztráció",
+    "signUpSuccessDescription": "A fiókod létrejött, de az adminisztrátornak jóvá kell hagynia.",
+    "signUpSuccessWait": "A jóváhagyás után be tudsz majd jelentkezni.",
+    "backToSignIn": "Vissza a bejelentkezéshez",
+    "functionUnavailableTitle": "A funkció nem érhető el",
+    "resetPasswordDisabled": "A jelszó visszaállítása jelenleg le van tiltva.",
+    "changePasswordDisabled": "A jelszó megváltoztatása jelenleg le van tiltva.",
+    "errors": {
+      "missingFields": "Hiányzó kötelező adatok",
+      "emailExists": "Ez az email cím már létezik",
+      "genericError": "Hiba történt",
+      "invalidCredentials": "Helytelen email vagy jelszó",
+      "dbError": "Hiba az adatbázis-kapcsolatban",
+      "notApproved": "A fiókod adminisztrátori jóváhagyásra vár."
+    }
   }
 }

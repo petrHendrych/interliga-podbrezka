@@ -27,5 +27,40 @@
     "faults": "Chyby",
     "noResults": "Tento hráč nemá žádné výsledky.",
     "errorLoading": "Chyba při načítání hráče"
+  },
+  "auth": {
+    "signInTitle": "Přihlášení",
+    "signInDescription": "Zadej své údaje pro přístup k účtu",
+    "signUpTitle": "Vytvořit účet",
+    "signUpDescription": "Zadej své údaje pro registraci",
+    "emailLabel": "Email",
+    "emailPlaceholder": "jmeno@priklad.cz",
+    "passwordLabel": "Heslo",
+    "forgotPasswordLink": "Zapomněl jsi heslo?",
+    "signInButton": "Přihlásit se",
+    "signingInButton": "Přihlašuji...",
+    "noAccountText": "Nemáš účet?",
+    "signUpLink": "Zaregistruj se",
+    "nameLabel": "Jméno a příjmení",
+    "namePlaceholder": "Honza Novák",
+    "signUpButton": "Zaregistrovat se",
+    "signingUpButton": "Registruji...",
+    "alreadyHaveAccountText": "Už máš účet?",
+    "signInLink": "Přihlas se",
+    "signUpSuccessTitle": "Registrace úspěšná",
+    "signUpSuccessDescription": "Tvůj účet byl vytvořen, ale musí ho schválit administrátor.",
+    "signUpSuccessWait": "Po schválení se budeš moct přihlásit.",
+    "backToSignIn": "Zpět na přihlášení",
+    "functionUnavailableTitle": "Funkce nedostupná",
+    "resetPasswordDisabled": "Resetování hesla je momentálně zakázáno.",
+    "changePasswordDisabled": "Změna hesla je momentálně zakázána.",
+    "errors": {
+      "missingFields": "Chybí povinné údaje",
+      "emailExists": "Email již existuje",
+      "genericError": "Někde se stala chyba",
+      "invalidCredentials": "Nesprávný email nebo heslo",
+      "dbError": "Chyba připojení k databázi",
+      "notApproved": "Tvůj účet čeká na schválení administrátorem."
+    }
   }
 }

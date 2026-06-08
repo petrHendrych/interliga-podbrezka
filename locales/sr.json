@@ -27,5 +27,40 @@
     "faults": "Greške",
     "noResults": "Nema rezultata za ovog igrača.",
     "errorLoading": "Greška pri učitavanju podataka o igraču"
+  },
+  "auth": {
+    "signInTitle": "Prijava",
+    "signInDescription": "Unesi svoje podatke za pristup nalogu",
+    "signUpTitle": "Napravi nalog",
+    "signUpDescription": "Unesi svoje podatke za registraciju",
+    "emailLabel": "Email",
+    "emailPlaceholder": "ime@primer.rs",
+    "passwordLabel": "Lozinka",
+    "forgotPasswordLink": "Zaboravio si lozinku?",
+    "signInButton": "Prijavi se",
+    "signingInButton": "Prijavljujem se...",
+    "noAccountText": "Nemaš nalog?",
+    "signUpLink": "Registruj se",
+    "nameLabel": "Ime i prezime",
+    "namePlaceholder": "Marko Marković",
+    "signUpButton": "Registruj se",
+    "signingUpButton": "Registrujem se...",
+    "alreadyHaveAccountText": "Već imaš nalog?",
+    "signInLink": "Prijavi se",
+    "signUpSuccessTitle": "Registracija uspešna",
+    "signUpSuccessDescription": "Tvoj nalog je napravljen, ali administrator mora da ga odobri.",
+    "signUpSuccessWait": "Nakon odobrenja moći ćeš da se prijaviš.",
+    "backToSignIn": "Nazad na prijavu",
+    "functionUnavailableTitle": "Funkcija nedostupna",
+    "resetPasswordDisabled": "Resetovanje lozinke je trenutno onemogućeno.",
+    "changePasswordDisabled": "Promena lozinke je trenutno onemogućena.",
+    "errors": {
+      "missingFields": "Nedostaju obavezni podaci",
+      "emailExists": "Email već postoji",
+      "genericError": "Došlo je do greške",
+      "invalidCredentials": "Pogrešan email ili lozinka",
+      "dbError": "Greška u vezi sa bazom podataka",
+      "notApproved": "Tvoj nalog čeka na odobrenje administratora."
+    }
   }
 }

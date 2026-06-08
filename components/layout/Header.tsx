@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { SyncButton } from '@/components/SyncButton';
 import { ModeToggle } from '@/components/layout/ModeToggle';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { getSession } from '@/lib/session';
 import { signOut } from '@/lib/auth-actions';
 import { Locale } from '@/lib/i18n/config';
@@ -39,6 +40,7 @@ export async function Header({ lang }: { lang: Locale }) {
           </span>
         </Link>
         <div className="flex items-center gap-2 w-24 sm:w-48 justify-end">
+          <LanguageSwitcher lang={lang} />
           <ModeToggle />
           {isAdmin && (
             <>
