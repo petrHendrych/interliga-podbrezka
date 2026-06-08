@@ -91,10 +91,9 @@ export default function SignUpPage() {
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? 'Registrujem...' : 'Zaregistrovať sa'}
         </Button>
-        <div className="text-center text-sm mt-4">
-          Už máte účet?
-          {' '}
-          <Link href="/sign-in" className="font-medium text-primary underline-offset-4 hover:underline">
+        <div className="text-center text-sm mt-4 flex justify-between">
+          <span>Už máte účet?</span>
+          <Link href="/sign-in" className="font-medium text-primary underline underline-offset-4 hover:underline">
             Prihláste sa
           </Link>
         </div>

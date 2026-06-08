@@ -1,10 +1,11 @@
 import React from 'react';
 import sql from '@/lib/db';
 import { Button } from '@/components/ui/button';
-import { approveUser, deleteUser } from '@/lib/admin-actions';
 import {
   Card, CardHeader, CardTitle, CardContent,
 } from '@/components/ui/card';
+import { approveUser } from '@/lib/admin-actions';
+import { DeleteUserButton } from './DeleteUserButton';
 
 export default async function AdminUsersPage() {
   const users = await sql`
@@ -47,9 +48,13 @@ export default async function AdminUsersPage() {
                       <form action={approveUser.bind(null, user.id as string)}>
                         <Button type="submit" size="sm">Schváliť</Button>
                       </form>
-                      <form action={deleteUser.bind(null, user.id as string)}>
-                        <Button type="submit" size="sm" variant="destructive">Zamietnuť</Button>
-                      </form>
+                      <DeleteUserButton
+                        userId={user.id as string}
+                        label="Zamietnuť"
+                        variant="destructive"
+                        title="Zamietnuť registráciu?"
+                        description="Naozaj chcete zamietnuť túto registráciu? Používateľ bude odstránený zo systému."
+                      />
                     </div>
                   </div>
                 ))}
@@ -83,16 +88,13 @@ export default async function AdminUsersPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <form action={deleteUser.bind(null, user.id as string)}>
-                        <Button
-                          type="submit"
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:bg-destructive/10"
-                        >
-                          Odobrať
-                        </Button>
-                      </form>
+                      <DeleteUserButton
+                        userId={user.id as string}
+                        label="Odobrať"
+                        variant="ghost"
+                        title="Odobrať používateľa?"
+                        description="Naozaj chcete odobrať tohto používateľa? Stratí prístup do admin panelu."
+                      />
                     </div>
                   </div>
                 ))}
