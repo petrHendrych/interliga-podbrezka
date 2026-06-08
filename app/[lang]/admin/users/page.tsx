@@ -5,9 +5,18 @@ import {
   Card, CardHeader, CardTitle, CardContent,
 } from '@/components/ui/card';
 import { approveUser } from '@/lib/admin-actions';
+import { Locale } from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 import { DeleteUserButton } from './DeleteUserButton';
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const dict = await getDictionary(lang as Locale);
+
   const users = await sql`
     SELECT id, name, email, role, is_approved, created_at
     FROM users
@@ -20,22 +29,24 @@ export default async function AdminUsersPage() {
   return (
     <div className="p-4 sm:p-8 space-y-8 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold">Správa používateľov</h1>
-        <p className="text-muted-foreground">Schvaľovanie nových registrácií a správa prístupov</p>
+        <h1 className="text-3xl font-bold">{dict.admin.users.title}</h1>
+        <p className="text-muted-foreground">{dict.admin.users.description}</p>
       </div>
 
       <div className="grid gap-8">
         <Card>
           <CardHeader>
             <CardTitle>
-              Čakajúci na schválenie (
+              {dict.admin.users.pendingTitle}
+              {' '}
+              (
               {pendingUsers.length}
               )
             </CardTitle>
           </CardHeader>
           <CardContent>
             {pendingUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Žiadni čakajúci používatelia.</p>
+              <p className="text-sm text-muted-foreground">{dict.admin.users.noPending}</p>
             ) : (
               <div className="space-y-4">
                 {pendingUsers.map((user) => (
@@ -46,14 +57,18 @@ export default async function AdminUsersPage() {
                     </div>
                     <div className="flex gap-2">
                       <form action={approveUser.bind(null, user.id as string)}>
-                        <Button type="submit" size="sm">Schváliť</Button>
+                        <Button type="submit" size="sm">{dict.admin.users.approve}</Button>
                       </form>
                       <DeleteUserButton
                         userId={user.id as string}
-                        label="Zamietnuť"
+                        label={dict.admin.users.reject}
                         variant="destructive"
-                        title="Zamietnuť registráciu?"
-                        description="Naozaj chcete zamietnuť túto registráciu? Používateľ bude odstránený zo systému."
+                        title={dict.admin.users.rejectTitle}
+                        description={dict.admin.users.rejectDescription}
+                        translations={{
+                          cancel: dict.common.cancel,
+                          delete: dict.common.delete,
+                        }}
                       />
                     </div>
                   </div>
@@ -66,14 +81,16 @@ export default async function AdminUsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Schválení používatelia (
+              {dict.admin.users.approvedTitle}
+              {' '}
+              (
               {approvedUsers.length}
               )
             </CardTitle>
           </CardHeader>
           <CardContent>
             {approvedUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Žiadni schválení používatelia.</p>
+              <p className="text-sm text-muted-foreground">{dict.admin.users.noApproved}</p>
             ) : (
               <div className="space-y-4">
                 {approvedUsers.map((user) => (
@@ -90,10 +107,14 @@ export default async function AdminUsersPage() {
                     <div className="flex gap-2">
                       <DeleteUserButton
                         userId={user.id as string}
-                        label="Odobrať"
+                        label={dict.admin.users.remove}
                         variant="ghost"
-                        title="Odobrať používateľa?"
-                        description="Naozaj chcete odobrať tohto používateľa? Stratí prístup do admin panelu."
+                        title={dict.admin.users.removeTitle}
+                        description={dict.admin.users.removeDescription}
+                        translations={{
+                          cancel: dict.common.cancel,
+                          delete: dict.common.delete,
+                        }}
                       />
                     </div>
                   </div>

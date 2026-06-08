@@ -40,8 +40,16 @@ export async function Header({ lang }: { lang: Locale }) {
           </span>
         </Link>
         <div className="flex items-center gap-2 w-24 sm:w-48 justify-end">
-          <LanguageSwitcher lang={lang} />
-          <ModeToggle />
+          <LanguageSwitcher
+            lang={lang}
+            translations={{
+              switchLanguage: dict.common.switchLanguage,
+            }}
+          />
+          <ModeToggle translations={{
+            toggleTheme: dict.common.toggleTheme,
+          }}
+          />
           {isAdmin && (
             <>
               <Link

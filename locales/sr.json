@@ -1,6 +1,8 @@
 {
   "home": {
     "title": "Naš tim",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Sistem za obračun kazni za A tim.",
     "viewDetail": "Pogledaj detalje",
     "errorTitle": "Greška pri učitavanju podataka",
     "noResults": "Nisu pronađeni rezultati za tim",
@@ -12,7 +14,28 @@
     "logout": "Odjavi se",
     "manageUsers": "Upravljanje korisnicima",
     "syncing": "Sinhronizujem...",
-    "syncData": "Sinhronizuj podatke"
+    "syncData": "Sinhronizuj podatke",
+    "cancel": "Otkaži",
+    "delete": "Izbriši",
+    "switchLanguage": "Promeni jezik",
+    "toggleTheme": "Promeni temu"
+  },
+  "admin": {
+    "users": {
+      "title": "Upravljanje korisnicima",
+      "description": "Odobravanje novih registracija i upravljanje pristupima",
+      "pendingTitle": "Čekaju na odobrenje",
+      "noPending": "Nema korisnika na čekanju.",
+      "approve": "Odobri",
+      "reject": "Odbij",
+      "rejectTitle": "Odbiti registraciju?",
+      "rejectDescription": "Da li zaista želite da odbijete ovu registraciju? Korisnik će biti uklonjen iz sistema.",
+      "approvedTitle": "Odobreni korisnici",
+      "noApproved": "Nema odobrenih korisnika.",
+      "remove": "Ukloni",
+      "removeTitle": "Ukloniti korisnika?",
+      "removeDescription": "Da li zaista želite da uklonite ovog korisnika? Izgubiće pristup admin panelu."
+    }
   },
   "playerDetail": {
     "totalPayment": "Ukupno za uplatu",

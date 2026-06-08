@@ -23,6 +23,10 @@ interface DeleteUserButtonProps {
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   title: string;
   description: string;
+  translations: {
+    cancel: string;
+    delete: string;
+  };
 }
 
 export function DeleteUserButton({
@@ -31,6 +35,7 @@ export function DeleteUserButton({
   variant = 'destructive',
   title,
   description,
+  translations,
 }: DeleteUserButtonProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -54,7 +59,7 @@ export function DeleteUserButton({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Zrušiť</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>{translations.cancel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
@@ -64,7 +69,7 @@ export function DeleteUserButton({
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Odstrániť
+            {translations.delete}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,6 +1,8 @@
 {
   "home": {
     "title": "A csapatunk",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Pénzügyi elszámolási rendszer az A csapat számára.",
     "viewDetail": "Részletek megtekintése",
     "errorTitle": "Hiba az adatok lekérésekor",
     "noResults": "Nem található eredmény a csapat számára",
@@ -12,7 +14,28 @@
     "logout": "Kijelentkezés",
     "manageUsers": "Felhasználók kezelése",
     "syncing": "Szinkronizálás...",
-    "syncData": "Adatok szinkronizálása"
+    "syncData": "Adatok szinkronizálása",
+    "cancel": "Mégse",
+    "delete": "Törlés",
+    "switchLanguage": "Nyelvváltás",
+    "toggleTheme": "Téma váltása"
+  },
+  "admin": {
+    "users": {
+      "title": "Felhasználók kezelése",
+      "description": "Új regisztrációk jóváhagyása és hozzáférések kezelése",
+      "pendingTitle": "Jóváhagyásra váró felhasználók",
+      "noPending": "Nincsenek várakozó felhasználók.",
+      "approve": "Jóváhagyás",
+      "reject": "Elutasítás",
+      "rejectTitle": "Regisztráció elutasítása?",
+      "rejectDescription": "Biztosan el akarja utasítani ezt a regisztrációt? A felhasználó törlődik a rendszerből.",
+      "approvedTitle": "Jóváhagyott felhasználók",
+      "noApproved": "Nincsenek jóváhagyott felhasználók.",
+      "remove": "Eltávolítás",
+      "removeTitle": "Felhasználó eltávolítása?",
+      "removeDescription": "Biztosan el akarja távolítani ezt a felhasználót? Elveszíti a hozzáférést az adminisztrációs panelhez."
+    }
   },
   "playerDetail": {
     "totalPayment": "Összes fizetendő",

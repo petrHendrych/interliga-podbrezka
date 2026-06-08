@@ -4,6 +4,7 @@ import '../globals.css';
 import { Header } from '@/components/layout/Header';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Locale } from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,10 +22,17 @@ const audiowide = Audiowide({
   subsets: ['latin'],
 });
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const dict = await getDictionary(lang as Locale);
+
   return {
-    title: 'Podbrezová - Interliga',
-    description: 'Money accounting system for A team.',
+    title: dict.home.pageTitle,
+    description: dict.home.pageDescription,
   };
 }
 

@@ -1,6 +1,8 @@
 {
   "home": {
     "title": "Naše parta",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Systém pro účtování pokut pro A tým.",
     "viewDetail": "Kouknout na detail",
     "errorTitle": "Chyba při načítání dat",
     "noResults": "Nenašly se žádné výsledky pro tým",
@@ -12,7 +14,28 @@
     "logout": "Odhlásit se",
     "manageUsers": "Správa uživatelů",
     "syncing": "Synchronizuji...",
-    "syncData": "Synchronizovat data"
+    "syncData": "Synchronizovat data",
+    "cancel": "Zrušit",
+    "delete": "Odstranit",
+    "switchLanguage": "Změnit jazyk",
+    "toggleTheme": "Přepnout téma"
+  },
+  "admin": {
+    "users": {
+      "title": "Správa uživatelů",
+      "description": "Schvalování nových registrací a správa přístupů",
+      "pendingTitle": "Čekající na schválení",
+      "noPending": "Žádní čekající uživatelé.",
+      "approve": "Schválit",
+      "reject": "Zamítnout",
+      "rejectTitle": "Zamítnout registraci?",
+      "rejectDescription": "Opravdu chcete zamítnout tuto registraci? Uživatel bude odstraněn ze systému.",
+      "approvedTitle": "Schválení uživatelé",
+      "noApproved": "Žádní schválení uživatelé.",
+      "remove": "Odebrat",
+      "removeTitle": "Odebrat uživatele?",
+      "removeDescription": "Opravdu chcete odebrat tohoto uživatele? Ztratí přístup do admin panelu."
+    }
   },
   "playerDetail": {
     "totalPayment": "Spolu k úhradě",

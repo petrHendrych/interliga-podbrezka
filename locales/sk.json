@@ -1,6 +1,8 @@
 {
   "home": {
     "title": "Naša partia",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Systém pre účtovanie pokút pre A tím.",
     "viewDetail": "Pozrieť detail",
     "errorTitle": "Chyba pri načítaní dát",
     "noResults": "Nenašli sa žiadne výsledky pre tím",
@@ -12,7 +14,28 @@
     "logout": "Odhlásiť sa",
     "manageUsers": "Správa používateľov",
     "syncing": "Synchronizujem...",
-    "syncData": "Synchronizovať dáta"
+    "syncData": "Synchronizovať dáta",
+    "cancel": "Zrušiť",
+    "delete": "Odstrániť",
+    "switchLanguage": "Zmeniť jazyk",
+    "toggleTheme": "Prepnúť tému"
+  },
+  "admin": {
+    "users": {
+      "title": "Správa používateľov",
+      "description": "Schvaľovanie nových registrácií a správa prístupov",
+      "pendingTitle": "Čakajúci na schválenie",
+      "noPending": "Žiadni čakajúci používatelia.",
+      "approve": "Schváliť",
+      "reject": "Zamietnuť",
+      "rejectTitle": "Zamietnuť registráciu?",
+      "rejectDescription": "Naozaj chcete zamietnuť túto registráciu? Používateľ bude odstránený zo systému.",
+      "approvedTitle": "Schválení používatelia",
+      "noApproved": "Žiadni schválení používatelia.",
+      "remove": "Odobrať",
+      "removeTitle": "Odobrať používateľa?",
+      "removeDescription": "Naozaj chcete odobrať tohto používateľa? Stratí prístup do admin panelu."
+    }
   },
   "playerDetail": {
     "totalPayment": "Spolu k úhrade",

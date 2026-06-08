@@ -21,7 +21,15 @@ const languages = [
   { code: 'sr', name: 'Srpski', Flag: RS },
 ];
 
-export function LanguageSwitcher({ lang }: { lang: string }) {
+export function LanguageSwitcher({
+  lang,
+  translations,
+}: {
+  lang: string;
+  translations: {
+    switchLanguage: string;
+  };
+}) {
   const pathname = usePathname();
 
   const handleLanguageChange = (newLang: string) => {
@@ -50,7 +58,7 @@ export function LanguageSwitcher({ lang }: { lang: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="ghost" size="icon-lg" />}>
         <Languages className="size-[1.2rem]" />
-        <span className="sr-only">Switch language</span>
+        <span className="sr-only">{translations.switchLanguage}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {languages.map((l) => (

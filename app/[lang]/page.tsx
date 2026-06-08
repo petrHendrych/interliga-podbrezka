@@ -98,7 +98,7 @@ export default async function Home({
   if (!data || !data.latestMatch) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Podbrezová - Interliga</h1>
+        <h1 className="text-2xl font-bold mb-4">{dict.home.pageTitle}</h1>
         <p>
           {dict.home.noResults}
           {' '}
