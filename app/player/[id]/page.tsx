@@ -42,7 +42,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
             </AvatarFallback>
           </Avatar>
           <div className="text-center md:text-left">
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-bold tracking-tight">
               {fullName}
             </h1>
             <div className="mt-2 text-muted-foreground">

@@ -106,8 +106,7 @@ async function syncMatch(matchId: number, data: SyncMatchData) {
 
       // Calculate fine (sequential + performance)
       // Special faults are added in the DB update via current value
-      const baseFine = (pr.faults * (pr.faults + 1)) / 2;
-      let calculatedFine = baseFine;
+      let calculatedFine = (pr.faults * (pr.faults + 1)) / 2;
       if (isWorstPlayer) calculatedFine += 1;
       if (isUnder600) calculatedFine += 1;
 
