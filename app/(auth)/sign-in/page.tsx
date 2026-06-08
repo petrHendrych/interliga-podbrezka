@@ -11,7 +11,7 @@ export default function SignInPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">Prihlásenie</h2>
+        <h2 className="text-2xl font-semibold">Prihlásenie</h2>
         <p className="text-sm text-muted-foreground">Zadajte svoje údaje pre prístup k účtu</p>
       </div>
       <form action={action} className="space-y-4">
@@ -40,7 +40,7 @@ export default function SignInPage() {
               <span>Heslo</span>
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                className="text-xs font-medium text-primary underline underline-offset-4 hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
                 Zabudli ste heslo?
@@ -61,10 +61,9 @@ export default function SignInPage() {
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? 'Prihlasujem...' : 'Prihlásiť sa'}
         </Button>
-        <div className="text-center text-sm mt-4">
-          Nemáte účet?
-          {' '}
-          <Link href="/sign-up" className="font-medium text-primary underline-offset-4 hover:underline">
+        <div className="text-center text-sm mt-4 flex justify-between">
+          <span>Nemáte účet?</span>
+          <Link href="/sign-up" className="font-medium text-primary underline underline-offset-4 hover:underline">
             Zaregistrujte sa
           </Link>
         </div>
