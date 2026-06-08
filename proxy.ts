@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decrypt } from './lib/auth';
 
-const publicRoutes = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password'];
+const publicRoutes = ['/sign-in', '/sign-up'/* , '/forgot-password', '/reset-password' */];
 const publicApiPrefixes = ['/api/cron/'];
 
 export default async function proxy(req: NextRequest) {

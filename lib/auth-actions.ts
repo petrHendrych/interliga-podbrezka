@@ -2,11 +2,11 @@
 
 /* eslint-disable no-console */
 import { redirect } from 'next/navigation';
-import crypto from 'crypto';
+// import crypto from 'crypto';
 import sql from './db';
 import { hashPassword, verifyPassword } from './auth';
 import { setSession, clearSession } from './session';
-import { sendPasswordResetEmail } from './email';
+// import { sendPasswordResetEmail } from './email';
 
 type ActionState = {
   error?: string;
@@ -90,6 +90,7 @@ export async function signOut() {
   redirect('/sign-in');
 }
 
+/*
 export async function requestPasswordReset(
   prevState: ActionState,
   formData: FormData,
@@ -132,8 +133,8 @@ export async function resetPassword(
 
   try {
     const results = await sql`
-      SELECT user_id, expires_at 
-      FROM password_reset_tokens 
+      SELECT user_id, expires_at
+      FROM password_reset_tokens
       WHERE token = ${token}
     `;
     const resetToken = results[0];
@@ -157,3 +158,4 @@ export async function resetPassword(
 
   return { success: true };
 }
+*/
