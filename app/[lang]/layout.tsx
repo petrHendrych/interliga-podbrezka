@@ -52,7 +52,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <Header lang={lang} />
-          <main className="flex-1">{children}</main>
+          <main className="flex flex-1 flex-col">{children}</main>
         </ThemeProvider>
       </body>
     </html>

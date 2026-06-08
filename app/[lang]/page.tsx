@@ -85,33 +85,33 @@ export default async function Home({
 
   if (errorMsg) {
     return (
-      <main className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4 text-red-600">{dict.home.errorTitle}</h1>
         <div className="bg-red-950 border border-red-900 p-4 rounded-lg">
           <p className="text-red-300">{errorMsg}</p>
           <p className="mt-2 text-sm text-red-400">{dict.home.checkToken}</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!data || !data.latestMatch) {
     return (
-      <main className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Podbrezová - Interliga</h1>
         <p>
           {dict.home.noResults}
           {' '}
           {teamId}
         </p>
-      </main>
+      </div>
     );
   }
 
   const { players } = data;
 
   return (
-    <main className="p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold tracking-tight mb-8 text-center sm:text-left">{dict.home.title}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,6 +141,6 @@ export default async function Home({
           </Link>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
