@@ -1,0 +1,31 @@
+{
+  "home": {
+    "title": "Naše parta",
+    "viewDetail": "Kouknout na detail",
+    "errorTitle": "Chyba při načítání dat",
+    "noResults": "Nenašly se žádné výsledky pro tým",
+    "checkToken": "Zkontroluj si X_APP_ACCESSTOKEN v .env.local"
+  },
+  "common": {
+    "loading": "Načítám...",
+    "error": "Někde se stala chyba",
+    "logout": "Odhlásit se",
+    "manageUsers": "Správa uživatelů",
+    "syncing": "Synchronizuji...",
+    "syncData": "Synchronizovat data"
+  },
+  "playerDetail": {
+    "totalPayment": "Spolu k úhradě",
+    "unpaid": "Nezaplaceno",
+    "totalFaults": "Chyby celkem",
+    "matchResults": "Výsledky zápasů",
+    "date": "Datum",
+    "match": "Zápas",
+    "full": "Plné",
+    "clean": "Dorážka",
+    "total": "Celkem",
+    "faults": "Chyby",
+    "noResults": "Tento hráč nemá žádné výsledky.",
+    "errorLoading": "Chyba při načítání hráče"
+  }
+}

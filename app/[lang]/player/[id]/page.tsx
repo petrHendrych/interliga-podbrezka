@@ -8,13 +8,17 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { Locale } from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; lang: string }>;
 }
 
 export default async function PlayerDetailPage({ params }: PageProps) {
-  const { id } = await params;
+  const { id, lang: langParam } = await params;
+  const lang = langParam as Locale;
+  const dict = await getDictionary(lang);
   const playerId = parseInt(id, 10);
 
   try {
@@ -47,12 +51,18 @@ export default async function PlayerDetailPage({ params }: PageProps) {
             </h1>
             <div className="mt-2 text-muted-foreground">
               <p className="text-lg">
-                Total Payment: 0 €
+                {dict.playerDetail.totalPayment}
+                : 0 €
                 {' '}
-                <span className="text-sm">(Unpaid: 0 €)</span>
+                <span className="text-sm">
+                  (
+                  {dict.playerDetail.unpaid}
+                  : 0 €)
+                </span>
               </p>
               <p className="text-lg">
-                Total Faults:
+                {dict.playerDetail.totalFaults}
+                :
                 {' '}
                 {totalFaults}
               </p>
@@ -64,18 +74,18 @@ export default async function PlayerDetailPage({ params }: PageProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Match Results</CardTitle>
+            <CardTitle>{dict.playerDetail.matchResults}</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap">Date</TableHead>
-                  <TableHead className="min-w-[200px]">Match</TableHead>
-                  <TableHead className="text-right">Full</TableHead>
-                  <TableHead className="text-right">Clean</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Faults</TableHead>
+                  <TableHead className="whitespace-nowrap">{dict.playerDetail.date}</TableHead>
+                  <TableHead className="min-w-[200px]">{dict.playerDetail.match}</TableHead>
+                  <TableHead className="text-right">{dict.playerDetail.full}</TableHead>
+                  <TableHead className="text-right">{dict.playerDetail.clean}</TableHead>
+                  <TableHead className="text-right">{dict.playerDetail.total}</TableHead>
+                  <TableHead className="text-right">{dict.playerDetail.faults}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,7 +112,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No results found for this player.
+                      {dict.playerDetail.noResults}
                     </TableCell>
                   </TableRow>
                 )}
@@ -115,7 +125,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
   } catch (error) {
     return (
       <div className="mx-auto py-12 px-4 text-center">
-        <h1 className="text-2xl font-bold text-destructive">Error loading player data</h1>
+        <h1 className="text-2xl font-bold text-destructive">{dict.playerDetail.errorLoading}</h1>
         <p className="mt-2 text-muted-foreground">
           {error instanceof Error ? error.message : 'An unknown error occurred'}
         </p>

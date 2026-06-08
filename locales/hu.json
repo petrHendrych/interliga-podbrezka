@@ -1,0 +1,31 @@
+{
+  "home": {
+    "title": "A csapatunk",
+    "viewDetail": "Részletek megtekintése",
+    "errorTitle": "Hiba az adatok lekérésekor",
+    "noResults": "Nem található eredmény a csapat számára",
+    "checkToken": "Ellenőrizd az X_APP_ACCESSTOKEN-t a .env.local fájlban"
+  },
+  "common": {
+    "loading": "Betöltés...",
+    "error": "Hiba történt",
+    "logout": "Kijelentkezés",
+    "manageUsers": "Felhasználók kezelése",
+    "syncing": "Szinkronizálás...",
+    "syncData": "Adatok szinkronizálása"
+  },
+  "playerDetail": {
+    "totalPayment": "Összes fizetendő",
+    "unpaid": "Kifizetetlen",
+    "totalFaults": "Összes hiba",
+    "matchResults": "Mérkőzés eredmények",
+    "date": "Dátum",
+    "match": "Mérkőzés",
+    "full": "Teli",
+    "clean": "Tarolás",
+    "total": "Összesen",
+    "faults": "Hiba",
+    "noResults": "Nincs eredmény ehhez a játékoshoz.",
+    "errorLoading": "Hiba a játékos adatainak betöltésekor"
+  }
+}

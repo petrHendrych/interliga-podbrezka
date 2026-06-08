@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Audiowide } from 'next/font/google';
-import './globals.css';
+import '../globals.css';
 import { Header } from '@/components/layout/Header';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { Locale } from '@/lib/i18n/config';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -20,19 +21,26 @@ const audiowide = Audiowide({
   subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
-  title: 'Podbrezová - Interliga',
-  description: 'Money accounting system for A team.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Podbrezová - Interliga',
+    description: 'Money accounting system for A team.',
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ lang: string }>;
 }>) {
+  const { lang: langParam } = await params;
+  const lang = langParam as Locale;
+
   return (
     <html
-      lang="en"
+      lang={lang}
       className={`${geistSans.variable} ${geistMono.variable} ${audiowide.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -43,7 +51,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
+          <Header lang={lang} />
           <main className="flex-1">{children}</main>
         </ThemeProvider>
       </body>

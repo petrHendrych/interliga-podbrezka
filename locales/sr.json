@@ -1,0 +1,31 @@
+{
+  "home": {
+    "title": "Naš tim",
+    "viewDetail": "Pogledaj detalje",
+    "errorTitle": "Greška pri učitavanju podataka",
+    "noResults": "Nisu pronađeni rezultati za tim",
+    "checkToken": "Proveri svoj X_APP_ACCESSTOKEN u .env.local"
+  },
+  "common": {
+    "loading": "Učitavam...",
+    "error": "Došlo je do greške",
+    "logout": "Odjavi se",
+    "manageUsers": "Upravljanje korisnicima",
+    "syncing": "Sinhronizujem...",
+    "syncData": "Sinhronizuj podatke"
+  },
+  "playerDetail": {
+    "totalPayment": "Ukupno za uplatu",
+    "unpaid": "Neplaćeno",
+    "totalFaults": "Ukupno grešaka",
+    "matchResults": "Rezultati utakmica",
+    "date": "Datum",
+    "match": "Utakmica",
+    "full": "Pune",
+    "clean": "Čišćenje",
+    "total": "Ukupno",
+    "faults": "Greške",
+    "noResults": "Nema rezultata za ovog igrača.",
+    "errorLoading": "Greška pri učitavanju podataka o igraču"
+  }
+}
