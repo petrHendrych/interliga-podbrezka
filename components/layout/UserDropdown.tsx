@@ -50,7 +50,7 @@ export function UserDropdown({
           />
         )}
       >
-        <span className="text-sm font-medium max-w-[120px] truncate sm:max-w-[180px]">
+        <span className="text-sm font-medium max-w-30 truncate sm:max-w-45">
           {user.name}
         </span>
         <ChevronDown className="size-3.5 text-muted-foreground shrink-0 transition-transform duration-200" />
