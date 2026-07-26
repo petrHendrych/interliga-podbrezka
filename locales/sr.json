@@ -1,0 +1,89 @@
+{
+  "home": {
+    "title": "Naš tim",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Sistem za obračun kazni za A tim.",
+    "viewDetail": "Pogledaj detalje",
+    "errorTitle": "Greška pri učitavanju podataka",
+    "noResults": "Nisu pronađeni rezultati za tim",
+    "checkToken": "Proveri svoj X_APP_ACCESSTOKEN u .env.local"
+  },
+  "common": {
+    "loading": "Učitavam...",
+    "error": "Došlo je do greške",
+    "logout": "Odjavi se",
+    "manageUsers": "Upravljanje korisnicima",
+    "syncing": "Sinhronizujem...",
+    "syncData": "Sinhronizuj podatke",
+    "cancel": "Otkaži",
+    "delete": "Izbriši",
+    "switchLanguage": "Promeni jezik",
+    "toggleTheme": "Promeni temu"
+  },
+  "admin": {
+    "users": {
+      "title": "Upravljanje korisnicima",
+      "description": "Odobravanje novih registracija i upravljanje pristupima",
+      "pendingTitle": "Čekaju na odobrenje",
+      "noPending": "Nema korisnika na čekanju.",
+      "approve": "Odobri",
+      "reject": "Odbij",
+      "rejectTitle": "Odbiti registraciju?",
+      "rejectDescription": "Da li zaista želite da odbijete ovu registraciju? Korisnik će biti uklonjen iz sistema.",
+      "approvedTitle": "Odobreni korisnici",
+      "noApproved": "Nema odobrenih korisnika.",
+      "remove": "Ukloni",
+      "removeTitle": "Ukloniti korisnika?",
+      "removeDescription": "Da li zaista želite da uklonite ovog korisnika? Izgubiće pristup admin panelu."
+    }
+  },
+  "playerDetail": {
+    "totalPayment": "Ukupno za uplatu",
+    "unpaid": "Neplaćeno",
+    "totalFaults": "Ukupno grešaka",
+    "matchResults": "Rezultati utakmica",
+    "date": "Datum",
+    "match": "Utakmica",
+    "full": "Pune",
+    "clean": "Čišćenje",
+    "total": "Ukupno",
+    "faults": "Greške",
+    "noResults": "Nema rezultata za ovog igrača.",
+    "errorLoading": "Greška pri učitavanju podataka o igraču"
+  },
+  "auth": {
+    "signInTitle": "Prijava",
+    "signInDescription": "Unesi svoje podatke za pristup nalogu",
+    "signUpTitle": "Napravi nalog",
+    "signUpDescription": "Unesi svoje podatke za registraciju",
+    "emailLabel": "Email",
+    "emailPlaceholder": "ime@primer.rs",
+    "passwordLabel": "Lozinka",
+    "forgotPasswordLink": "Zaboravio si lozinku?",
+    "signInButton": "Prijavi se",
+    "signingInButton": "Prijavljujem se...",
+    "noAccountText": "Nemaš nalog?",
+    "signUpLink": "Registruj se",
+    "nameLabel": "Ime i prezime",
+    "namePlaceholder": "Marko Marković",
+    "signUpButton": "Registruj se",
+    "signingUpButton": "Registrujem se...",
+    "alreadyHaveAccountText": "Već imaš nalog?",
+    "signInLink": "Prijavi se",
+    "signUpSuccessTitle": "Registracija uspešna",
+    "signUpSuccessDescription": "Tvoj nalog je napravljen, ali administrator mora da ga odobri.",
+    "signUpSuccessWait": "Nakon odobrenja moći ćeš da se prijaviš.",
+    "backToSignIn": "Nazad na prijavu",
+    "functionUnavailableTitle": "Funkcija nedostupna",
+    "resetPasswordDisabled": "Resetovanje lozinke je trenutno onemogućeno.",
+    "changePasswordDisabled": "Promena lozinke je trenutno onemogućena.",
+    "errors": {
+      "missingFields": "Nedostaju obavezni podaci",
+      "emailExists": "Email već postoji",
+      "genericError": "Došlo je do greške",
+      "invalidCredentials": "Pogrešan email ili lozinka",
+      "dbError": "Greška u vezi sa bazom podataka",
+      "notApproved": "Tvoj nalog čeka na odobrenje administratora."
+    }
+  }
+}

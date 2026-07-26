@@ -4,15 +4,21 @@ import React, { useActionState } from 'react';
 import Link from 'next/link';
 import { signIn } from '@/lib/auth-actions';
 import { Button } from '@/components/ui/button';
+import { Dictionary } from '@/lib/i18n/types';
 
-export default function SignInPage() {
+interface SignInFormProps {
+  lang: string;
+  dict: Dictionary['auth'];
+}
+
+export default function SignInForm({ lang, dict }: SignInFormProps) {
   const [state, action, isPending] = useActionState(signIn, null);
 
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold">Prihlásenie</h2>
-        <p className="text-sm text-muted-foreground">Zadajte svoje údaje pre prístup k účtu</p>
+        <h2 className="text-2xl font-semibold">{dict.signInTitle}</h2>
+        <p className="text-sm text-muted-foreground">{dict.signInDescription}</p>
       </div>
       <form action={action} className="space-y-4">
         <div className="space-y-2">
@@ -20,12 +26,12 @@ export default function SignInPage() {
             htmlFor="email"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
           >
-            Email
+            {dict.emailLabel}
             <input
               id="email"
               name="email"
               type="email"
-              placeholder="meno@priklad.sk"
+              placeholder={dict.emailPlaceholder}
               required
               className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1
                 text-base shadow-sm transition-colors file:border-0 file:bg-transparent
@@ -41,15 +47,15 @@ export default function SignInPage() {
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
           >
             <div className="flex items-center justify-between mb-2">
-              <span>Heslo</span>
-              {/* Commented out for now as per issue description
+              <span>{dict.passwordLabel}</span>
+              {/* Commented out for now
               <Link
-                href="/forgot-password"
+                href={`/${lang}/forgot-password`}
                 className="text-xs font-medium text-primary underline
                   underline-offset-4 hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
-                Zabudli ste heslo?
+                {dict.forgotPasswordLink}
               </Link>
               */}
             </div>
@@ -67,18 +73,20 @@ export default function SignInPage() {
           </label>
         </div>
         {state?.error && (
-        <p className="text-sm font-medium text-destructive text-center">{state.error}</p>
+          <p className="text-sm font-medium text-destructive text-center">
+            {dict.errors[state.error as keyof typeof dict.errors] || state.error}
+          </p>
         )}
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Prihlasujem...' : 'Prihlásiť sa'}
+          {isPending ? dict.signingInButton : dict.signInButton}
         </Button>
         <div className="text-center text-sm mt-4 flex justify-between">
-          <span>Nemáte účet?</span>
+          <span>{dict.noAccountText}</span>
           <Link
-            href="/sign-up"
+            href={`/${lang}/sign-up`}
             className="font-medium text-primary underline underline-offset-4 hover:underline"
           >
-            Zaregistrujte sa
+            {dict.signUpLink}
           </Link>
         </div>
       </form>

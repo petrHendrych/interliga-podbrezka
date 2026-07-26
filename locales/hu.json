@@ -1,0 +1,89 @@
+{
+  "home": {
+    "title": "A csapatunk",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Pénzügyi elszámolási rendszer az A csapat számára.",
+    "viewDetail": "Részletek megtekintése",
+    "errorTitle": "Hiba az adatok lekérésekor",
+    "noResults": "Nem található eredmény a csapat számára",
+    "checkToken": "Ellenőrizd az X_APP_ACCESSTOKEN-t a .env.local fájlban"
+  },
+  "common": {
+    "loading": "Betöltés...",
+    "error": "Hiba történt",
+    "logout": "Kijelentkezés",
+    "manageUsers": "Felhasználók kezelése",
+    "syncing": "Szinkronizálás...",
+    "syncData": "Adatok szinkronizálása",
+    "cancel": "Mégse",
+    "delete": "Törlés",
+    "switchLanguage": "Nyelvváltás",
+    "toggleTheme": "Téma váltása"
+  },
+  "admin": {
+    "users": {
+      "title": "Felhasználók kezelése",
+      "description": "Új regisztrációk jóváhagyása és hozzáférések kezelése",
+      "pendingTitle": "Jóváhagyásra váró felhasználók",
+      "noPending": "Nincsenek várakozó felhasználók.",
+      "approve": "Jóváhagyás",
+      "reject": "Elutasítás",
+      "rejectTitle": "Regisztráció elutasítása?",
+      "rejectDescription": "Biztosan el akarja utasítani ezt a regisztrációt? A felhasználó törlődik a rendszerből.",
+      "approvedTitle": "Jóváhagyott felhasználók",
+      "noApproved": "Nincsenek jóváhagyott felhasználók.",
+      "remove": "Eltávolítás",
+      "removeTitle": "Felhasználó eltávolítása?",
+      "removeDescription": "Biztosan el akarja távolítani ezt a felhasználót? Elveszíti a hozzáférést az adminisztrációs panelhez."
+    }
+  },
+  "playerDetail": {
+    "totalPayment": "Összes fizetendő",
+    "unpaid": "Kifizetetlen",
+    "totalFaults": "Összes hiba",
+    "matchResults": "Mérkőzés eredmények",
+    "date": "Dátum",
+    "match": "Mérkőzés",
+    "full": "Teli",
+    "clean": "Tarolás",
+    "total": "Összesen",
+    "faults": "Hiba",
+    "noResults": "Nincs eredmény ehhez a játékoshoz.",
+    "errorLoading": "Hiba a játékos adatainak betöltésekor"
+  },
+  "auth": {
+    "signInTitle": "Bejelentkezés",
+    "signInDescription": "Add meg az adataidat a fiókodhoz való hozzáféréshez",
+    "signUpTitle": "Fiók létrehozása",
+    "signUpDescription": "Add meg az adataidat a regisztrációhoz",
+    "emailLabel": "Email",
+    "emailPlaceholder": "nev@pelda.hu",
+    "passwordLabel": "Jelszó",
+    "forgotPasswordLink": "Elfelejtetted a jelszavad?",
+    "signInButton": "Bejelentkezés",
+    "signingInButton": "Bejelentkezés...",
+    "noAccountText": "Nincs még fiókod?",
+    "signUpLink": "Regisztrálj",
+    "nameLabel": "Vezeték- és keresztnév",
+    "namePlaceholder": "Minta János",
+    "signUpButton": "Regisztráció",
+    "signingUpButton": "Regisztráció...",
+    "alreadyHaveAccountText": "Van már fiókod?",
+    "signInLink": "Jelentkezz be",
+    "signUpSuccessTitle": "Sikeres regisztráció",
+    "signUpSuccessDescription": "A fiókod létrejött, de az adminisztrátornak jóvá kell hagynia.",
+    "signUpSuccessWait": "A jóváhagyás után be tudsz majd jelentkezni.",
+    "backToSignIn": "Vissza a bejelentkezéshez",
+    "functionUnavailableTitle": "A funkció nem érhető el",
+    "resetPasswordDisabled": "A jelszó visszaállítása jelenleg le van tiltva.",
+    "changePasswordDisabled": "A jelszó megváltoztatása jelenleg le van tiltva.",
+    "errors": {
+      "missingFields": "Hiányzó kötelező adatok",
+      "emailExists": "Ez az email cím már létezik",
+      "genericError": "Hiba történt",
+      "invalidCredentials": "Helytelen email vagy jelszó",
+      "dbError": "Hiba az adatbázis-kapcsolatban",
+      "notApproved": "A fiókod adminisztrátori jóváhagyásra vár."
+    }
+  }
+}

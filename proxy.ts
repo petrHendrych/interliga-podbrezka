@@ -1,17 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { match as matchLocale } from '@formatjs/intl-localematcher';
+import Negotiator from 'negotiator';
 import { decrypt } from './lib/auth';
+import { i18n } from './lib/i18n/config';
 
-const publicRoutes = ['/sign-in', '/sign-up'/* , '/forgot-password', '/reset-password' */];
+function getLocale(request: NextRequest): string {
+  // 1. Check if locale is already in cookies
+  const cookieLocale = request.cookies.get('next-locale')?.value;
+  if (cookieLocale && (i18n.locales as readonly string[]).includes(cookieLocale)) {
+    return cookieLocale;
+  }
+
+  // 2. Use negotiator to detect from headers
+  const negotiatorHeaders: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    negotiatorHeaders[key] = value;
+  });
+
+  // @ts-ignore locales are readonly
+  const { locales } = i18n;
+  const languages = new Negotiator({ headers: negotiatorHeaders }).languages();
+
+  try {
+    return matchLocale(languages, locales, i18n.defaultLocale);
+  } catch (e) {
+    return i18n.defaultLocale;
+  }
+}
+
+const publicRoutes = ['/sign-in', '/sign-up'];
 const publicApiPrefixes = ['/api/cron/'];
 
-export default async function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Check if it's a public route or public API
-  const isPublicRoute = publicRoutes.includes(pathname);
+  // Check if it's a public API route first (before locale check)
   const isPublicApiRoute = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
+  if (isPublicApiRoute) {
+    return NextResponse.next();
+  }
 
-  if (isPublicRoute || isPublicApiRoute) {
+  // Check if there is any supported locale in the pathname
+  const pathnameIsMissingLocale = i18n.locales.every(
+    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`,
+  );
+
+  // Redirect if there is no locale
+  if (pathnameIsMissingLocale) {
+    const locale = getLocale(req);
+
+    // e.g. incoming is /products
+    // The new URL is now /en/products
+    return NextResponse.redirect(
+      new URL(
+        `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`,
+        req.url,
+      ),
+    );
+  }
+
+  // Locale is present
+  const segments = pathname.split('/');
+  const locale = segments[1];
+  const basePathname = `/${segments.slice(2).join('/')}`;
+
+  // 1. Check if it's a public route
+  const isPublicRoute = publicRoutes.includes(basePathname);
+
+  if (isPublicRoute) {
     return NextResponse.next();
   }
 
@@ -21,15 +77,15 @@ export default async function proxy(req: NextRequest) {
 
   // 3. Redirect to sign-in if no valid session
   if (!session) {
-    return NextResponse.redirect(new URL('/sign-in', req.nextUrl));
+    // We must preserve the locale when redirecting to sign-in
+    return NextResponse.redirect(new URL(`/${locale}/sign-in`, req.nextUrl));
   }
 
   // 4. Admin route protection
-  if (pathname.startsWith('/admin') && session.user.role !== 'admin') {
-    return NextResponse.redirect(new URL('/', req.nextUrl));
+  if (basePathname.startsWith('/admin') && session.user.role !== 'admin') {
+    return NextResponse.redirect(new URL(`/${locale}`, req.nextUrl));
   }
 
-  // 5. Continue
   return NextResponse.next();
 }
 

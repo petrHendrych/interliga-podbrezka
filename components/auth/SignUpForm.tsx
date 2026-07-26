@@ -5,27 +5,33 @@ import Link from 'next/link';
 import { signUp } from '@/lib/auth-actions';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Dictionary } from '@/lib/i18n/types';
 
-export default function SignUpPage() {
+interface SignUpFormProps {
+  lang: string;
+  dict: Dictionary['auth'];
+}
+
+export default function SignUpForm({ lang, dict }: SignUpFormProps) {
   const [state, action, isPending] = useActionState(signUp, null);
 
   if (state?.success) {
     return (
       <div className="space-y-6 text-center">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Registrácia úspešná</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{dict.signUpSuccessTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Váš účet bol vytvorený, ale musí ho schváliť administrátor.
+            {dict.signUpSuccessDescription}
           </p>
         </div>
         <p className="text-sm">
-          Po schválení sa budete môcť prihlásiť.
+          {dict.signUpSuccessWait}
         </p>
         <Link
-          href="/sign-in"
+          href={`/${lang}/sign-in`}
           className={cn(buttonVariants({ variant: 'default' }), 'w-full flex justify-center items-center')}
         >
-          Späť na prihlásenie
+          {dict.backToSignIn}
         </Link>
       </div>
     );
@@ -34,8 +40,8 @@ export default function SignUpPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">Vytvoriť účet</h2>
-        <p className="text-sm text-muted-foreground">Zadajte svoje údaje pre registráciu</p>
+        <h2 className="text-2xl font-semibold tracking-tight">{dict.signUpTitle}</h2>
+        <p className="text-sm text-muted-foreground">{dict.signUpDescription}</p>
       </div>
       <form action={action} className="space-y-4">
         <div className="space-y-2">
@@ -43,12 +49,12 @@ export default function SignUpPage() {
             htmlFor="name"
             className="text-sm font-medium leading-none"
           >
-            Meno a priezvisko
+            {dict.nameLabel}
             <input
               id="name"
               name="name"
               type="text"
-              placeholder="Janko Hraško"
+              placeholder={dict.namePlaceholder}
               required
               className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -59,12 +65,12 @@ export default function SignUpPage() {
             htmlFor="email"
             className="text-sm font-medium leading-none"
           >
-            Email
+            {dict.emailLabel}
             <input
               id="email"
               name="email"
               type="email"
-              placeholder="meno@priklad.sk"
+              placeholder={dict.emailPlaceholder}
               required
               className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -75,7 +81,7 @@ export default function SignUpPage() {
             htmlFor="password"
             className="text-sm font-medium leading-none"
           >
-            Heslo
+            {dict.passwordLabel}
             <input
               id="password"
               name="password"
@@ -86,15 +92,17 @@ export default function SignUpPage() {
           </label>
         </div>
         {state?.error && (
-          <p className="text-sm font-medium text-destructive text-center">{state.error}</p>
+          <p className="text-sm font-medium text-destructive text-center">
+            {dict.errors[state.error as keyof typeof dict.errors] || state.error}
+          </p>
         )}
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Registrujem...' : 'Zaregistrovať sa'}
+          {isPending ? dict.signingUpButton : dict.signUpButton}
         </Button>
         <div className="text-center text-sm mt-4 flex justify-between">
-          <span>Už máte účet?</span>
-          <Link href="/sign-in" className="font-medium text-primary underline underline-offset-4 hover:underline">
-            Prihláste sa
+          <span>{dict.alreadyHaveAccountText}</span>
+          <Link href={`/${lang}/sign-in`} className="font-medium text-primary underline underline-offset-4 hover:underline">
+            {dict.signInLink}
           </Link>
         </div>
       </form>

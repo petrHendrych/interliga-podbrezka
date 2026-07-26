@@ -19,7 +19,7 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
   const password = formData.get('password') as string;
 
   if (!name || !email || !password) {
-    return { error: 'Missing required fields' };
+    return { error: 'missingFields' };
   }
 
   const hashedPassword = await hashPassword(password);
@@ -32,10 +32,10 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
   } catch (error: unknown) {
     const dbError = error as { code?: string };
     if (dbError.code === '23505') {
-      return { error: 'Email already exists' };
+      return { error: 'emailExists' };
     }
     console.error('Sign up error:', error);
-    return { error: 'Something went wrong during registration' };
+    return { error: 'genericError' };
   }
 
   return { success: true };
@@ -46,7 +46,7 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
   const password = formData.get('password') as string;
 
   if (!email || !password) {
-    return { error: 'Missing credentials' };
+    return { error: 'missingFields' };
   }
 
   let user;
@@ -59,20 +59,20 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
     [user] = results;
   } catch (error) {
     console.error('Sign in DB error:', error);
-    return { error: 'Database connection failed' };
+    return { error: 'dbError' };
   }
 
   if (!user) {
-    return { error: 'Invalid email or password' };
+    return { error: 'invalidCredentials' };
   }
 
   const isValid = await verifyPassword(password, user.password_hash);
   if (!isValid) {
-    return { error: 'Invalid email or password' };
+    return { error: 'invalidCredentials' };
   }
 
   if (!user.is_approved) {
-    return { error: 'Your account is pending approval by an admin.' };
+    return { error: 'notApproved' };
   }
 
   await setSession({

@@ -5,6 +5,8 @@ import {
 import { getScrapedData } from '@/lib/db-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Locale } from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
 
 type FetchDataResult =
   | { teamResults: TeamResult[]; latestMatch: null }
@@ -62,7 +64,15 @@ async function fetchData(teamId: number): Promise<FetchDataResult> {
   };
 }
 
-export default async function Home() {
+export default async function Home({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang: langParam } = await params;
+  const lang = langParam as Locale;
+  const dict = await getDictionary(lang);
+
   const teamId = 4844;
   let data;
   let errorMsg;
@@ -75,37 +85,38 @@ export default async function Home() {
 
   if (errorMsg) {
     return (
-      <main className="p-4 md:p-8 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4 text-red-600">Error fetching data</h1>
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4 text-red-600">{dict.home.errorTitle}</h1>
         <div className="bg-red-950 border border-red-900 p-4 rounded-lg">
           <p className="text-red-300">{errorMsg}</p>
-          <p className="mt-2 text-sm text-red-400">Check your X_APP_ACCESSTOKEN in .env.local</p>
+          <p className="mt-2 text-sm text-red-400">{dict.home.checkToken}</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!data || !data.latestMatch) {
     return (
-      <main className="p-4 md:p-8 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Podbrezová - Interliga</h1>
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">{dict.home.pageTitle}</h1>
         <p>
-          No match results found for team
+          {dict.home.noResults}
+          {' '}
           {teamId}
         </p>
-      </main>
+      </div>
     );
   }
 
   const { players } = data;
 
   return (
-    <main className="p-4 md:p-8 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold tracking-tight mb-8 text-center sm:text-left">Our Team</h1>
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold tracking-tight mb-8 text-center sm:text-left">{dict.home.title}</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {players.map((player) => (
-          <Link key={player.id} href={`/player/${player.id}`} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
+          <Link key={player.id} href={`/${lang}/player/${player.id}`} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
             <Card className="overflow-hidden hover:border-primary transition-colors">
               <CardContent className="p-0">
                 <div className="flex items-center p-4 gap-4">
@@ -122,7 +133,7 @@ export default async function Home() {
                       <br />
                       {player.lastName}
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1">View Detail</p>
+                    <p className="text-sm text-muted-foreground mt-1">{dict.home.viewDetail}</p>
                   </div>
                 </div>
               </CardContent>
@@ -130,6 +141,6 @@ export default async function Home() {
           </Link>
         ))}
       </div>
-    </main>
+    </div>
   );
 }

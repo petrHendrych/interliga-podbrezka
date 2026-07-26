@@ -1,0 +1,89 @@
+{
+  "home": {
+    "title": "Naša partia",
+    "pageTitle": "Podbrezová - Interliga",
+    "pageDescription": "Systém pre účtovanie pokút pre A tím.",
+    "viewDetail": "Pozrieť detail",
+    "errorTitle": "Chyba pri načítaní dát",
+    "noResults": "Nenašli sa žiadne výsledky pre tím",
+    "checkToken": "Skontroluj si X_APP_ACCESSTOKEN v .env.local"
+  },
+  "common": {
+    "loading": "Načítavam...",
+    "error": "Niekde sa stala chyba",
+    "logout": "Odhlásiť sa",
+    "manageUsers": "Správa používateľov",
+    "syncing": "Synchronizujem...",
+    "syncData": "Synchronizovať dáta",
+    "cancel": "Zrušiť",
+    "delete": "Odstrániť",
+    "switchLanguage": "Zmeniť jazyk",
+    "toggleTheme": "Prepnúť tému"
+  },
+  "admin": {
+    "users": {
+      "title": "Správa používateľov",
+      "description": "Schvaľovanie nových registrácií a správa prístupov",
+      "pendingTitle": "Čakajúci na schválenie",
+      "noPending": "Žiadni čakajúci používatelia.",
+      "approve": "Schváliť",
+      "reject": "Zamietnuť",
+      "rejectTitle": "Zamietnuť registráciu?",
+      "rejectDescription": "Naozaj chcete zamietnuť túto registráciu? Používateľ bude odstránený zo systému.",
+      "approvedTitle": "Schválení používatelia",
+      "noApproved": "Žiadni schválení používatelia.",
+      "remove": "Odobrať",
+      "removeTitle": "Odobrať používateľa?",
+      "removeDescription": "Naozaj chcete odobrať tohto používateľa? Stratí prístup do admin panelu."
+    }
+  },
+  "playerDetail": {
+    "totalPayment": "Spolu k úhrade",
+    "unpaid": "Nezaplatené",
+    "totalFaults": "Chyby celkom",
+    "matchResults": "Výsledky zápasov",
+    "date": "Dátum",
+    "match": "Zápas",
+    "full": "Plné",
+    "clean": "Dorážka",
+    "total": "Celkom",
+    "faults": "Chyby",
+    "noResults": "Tento hráč nemá žiadne výsledky.",
+    "errorLoading": "Chyba pri načítaní hráča"
+  },
+  "auth": {
+    "signInTitle": "Prihlásenie",
+    "signInDescription": "Zadaj svoje údaje pre prístup k účtu",
+    "signUpTitle": "Vytvoriť účet",
+    "signUpDescription": "Zadaj svoje údaje pre registráciu",
+    "emailLabel": "Email",
+    "emailPlaceholder": "meno@priklad.sk",
+    "passwordLabel": "Heslo",
+    "forgotPasswordLink": "Zabudol si heslo?",
+    "signInButton": "Prihlásiť sa",
+    "signingInButton": "Prihlasujem...",
+    "noAccountText": "Nemáš účet?",
+    "signUpLink": "Zaregistruj sa",
+    "nameLabel": "Meno a priezvisko",
+    "namePlaceholder": "Janko Hraško",
+    "signUpButton": "Zaregistrovať sa",
+    "signingUpButton": "Registrujem...",
+    "alreadyHaveAccountText": "Už máš účet?",
+    "signInLink": "Prihlás sa",
+    "signUpSuccessTitle": "Registrácia úspešná",
+    "signUpSuccessDescription": "Tvoj účet bol vytvorený, ale musí ho schváliť administrátor.",
+    "signUpSuccessWait": "Po schválení sa budeš môcť prihlásiť.",
+    "backToSignIn": "Späť na prihlásenie",
+    "functionUnavailableTitle": "Funkcia nedostupná",
+    "resetPasswordDisabled": "Resetovanie hesla je momentálne zakázané.",
+    "changePasswordDisabled": "Zmena hesla je momentálne zakázaná.",
+    "errors": {
+      "missingFields": "Chýbajú povinné údaje",
+      "emailExists": "Email už existuje",
+      "genericError": "Niekde sa stala chyba",
+      "invalidCredentials": "Nesprávny email alebo heslo",
+      "dbError": "Chyba pripojenia k databáze",
+      "notApproved": "Tvoj účet čaká na schválenie administrátorom."
+    }
+  }
+}

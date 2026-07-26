@@ -5,7 +5,14 @@ import { RefreshCw } from 'lucide-react';
 import { triggerSync } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 
-export function SyncButton() {
+export function SyncButton({
+  translations,
+}: {
+  translations: {
+    syncing: string;
+    syncData: string;
+  };
+}) {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = async () => {
@@ -37,7 +44,7 @@ export function SyncButton() {
     >
       <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
       <span className="hidden sm:inline">
-        {isSyncing ? 'Syncing...' : 'Sync Data'}
+        {isSyncing ? translations.syncing : translations.syncData}
       </span>
     </Button>
   );
