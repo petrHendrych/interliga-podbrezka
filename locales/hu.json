@@ -6,7 +6,16 @@
     "viewDetail": "Részletek megtekintése",
     "errorTitle": "Hiba az adatok lekérésekor",
     "noResults": "Nem található eredmény a csapat számára",
-    "checkToken": "Ellenőrizd az X_APP_ACCESSTOKEN-t a .env.local fájlban"
+    "checkToken": "Ellenőrizd az X_APP_ACCESSTOKEN-t a .env.local fájlban",
+    "upcomingMatch": "Következő mérkőzés",
+    "roundFormat": "{round}. forduló",
+    "homeMatch": "Hazai mérkőzés",
+    "awayMatch": "Idegenbeli mérkőzés",
+    "vs": "vs",
+    "avg": "Átlag",
+    "misses": "Hibák",
+    "totalPaid": "Bírságok",
+    "max": "Max"
   },
   "common": {
     "loading": "Betöltés...",

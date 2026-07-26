@@ -1,5 +1,18 @@
 const BASE_URL = 'https://api.vysledky.kolky.sk';
 
+export const TEAM_ID = 5008;
+
+export interface MatchListItem {
+  id: number;
+  homeId: number;
+  awayId: number;
+  homeName: string;
+  awayName: string;
+  startDate: string;
+  round: number;
+  [key: string]: unknown;
+}
+
 export interface TeamResult {
   id: number;
   matchId: number;
@@ -125,4 +138,12 @@ export async function getPlayerDetail(playerId: number) {
   return fetchLeagueApi<PlayerDetail>('/player/detail', {
     id: playerId,
   });
+}
+
+export async function getMatchList(teamId: number): Promise<MatchListItem[]> {
+  const data = await fetchLeagueApi<{ list?: MatchListItem[] } | MatchListItem[]>('/match/list', { id: teamId });
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return data.list || [];
 }

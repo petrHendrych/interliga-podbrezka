@@ -1,68 +1,16 @@
 import Link from 'next/link';
+import { Home as HomeIcon, Bus, Crown } from 'lucide-react';
+import { TEAM_ID } from '@/lib/api';
 import {
-  TeamResult, MatchDetail, PlayerDetail,
-} from '@/lib/api';
-import { getScrapedData } from '@/lib/db-utils';
+  fetchHomeData,
+  formatMatchDate,
+  FetchDataResult,
+} from '@/lib/home-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
-
-type FetchDataResult =
-  | { teamResults: TeamResult[]; latestMatch: null }
-  | {
-    teamResults: TeamResult[];
-    latestMatch: TeamResult;
-    matchDetail: MatchDetail;
-    players: PlayerDetail[];
-  };
-
-async function fetchData(teamId: number): Promise<FetchDataResult> {
-  // 1. Fetch team results from database
-  const teamResults = await getScrapedData<TeamResult[]>('team_results', teamId);
-
-  if (!teamResults || teamResults.length === 0) {
-    return { teamResults: [], latestMatch: null };
-  }
-
-  const latestMatch = teamResults[0];
-  const { matchId } = latestMatch;
-
-  // 2. Fetch match detail from database
-  const matchDetail = await getScrapedData<MatchDetail>('match_detail', matchId);
-
-  if (!matchDetail) {
-    return { teamResults, latestMatch: null };
-  }
-
-  // 3. Determine if team 4844 is home or away
-  const isHome = matchDetail.homeTeam.club.id === teamId;
-  const teamKey = isHome ? 'home' : 'away';
-
-  // 4. Extract player IDs
-  const lineup = matchDetail.lineUp[teamKey];
-  const playerIds: number[] = lineup
-    .map((p) => p.player?.id)
-    .filter((id: number | undefined): id is number => id !== undefined);
-
-  // 5. Fetch player details for each player from database
-  const players = await Promise.all(
-    playerIds.map(async (id) => {
-      const detail = await getScrapedData<PlayerDetail>('player_detail', id);
-      return detail;
-    }),
-  );
-
-  // Filter out any players that weren't found in the DB
-  const validPlayers = players.filter((p): p is PlayerDetail => p !== null);
-
-  return {
-    teamResults,
-    latestMatch,
-    matchDetail,
-    players: validPlayers,
-  };
-}
 
 export default async function Home({
   params,
@@ -73,12 +21,11 @@ export default async function Home({
   const lang = langParam as Locale;
   const dict = await getDictionary(lang);
 
-  const teamId = 4844;
-  let data;
-  let errorMsg;
+  let data: FetchDataResult | null = null;
+  let errorMsg: string | null = null;
 
   try {
-    data = await fetchData(teamId);
+    data = await fetchHomeData(TEAM_ID);
   } catch (e: unknown) {
     errorMsg = e instanceof Error ? e.message : 'An unknown error occurred';
   }
@@ -95,52 +42,153 @@ export default async function Home({
     );
   }
 
-  if (!data || !data.latestMatch) {
+  if (
+    !data
+    || (data.upcomingMatches.length === 0
+      && !data.latestMatch
+      && data.players.length === 0)
+  ) {
     return (
       <div className="p-4 md:p-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">{dict.home.pageTitle}</h1>
         <p>
           {dict.home.noResults}
           {' '}
-          {teamId}
+          {TEAM_ID}
         </p>
       </div>
     );
   }
 
-  const { players } = data;
+  const { upcomingMatches, players } = data;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold tracking-tight mb-8 text-center sm:text-left">{dict.home.title}</h1>
+      {upcomingMatches.length > 0 && (
+        <div className="flex flex-col gap-6 mb-8">
+          {upcomingMatches.map((match) => {
+            const isHome = match.homeId === TEAM_ID;
+            const opponentName = isHome ? match.awayName : match.homeName;
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {players.map((player) => (
-          <Link key={player.id} href={`/${lang}/player/${player.id}`} className="block transition-transform hover:scale-[1.02] active:scale-[0.98]">
-            <Card className="overflow-hidden hover:border-primary transition-colors">
-              <CardContent className="p-0">
-                <div className="flex items-center p-4 gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-muted">
-                    <AvatarImage src="/players/3009.JPG" alt={`${player.firstName} ${player.lastName}`} />
-                    <AvatarFallback>
-                      {player.firstName?.[0]}
-                      {player.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h2 className="font-bold text-lg leading-tight">
-                      {player.firstName}
-                      <br />
-                      {player.lastName}
+            return (
+              <div
+                key={match.id}
+                className="border-[3px] border-amber-500 rounded-xl relative bg-card text-card-foreground p-6 shadow-sm"
+              >
+                <div className="absolute -top-3.5 left-6 bg-background px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500 rounded-md z-10">
+                  {dict.home.roundFormat.replace('{round}', String(match.round))}
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        {dict.home.upcomingMatch}
+                      </span>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {isHome ? dict.home.homeMatch : dict.home.awayMatch}
+                      </span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+                      {dict.home.vs}
+                      {' '}
+                      {opponentName}
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1">{dict.home.viewDetail}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatMatchDate(match.startDate, lang)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                    {isHome ? <HomeIcon className="w-6 h-6" /> : <Bus className="w-6 h-6" />}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {upcomingMatches.length > 0 && players.length > 0 && (
+        <Separator className="my-8" />
+      )}
+
+      {players.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {players.map((player, index) => (
+            <Link
+              key={player.id}
+              href={`/${lang}/player/${player.id}`}
+              className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <Card className="relative overflow-hidden hover:border-primary transition-colors h-full">
+                {index === 0 && (
+                  <Crown className="w-5 h-5 text-amber-500 fill-amber-400 rotate-12 absolute top-3.5 right-3.5 z-10" />
+                )}
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                    <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-muted">
+                      <AvatarImage
+                        src="/players/3009.JPG"
+                        alt={`${player.firstName} ${player.lastName}`}
+                        className="rounded-2xl"
+                      />
+                      <AvatarFallback className="rounded-2xl text-lg font-semibold">
+                        {player.firstName?.[0]}
+                        {player.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 w-full text-center sm:text-left">
+                      <h2 className="font-bold text-lg sm:text-xl leading-snug">
+                        {player.firstName}
+                        {' '}
+                        {player.lastName}
+                      </h2>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.avg}
+                          </span>
+                          <span className="text-base font-bold text-primary">
+                            {player.stats.avg || '-'}
+                          </span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.max}
+                          </span>
+                          <span className="text-base font-bold">
+                            {player.stats.max || '-'}
+                          </span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.misses}
+                          </span>
+                          <span className="text-base font-semibold">
+                            {player.stats.misses}
+                          </span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.totalPaid}
+                          </span>
+                          <span className="text-base font-semibold">
+                            {player.stats.totalPaid}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

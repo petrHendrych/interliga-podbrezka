@@ -6,7 +6,16 @@
     "viewDetail": "Kouknout na detail",
     "errorTitle": "Chyba při načítání dat",
     "noResults": "Nenašly se žádné výsledky pro tým",
-    "checkToken": "Zkontroluj si X_APP_ACCESSTOKEN v .env.local"
+    "checkToken": "Zkontroluj si X_APP_ACCESSTOKEN v .env.local",
+    "upcomingMatch": "Nadcházející zápas",
+    "roundFormat": "{round}. kolo",
+    "homeMatch": "Domácí zápas",
+    "awayMatch": "Zápas venku",
+    "vs": "vs",
+    "avg": "Průměr",
+    "misses": "Chyby",
+    "totalPaid": "Pokuty",
+    "max": "Max"
   },
   "common": {
     "loading": "Načítám...",

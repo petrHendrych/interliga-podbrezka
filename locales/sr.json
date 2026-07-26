@@ -6,7 +6,16 @@
     "viewDetail": "Pogledaj detalje",
     "errorTitle": "Greška pri učitavanju podataka",
     "noResults": "Nisu pronađeni rezultati za tim",
-    "checkToken": "Proveri svoj X_APP_ACCESSTOKEN u .env.local"
+    "checkToken": "Proveri svoj X_APP_ACCESSTOKEN u .env.local",
+    "upcomingMatch": "Naredna utakmica",
+    "roundFormat": "{round}. kolo",
+    "homeMatch": "Domaća utakmica",
+    "awayMatch": "Gostujuća utakmica",
+    "vs": "vs",
+    "avg": "Prosek",
+    "misses": "Greške",
+    "totalPaid": "Kazne",
+    "max": "Max"
   },
   "common": {
     "loading": "Učitavam...",

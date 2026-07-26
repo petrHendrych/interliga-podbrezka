@@ -2,8 +2,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 import sql from './db';
-
-const TEAM_ID = 4844;
+import { TEAM_ID } from './api';
 
 interface SyncMatchData {
   homeTeam?: { club?: { id?: number; name?: string } };

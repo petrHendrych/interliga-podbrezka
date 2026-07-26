@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { triggerSync } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
+import { useSyncData } from '@/lib/hooks/useSyncData';
 
 export function SyncButton({
   translations,
@@ -13,26 +12,7 @@ export function SyncButton({
     syncData: string;
   };
 }) {
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSync = async () => {
-    if (isSyncing) return;
-
-    setIsSyncing(true);
-    try {
-      const data = await triggerSync();
-
-      if (!data.success) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to sync data:', data.error);
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Sync error:', error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  const { isSyncing, handleSync } = useSyncData();
 
   return (
     <Button
