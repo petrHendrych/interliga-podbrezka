@@ -1,13 +1,12 @@
 /* eslint-disable no-console */
 import * as dotenv from 'dotenv';
 
-import { ensureSchema } from '../lib/db-utils';
-
 dotenv.config({ path: '.env.local' });
 
 async function main() {
   console.log('Ensuring schema...');
   try {
+    const { ensureSchema } = await import('../lib/db-utils');
     await ensureSchema();
     console.log('Schema updated successfully.');
     process.exit(0);

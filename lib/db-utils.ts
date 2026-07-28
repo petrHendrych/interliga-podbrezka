@@ -80,6 +80,8 @@ export async function ensureSchema() {
       avg NUMERIC,
       faults INTEGER,
       special_faults_count INTEGER DEFAULT 0,
+      full_faults_count INTEGER DEFAULT 0,
+      second_to_last_faults_count INTEGER DEFAULT 0,
       is_worst_player BOOLEAN DEFAULT FALSE,
       is_under_600 BOOLEAN DEFAULT FALSE,
       calculated_fine NUMERIC DEFAULT 0,
@@ -88,6 +90,10 @@ export async function ensureSchema() {
       PRIMARY KEY (match_id, user_id)
     );
   `;
+
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS special_faults_count INTEGER DEFAULT 0;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS full_faults_count INTEGER DEFAULT 0;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS second_to_last_faults_count INTEGER DEFAULT 0;`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS trainer_payments (
