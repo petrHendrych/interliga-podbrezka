@@ -38,9 +38,9 @@ export default async function PlayerDetailPage({ params }: PageProps) {
     return (
       <div className="mx-auto py-8 px-4 max-w-4xl w-full">
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start mb-8">
-          <Avatar className="w-32 h-32 border-2 border-primary">
-            <AvatarImage src="/players/3009.JPG" alt={fullName} />
-            <AvatarFallback>
+          <Avatar className="w-32 h-32 rounded-2xl after:rounded-2xl border-2 border-primary shadow-sm">
+            <AvatarImage src="/players/3009.JPG" alt={fullName} className="rounded-2xl aspect-square object-cover" />
+            <AvatarFallback className="rounded-2xl text-2xl font-bold">
               {player.firstName?.[0]}
               {player.lastName?.[0]}
             </AvatarFallback>

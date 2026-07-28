@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-audiowide), var(--font-geist-sans);
+  --font-sans: var(--font-montserrat), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-audiowide), var(--font-geist-sans);
+  --font-heading: var(--font-montserrat), var(--font-geist-sans);
+  --font-montserrat: var(--font-montserrat);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,6 +47,7 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --max-width-8xl: 90rem;
 }
 
 :root {

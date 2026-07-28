@@ -18,3 +18,9 @@ The main and first focus of the design should be mobile view. All components and
 Before finishing any task, you must run linting and type checks. No TypeScript errors or linting violations (Airbnb style) are allowed.
 Strictly avoid using the `any` type in the codebase.
 <!-- END:check-rules -->
+
+<!-- BEGIN:decision-rules -->
+# Decision Making Rules
+
+Always ask questions instead of running your assumptions to confirm key decisions.
+<!-- END:decision-rules -->

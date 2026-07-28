@@ -6,7 +6,19 @@
     "viewDetail": "Kouknout na detail",
     "errorTitle": "Chyba při načítání dat",
     "noResults": "Nenašly se žádné výsledky pro tým",
-    "checkToken": "Zkontroluj si X_APP_ACCESSTOKEN v .env.local"
+    "checkToken": "Zkontroluj si X_APP_ACCESSTOKEN v .env.local",
+    "upcomingMatch": "Nadcházející zápas",
+    "roundFormat": "{round}. kolo",
+    "homeMatch": "Domácí zápas",
+    "awayMatch": "Zápas venku",
+    "vs": "vs",
+    "avg": "Průměr",
+    "misses": "Chyby",
+    "totalPaid": "Pokuty",
+    "max": "Max",
+    "count3800": "3800+",
+    "count3900": "3900+",
+    "zeroMisses": "0 chyb"
   },
   "common": {
     "loading": "Načítám...",
@@ -38,7 +50,7 @@
     }
   },
   "playerDetail": {
-    "totalPayment": "Spolu k úhradě",
+    "totalPayment": "Celkem zaplaceno",
     "unpaid": "Nezaplaceno",
     "totalFaults": "Chyby celkem",
     "matchResults": "Výsledky zápasů",

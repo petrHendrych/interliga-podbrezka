@@ -2,15 +2,15 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import {
+  TEAM_ID,
   getTeamResults,
   getMatchDetail,
   getPlayerDetail,
   getPlayerResults,
+  getMatchList,
 } from './api';
 import { ensureSchema, upsertScrapedData, saveSnapshot } from './db-utils';
 import { syncData } from './sync';
-
-const TEAM_ID = 4844;
 
 /**
  * Main scraping job that fetches data from the external API and persists it to Neon DB.
@@ -22,7 +22,17 @@ export async function runScrapingJob() {
     // Ensure database table exists
     await ensureSchema();
 
-    // 1. Fetch team results for Podbrezová
+    // 1. Fetch match list for Podbrezová
+    console.log(`Fetching match list for team ${TEAM_ID}...`);
+    try {
+      const matchList = await getMatchList(TEAM_ID);
+      await upsertScrapedData('match_list', TEAM_ID, matchList);
+      await saveSnapshot('match_list', TEAM_ID, matchList);
+    } catch (error) {
+      console.error(`Failed to fetch match list for team ${TEAM_ID}:`, error);
+    }
+
+    // 2. Fetch team results for Podbrezová
     console.log(`Fetching team results for team ${TEAM_ID}...`);
     const teamResults = await getTeamResults(TEAM_ID);
     await upsertScrapedData('team_results', TEAM_ID, teamResults);

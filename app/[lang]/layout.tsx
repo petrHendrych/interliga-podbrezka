@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Audiowide } from 'next/font/google';
+import { Geist, Geist_Mono, Montserrat } from 'next/font/google';
 import '../globals.css';
 import { Header } from '@/components/layout/Header';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-const audiowide = Audiowide({
-  weight: '400',
-  variable: '--font-audiowide',
+const montserrat = Montserrat({
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-montserrat',
   subsets: ['latin'],
 });
 
@@ -49,7 +49,7 @@ export default async function RootLayout({
   return (
     <html
       lang={lang}
-      className={`${geistSans.variable} ${geistMono.variable} ${audiowide.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
