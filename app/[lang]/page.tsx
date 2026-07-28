@@ -60,7 +60,7 @@ export default async function Home({
     );
   }
 
-  const { upcomingMatches, players } = data;
+  const { upcomingMatches, players, trainers } = data;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
@@ -110,12 +110,76 @@ export default async function Home({
         </div>
       )}
 
-      {upcomingMatches.length > 0 && players.length > 0 && (
+      {upcomingMatches.length > 0 && (players.length > 0 || trainers.length > 0) && (
         <Separator className="my-8" />
       )}
 
-      {players.length > 0 && (
+      {(players.length > 0 || trainers.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {trainers.map((trainer) => (
+            <div
+              key={trainer.id}
+              className="md:col-span-2"
+            >
+              <Card className="relative overflow-hidden border-amber-500/50 bg-amber-50/5 dark:bg-amber-950/5 h-full">
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                    <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-amber-200 dark:border-amber-900">
+                      <AvatarImage
+                        src="/players/3009.JPG"
+                        alt={trainer.name}
+                        className="rounded-2xl"
+                      />
+                      <AvatarFallback className="rounded-2xl text-lg font-semibold">
+                        {trainer.name.split(' ').map((n) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex-1 w-full text-center sm:text-left">
+                      <h2 className="font-bold text-lg sm:text-xl leading-snug">
+                        {trainer.name}
+                      </h2>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.count3800}
+                          </span>
+                          <span className="text-base font-bold">
+                            {trainer.stats.count3800}
+                          </span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.count3900}
+                          </span>
+                          <span className="text-base font-bold">
+                            {trainer.stats.count3900}
+                          </span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.zeroMisses}
+                          </span>
+                          <span className="text-base font-semibold">
+                            {trainer.stats.zeroMisses}
+                          </span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2 text-center">
+                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                            {dict.home.totalPaid}
+                          </span>
+                          <span className="text-base font-semibold">
+                            {trainer.stats.totalPaid}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
           {players.map((player, index) => (
             <Link
               key={player.id}

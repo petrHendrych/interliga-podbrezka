@@ -15,7 +15,10 @@
     "avg": "Átlag",
     "misses": "Hibák",
     "totalPaid": "Bírságok",
-    "max": "Max"
+    "max": "Max",
+    "count3800": "3800+",
+    "count3900": "3900+",
+    "zeroMisses": "0 hiba"
   },
   "common": {
     "loading": "Betöltés...",
@@ -47,7 +50,7 @@
     }
   },
   "playerDetail": {
-    "totalPayment": "Összes fizetendő",
+    "totalPayment": "Összesen kifizetve",
     "unpaid": "Kifizetetlen",
     "totalFaults": "Összes hiba",
     "matchResults": "Mérkőzés eredmények",

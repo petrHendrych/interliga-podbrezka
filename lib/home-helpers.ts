@@ -5,7 +5,7 @@ import {
   PlayerDetail,
   PlayerResult,
 } from '@/lib/api';
-import { getScrapedData } from '@/lib/db-utils';
+import { getScrapedData, getTrainersWithStats } from '@/lib/db-utils';
 
 export interface PlayerStats {
   avg: number;
@@ -18,6 +18,19 @@ export interface PlayerWithStats extends PlayerDetail {
   stats: PlayerStats;
 }
 
+export interface TrainerStats {
+  count3800: number;
+  count3900: number;
+  zeroMisses: number;
+  totalPaid: string;
+}
+
+export interface TrainerWithStats {
+  id: string;
+  name: string;
+  stats: TrainerStats;
+}
+
 export interface FetchDataResult {
   upcomingMatches: MatchListItem[];
   upcomingMatch: MatchListItem | null;
@@ -25,6 +38,7 @@ export interface FetchDataResult {
   latestMatch: TeamResult | null;
   matchDetail: MatchDetail | null;
   players: PlayerWithStats[];
+  trainers: TrainerWithStats[];
 }
 
 export function parseUtcDate(dateString: string): Date {
@@ -145,6 +159,7 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
       latestMatch: null,
       matchDetail: null,
       players: [],
+      trainers: [],
     };
   }
 
@@ -162,6 +177,7 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
       latestMatch: null,
       matchDetail: null,
       players: [],
+      trainers: [],
     };
   }
 
@@ -219,6 +235,19 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
   // Sort players by AVG descending
   validPlayers.sort((a, b) => b.stats.avg - a.stats.avg);
 
+  // 7. Fetch trainer data
+  const trainersData = await getTrainersWithStats();
+  const trainers: TrainerWithStats[] = trainersData.map((t) => ({
+    id: t.id,
+    name: t.name,
+    stats: {
+      count3800: t.count3800,
+      count3900: t.count3900,
+      zeroMisses: t.zeroMisses,
+      totalPaid: t.totalPaid,
+    },
+  }));
+
   return {
     upcomingMatches,
     upcomingMatch,
@@ -226,5 +255,6 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
     latestMatch,
     matchDetail,
     players: validPlayers,
+    trainers,
   };
 }

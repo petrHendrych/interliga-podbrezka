@@ -15,7 +15,10 @@
     "avg": "Průměr",
     "misses": "Chyby",
     "totalPaid": "Pokuty",
-    "max": "Max"
+    "max": "Max",
+    "count3800": "3800+",
+    "count3900": "3900+",
+    "zeroMisses": "0 chyb"
   },
   "common": {
     "loading": "Načítám...",
@@ -47,7 +50,7 @@
     }
   },
   "playerDetail": {
-    "totalPayment": "Spolu k úhradě",
+    "totalPayment": "Celkem zaplaceno",
     "unpaid": "Nezaplaceno",
     "totalFaults": "Chyby celkem",
     "matchResults": "Výsledky zápasů",

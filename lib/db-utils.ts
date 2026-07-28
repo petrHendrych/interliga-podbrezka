@@ -212,3 +212,27 @@ export async function getScrapedData<T>(type: string, externalId: number): Promi
     throw error;
   }
 }
+
+export async function getTrainersWithStats() {
+  const trainers = await sql`
+    SELECT 
+      u.id::text, 
+      u.name,
+      COUNT(CASE WHEN tp.condition_type = 'score_bonus' AND tp.amount = 10 THEN 1 END)::int as count3800,
+      COUNT(CASE WHEN tp.condition_type = 'score_bonus' AND tp.amount = 15 THEN 1 END)::int as count3900,
+      COUNT(CASE WHEN tp.condition_type = 'zero_faults' THEN 1 END)::int as "zeroMisses",
+      (COALESCE(SUM(tp.amount), 0)::text || ' €') as "totalPaid"
+    FROM users u
+    LEFT JOIN trainer_payments tp ON u.id = tp.user_id
+    WHERE u.role = 'trainer' AND u.is_approved = true
+    GROUP BY u.id, u.name
+  ` as unknown as Array<{
+    id: string;
+    name: string;
+    count3800: number;
+    count3900: number;
+    zeroMisses: number;
+    totalPaid: string;
+  }>;
+  return trainers;
+}

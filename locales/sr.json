@@ -15,7 +15,10 @@
     "avg": "Prosek",
     "misses": "Greške",
     "totalPaid": "Kazne",
-    "max": "Max"
+    "max": "Max",
+    "count3800": "3800+",
+    "count3900": "3900+",
+    "zeroMisses": "0 grešaka"
   },
   "common": {
     "loading": "Učitavam...",
@@ -47,7 +50,7 @@
     }
   },
   "playerDetail": {
-    "totalPayment": "Ukupno za uplatu",
+    "totalPayment": "Ukupno plaćeno",
     "unpaid": "Neplaćeno",
     "totalFaults": "Ukupno grešaka",
     "matchResults": "Rezultati utakmica",

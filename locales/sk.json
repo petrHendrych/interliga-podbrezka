@@ -15,7 +15,10 @@
     "avg": "Priemer",
     "misses": "Chyby",
     "totalPaid": "Pokuty",
-    "max": "Max"
+    "max": "Max",
+    "count3800": "3800+",
+    "count3900": "3900+",
+    "zeroMisses": "0 chýb"
   },
   "common": {
     "loading": "Načítavam...",
@@ -47,7 +50,7 @@
     }
   },
   "playerDetail": {
-    "totalPayment": "Spolu k úhrade",
+    "totalPayment": "Celkom zaplatené",
     "unpaid": "Nezaplatené",
     "totalFaults": "Chyby celkom",
     "matchResults": "Výsledky zápasov",

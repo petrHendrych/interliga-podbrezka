@@ -32,3 +32,14 @@ Project is deployed on Vercel with URL: https://interliga-podbrezka.vercel.app/.
 ## Implementation detail
 
 Data are web scraped from the official website of the Slovakian result system https://vysledky.kolky.sk/. Details about if the fault is 2nd to last throw is managed manually.
+
+## Manual Setup
+
+### Adding a Trainer
+Trainers are not scraped from external data and must be added manually to the database. Use the following SQL query:
+
+```sql
+INSERT INTO users (name, role, is_approved) 
+VALUES ('John Doe', 'trainer', true);
+```
+*(Email and password are not required as trainers don't log in).*
