@@ -13,10 +13,17 @@ export function Tooltip({
   content: React.ReactNode;
   className?: string;
 }) {
+  const [open, setOpen] = React.useState(false);
+
   return (
     <TooltipPrimitive.Provider>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Root open={open} onOpenChange={setOpen}>
+        <TooltipPrimitive.Trigger
+          onClick={() => {
+            // For mobile support, toggle open state on click
+            setOpen((prev) => !prev);
+          }}
+        >
           {children}
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>

@@ -135,14 +135,13 @@ export function MatchFineTooltip({
 
   return (
     <Tooltip content={tooltipContent}>
-      <button
-        type="button"
+      <span
         className={`cursor-pointer hover:underline focus:outline-none ${colorClasses}`}
       >
         {calculatedFine}
         {' '}
         €
-      </button>
+      </span>
     </Tooltip>
   );
 }
