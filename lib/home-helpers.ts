@@ -3,7 +3,6 @@ import {
   TeamResult,
   MatchDetail,
   PlayerDetail,
-  PlayerResult,
 } from '@/lib/api';
 import {
   getScrapedData,
@@ -17,6 +16,7 @@ export interface PlayerStats {
   max: number;
   misses: number;
   totalPaid: string;
+  matchesCount: number;
 }
 
 export interface PlayerWithStats extends PlayerDetail {
@@ -193,80 +193,32 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
     };
   }
 
-  const latestMatch = teamResults[0];
-  const { matchId } = latestMatch;
-
-  // 3. Fetch match detail from database
-  const matchDetail = await getScrapedData<MatchDetail>('match_detail', matchId);
-
-  if (!matchDetail) {
-    return {
-      upcomingMatches,
-      upcomingMatch,
-      teamResults,
-      latestMatch: null,
-      matchDetail: null,
-      players: [],
-      trainers: [],
-      bankBalance,
-      nextHomeMatch,
-    };
-  }
-
-  // 4. Determine if team is home or away
-  const homeClubId = matchDetail.homeTeam?.club?.id;
-  const isHome = homeClubId === teamId || homeClubId === 4844;
-  const teamKey = isHome ? 'home' : 'away';
-
-  // 5. Extract player IDs
-  const lineup = matchDetail.lineUp?.[teamKey] || [];
-  const playerIds: number[] = lineup
-    .map((p) => p.player?.id)
-    .filter((id: number | undefined): id is number => id !== undefined);
-
-  // 6. Fetch player details and season results for each player
+  // 3. Fetch player details and season results for all players with balance
   const playerBalances = await getPlayerBalances();
-  const balancesMap = new Map(
+  const playersWithStats = await Promise.all(
     playerBalances
       .filter((b) => b.externalPlayerId !== null)
-      .map((b) => [b.externalPlayerId, b]),
-  );
+      .map(async (b) => {
+        const id = b.externalPlayerId!;
+        const detail = await getScrapedData<PlayerDetail>('player_detail', id);
 
-  const playersWithStats = await Promise.all(
-    playerIds.map(async (id) => {
-      const [detail, results] = await Promise.all([
-        getScrapedData<PlayerDetail>('player_detail', id),
-        getScrapedData<PlayerResult[]>('player_results', id),
-      ]);
+        if (!detail) return null;
 
-      if (!detail) return null;
+        const totalPaid = `${b.totalDue} €`;
 
-      const validTotals = (results || [])
-        .map((r) => r.total)
-        .filter((t): t is number => typeof t === 'number' && t > 0);
+        const player: PlayerWithStats = {
+          ...detail,
+          stats: {
+            avg: b.avgScore,
+            max: b.maxScore,
+            misses: b.totalFaults,
+            totalPaid,
+            matchesCount: b.matchesCount,
+          },
+        };
 
-      const sumTotal = validTotals.reduce((a, b) => a + b, 0);
-      const avg = validTotals.length > 0
-        ? Math.round((sumTotal / validTotals.length) * 10) / 10
-        : 0;
-      const max = validTotals.length > 0 ? Math.max(...validTotals) : 0;
-      const misses = (results || []).reduce((acc, r) => acc + (r.faults || 0), 0);
-
-      const playerBalance = balancesMap.get(id);
-      const totalPaid = playerBalance ? `${playerBalance.totalDue} €` : '0 €';
-
-      const player: PlayerWithStats = {
-        ...detail,
-        stats: {
-          avg,
-          max,
-          misses,
-          totalPaid,
-        },
-      };
-
-      return player;
-    }),
+        return player;
+      }),
   );
 
   const validPlayers = playersWithStats.filter(
@@ -293,8 +245,8 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
     upcomingMatches,
     upcomingMatch,
     teamResults,
-    latestMatch,
-    matchDetail,
+    latestMatch: teamResults[0] || null,
+    matchDetail: null,
     players: validPlayers,
     trainers,
     bankBalance,

@@ -297,6 +297,7 @@ export async function syncAllPlayerResultsSnapshots() {
     isHome: boolean;
     location: string | null;
     leagueName: string | null;
+    seasonId: number | null;
   }>();
 
   const playerResultsToUpsert: Array<{
@@ -309,6 +310,7 @@ export async function syncAllPlayerResultsSnapshots() {
     faults: number;
     isUnder600: boolean;
     bonusReceived: number;
+    teamId: number;
   }> = [];
 
   for (const snapshot of playerSnapshots) {
@@ -319,13 +321,14 @@ export async function syncAllPlayerResultsSnapshots() {
       total?: number;
       faults?: number;
       average?: number;
+      teamId?: number;
       player?: { firstName?: string; lastName?: string; name?: string };
       match?: {
         id?: number;
         startDate?: string;
         created?: string;
         hall?: { name?: string };
-        league?: { name?: string };
+        league?: { name?: string; seasonId?: number };
         homeTeam?: {
           id?: number;
           name?: string;
@@ -342,21 +345,7 @@ export async function syncAllPlayerResultsSnapshots() {
     }>;
 
     if (externalPlayerId && Array.isArray(playerResults)) {
-      let userId = userMap.get(externalPlayerId);
-      if (!userId) {
-        const firstItem = playerResults.find((p) => p.player);
-        const name = firstItem?.player
-          ? `${firstItem.player.firstName || ''} ${firstItem.player.lastName || ''}`.trim()
-          : `Player ${externalPlayerId}`;
-        const createdUsers = await sql`
-          INSERT INTO users (name, external_player_id, role, is_approved)
-          VALUES (${name}, ${externalPlayerId}, 'player', true)
-          ON CONFLICT (external_player_id) DO UPDATE SET name = EXCLUDED.name
-          RETURNING id;
-        `;
-        userId = String(createdUsers[0].id);
-        userMap.set(externalPlayerId, userId);
-      }
+      const resultsForPodbrezova = [];
 
       for (const item of playerResults) {
         const { match } = item;
@@ -375,37 +364,89 @@ export async function syncAllPlayerResultsSnapshots() {
           const opponent = opponentTeam?.name || opponentTeam?.club?.name || 'Unknown';
           const location = match.hall?.name || null;
           const leagueName = match.league?.name || null;
+          // seasonId might be at match.league.seasonId or just captured during other syncs
+          const seasonId = match.league?.seasonId || null;
 
-          if (!matchesMap.has(matchId)) {
-            matchesMap.set(matchId, {
-              externalId: matchId,
-              date,
-              opponent,
-              isHome,
-              location,
-              leagueName,
-            });
+          // Only sync results if the player was playing for Podbrezová in this match
+          const playerTeamId = Number(item.teamId);
+          const podbrezovaATeamIds = [TEAM_ID, 4844, 4948];
+          const mainPlayerIds = [170512, 169214, 169215, 170511, 19728, 20299];
+
+          const playerTeam = (match.homeTeam?.id === playerTeamId)
+            ? match.homeTeam
+            : match.awayTeam;
+          const playerTeamName = playerTeam?.name || playerTeam?.club?.name || '';
+          const isPodbrezovaMatch = playerTeamName.includes('Podbrezová');
+
+          if (isPodbrezovaMatch && matchId) {
+            const isMainPlayer = mainPlayerIds.includes(externalPlayerId);
+            const isATeamMatch = podbrezovaATeamIds.includes(playerTeamId);
+
+            // Sync all Podbrezová matches for main players,
+            // but only A-team matches for others (like Jozef Petráš)
+            if (isMainPlayer || isATeamMatch) {
+              if (!matchesMap.has(matchId)) {
+                matchesMap.set(matchId, {
+                  externalId: matchId,
+                  date,
+                  opponent,
+                  isHome,
+                  location,
+                  leagueName,
+                  seasonId,
+                });
+              }
+
+              const full = Number(item.full || 0);
+              const clean = Number(item.clean || 0);
+              const total = Number(item.total || 0);
+              const faults = Number(item.faults || 0);
+              const avg = Number(
+                item.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0),
+              );
+
+              const isUnder600 = total < 600 && total > 0;
+              // Bonus is 30€ from bank + 10€ from trainer (total 40€)
+              // We include all 40€ here because we also count the trainer's 10€ in the bank inflow
+              const bonusReceived = total > 700 ? 40 : 0;
+
+              resultsForPodbrezova.push({
+                matchId,
+                full,
+                clean,
+                total,
+                avg,
+                faults,
+                isUnder600,
+                bonusReceived,
+                teamId: playerTeamId,
+              });
+            }
           }
+        }
+      }
 
-          const full = Number(item.full || 0);
-          const clean = Number(item.clean || 0);
-          const total = Number(item.total || 0);
-          const faults = Number(item.faults || 0);
-          const avg = Number(item.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0));
+      if (resultsForPodbrezova.length > 0) {
+        let userId = userMap.get(externalPlayerId);
+        if (!userId) {
+          const firstItem = playerResults.find((p) => p.player);
+          const name = firstItem?.player
+            ? `${firstItem.player.firstName || ''} ${firstItem.player.lastName || ''}`.trim()
+            : `Player ${externalPlayerId}`;
+          const createdUsers = await sql`
+            INSERT INTO users (name, external_player_id, role, is_approved)
+            VALUES (${name}, ${externalPlayerId}, 'player', true)
+            ON CONFLICT (external_player_id) DO UPDATE SET name = EXCLUDED.name
+            RETURNING id;
+          `;
+          userId = String(createdUsers[0].id);
+          userMap.set(externalPlayerId, userId);
+        }
 
-          const isUnder600 = total < 600 && total > 0;
-          const bonusReceived = total > 700 ? 30 : 0;
-
+        for (const res of resultsForPodbrezova) {
           playerResultsToUpsert.push({
-            matchId,
+            ...res,
             userId,
-            full,
-            clean,
-            total,
-            avg,
-            faults,
-            isUnder600,
-            bonusReceived,
           });
         }
       }
@@ -419,14 +460,15 @@ export async function syncAllPlayerResultsSnapshots() {
     const chunk = matchEntries.slice(i, i + matchBatchSize);
     await Promise.all(
       chunk.map((m) => sql`
-        INSERT INTO matches (external_id, date, opponent, is_home, location, league_name, updated_at)
-        VALUES (${m.externalId}, ${m.date}, ${m.opponent}, ${m.isHome}, ${m.location}, ${m.leagueName}, NOW())
+        INSERT INTO matches (external_id, date, opponent, is_home, location, league_name, season_id, updated_at)
+        VALUES (${m.externalId}, ${m.date}, ${m.opponent}, ${m.isHome}, ${m.location}, ${m.leagueName}, ${m.seasonId}, NOW())
         ON CONFLICT (external_id) DO UPDATE SET
           date = COALESCE(EXCLUDED.date, matches.date),
           opponent = COALESCE(EXCLUDED.opponent, matches.opponent),
           is_home = COALESCE(EXCLUDED.is_home, matches.is_home),
           location = COALESCE(EXCLUDED.location, matches.location),
           league_name = COALESCE(EXCLUDED.league_name, matches.league_name),
+          season_id = COALESCE(EXCLUDED.season_id, matches.season_id),
           updated_at = NOW();
       `),
     );
@@ -440,11 +482,13 @@ export async function syncAllPlayerResultsSnapshots() {
       chunk.map((pr) => sql`
         INSERT INTO match_player_results (
           match_id, user_id, "full", clean, total, avg, faults, 
-          is_under_600, calculated_fine, bonus_received
+          is_under_600, calculated_fine, bonus_received, team_id
         )
         VALUES (
           ${pr.matchId}, ${pr.userId}, ${pr.full}, ${pr.clean}, ${pr.total}, ${pr.avg}, ${pr.faults},
-          ${pr.isUnder600}, ((${pr.faults} * (${pr.faults} + 1)) / 2) + (CASE WHEN ${pr.isUnder600} THEN 1 ELSE 0 END), ${pr.bonusReceived}
+          ${pr.isUnder600},
+          ((${pr.faults} * (${pr.faults} + 1)) / 2) + (CASE WHEN ${pr.isUnder600} THEN 1 ELSE 0 END),
+          ${pr.bonusReceived}, ${pr.teamId}
         )
         ON CONFLICT (match_id, user_id) DO UPDATE SET
           "full" = EXCLUDED."full",
@@ -457,7 +501,8 @@ export async function syncAllPlayerResultsSnapshots() {
                              (CASE WHEN match_player_results.is_worst_player THEN 1 ELSE 0 END) + 
                              (CASE WHEN EXCLUDED.is_under_600 THEN 1 ELSE 0 END) +
                              (COALESCE(match_player_results.special_faults_count, 0) * 5),
-          bonus_received = EXCLUDED.bonus_received;
+          bonus_received = EXCLUDED.bonus_received,
+          team_id = EXCLUDED.team_id;
       `),
     );
   }

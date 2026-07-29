@@ -162,3 +162,17 @@ The dashboard UI is updated with the new Team Bank section, following mobile-fir
 - Use a `Separator` to divide it from the next match section.
 - Display "Actual real money" and "Grand total money" in two columns.
 - Add a warning-styled row (using amber colors and an icon) showing the next pickup date based on the next home match.
+
+### ✓ Step 7: Fix season synchronization and balance discrepancy
+Fix the issue where matches imported from snapshots are missing season IDs, causing them to be excluded from seasonal balance calculations.
+
+- Update `syncAllPlayerResultsSnapshots` in `lib/sync.ts` to include `season_id` when upserting matches.
+- Try to infer `season_id` from the league data if available in snapshots.
+- Update `getTeamBankBalance` and `getPlayerBalances` in `lib/db-utils.ts` to be more inclusive of recent matches even if `season_id` is missing.
+- Ensure the "28€ vs 10€" discrepancy is resolved for player 170512.
+
+### ✓ Step 8: Clean up irrelevant users
+Remove players from the `users` table who do not belong to the Podbrezová team.
+
+- Identify and delete players in the `users` table who have no match results or are confirmed to be opponents.
+- Ensure only the 7-8 main players (and admins/trainers) remain in the system.

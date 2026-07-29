@@ -259,6 +259,12 @@ export default async function Home({
                         {player.firstName}
                         {' '}
                         {player.lastName}
+                        {' '}
+                        <span className="text-muted-foreground font-normal text-base">
+                          (
+                          {player.stats.matchesCount}
+                          )
+                        </span>
                       </h2>
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
