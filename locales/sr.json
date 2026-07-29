@@ -52,6 +52,7 @@
   "playerDetail": {
     "totalPayment": "Ukupno plaćeno",
     "unpaid": "Neplaćeno",
+    "bonuses": "Bonusi",
     "totalFaults": "Ukupno grešaka",
     "matchResults": "Rezultati utakmica",
     "date": "Datum",
@@ -60,6 +61,20 @@
     "clean": "Čišćenje",
     "total": "Ukupno",
     "faults": "Greške",
+    "fine": "Kazna",
+    "paidStatus": "Plaćeno",
+    "unpaidStatus": "Neplaćeno",
+    "noFine": "Bez kazne",
+    "fineReasons": {
+      "faults": "{count} grešaka",
+      "worstPlayer": "najslabiji igrač",
+      "under600": "ispod 600",
+      "fullFaults": "{count}x greška u pune",
+      "secondToLastFaults": "{count}x pretposlednji hitac",
+      "specialFaults": "{count}x specijalna greška",
+      "streak": "serija 5+ utakmica bez greške ({count}. utakmica)"
+    },
+    "streakBadge": "{count}. bez greške",
     "noResults": "Nema rezultata za ovog igrača.",
     "errorLoading": "Greška pri učitavanju podataka o igraču"
   },

@@ -100,13 +100,16 @@ export async function ensureSchema() {
       id SERIAL PRIMARY KEY,
       match_id BIGINT REFERENCES matches(external_id),
       user_id UUID REFERENCES users(id),
-      condition_type TEXT NOT NULL CHECK (condition_type IN ('score_bonus', 'zero_faults')),
+      condition_type TEXT NOT NULL CHECK (condition_type IN ('score_bonus', 'zero_faults', 'elite_player')),
       amount NUMERIC NOT NULL,
       is_paid BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(match_id, user_id, condition_type)
     );
   `;
+
+  await sql`ALTER TABLE trainer_payments DROP CONSTRAINT IF EXISTS trainer_payments_condition_type_check;`;
+  await sql`ALTER TABLE trainer_payments ADD CONSTRAINT trainer_payments_condition_type_check CHECK (condition_type IN ('score_bonus', 'zero_faults', 'elite_player'));`;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_scraped_snapshots_type_id ON scraped_snapshots(type, external_id);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_users_external_id ON users(external_player_id);`;
@@ -150,7 +153,6 @@ export async function ensureSchema() {
       COALESCE(ps.total_bonuses, 0) as total_bonuses,
       COALESCE(ps.paid_fines, 0) + COALESCE(ts.paid_trainer_payments, 0) as total_paid,
       (COALESCE(ps.total_fines, 0) + COALESCE(ts.total_trainer_payments, 0)) 
-      - COALESCE(ps.total_bonuses, 0) 
       - (COALESCE(ps.paid_fines, 0) + COALESCE(ts.paid_trainer_payments, 0)) as balance
     FROM users u
     LEFT JOIN user_seasons us ON u.id = us.user_id
@@ -241,4 +243,118 @@ export async function getTrainersWithStats() {
     totalPaid: string;
   }>;
   return trainers;
+}
+
+export async function getPlayerBalances() {
+  const rows = await sql`
+    SELECT 
+      external_player_id,
+      user_id::text,
+      SUM(total_due)::text as total_due,
+      SUM(total_bonuses)::text as total_bonuses,
+      SUM(total_paid)::text as total_paid,
+      SUM(balance)::text as balance
+    FROM view_user_balances
+    WHERE role = 'player'
+    GROUP BY external_player_id, user_id
+  `;
+  return rows.map((r) => ({
+    externalPlayerId: r.external_player_id ? Number(r.external_player_id) : null,
+    userId: String(r.user_id),
+    totalDue: Number(r.total_due || 0),
+    totalBonuses: Number(r.total_bonuses || 0),
+    totalPaid: Number(r.total_paid || 0),
+    balance: Number(r.balance || 0),
+  }));
+}
+
+export async function getPlayerBalanceByExternalId(externalPlayerId: number) {
+  const rows = await sql`
+    SELECT 
+      SUM(total_due)::text as total_due,
+      SUM(total_bonuses)::text as total_bonuses,
+      SUM(total_paid)::text as total_paid,
+      SUM(balance)::text as balance
+    FROM view_user_balances
+    WHERE external_player_id = ${externalPlayerId}
+    GROUP BY external_player_id
+  `;
+  if (rows.length === 0) {
+    return {
+      totalDue: 0,
+      totalBonuses: 0,
+      totalPaid: 0,
+      balance: 0,
+    };
+  }
+  return {
+    totalDue: Number(rows[0].total_due || 0),
+    totalBonuses: Number(rows[0].total_bonuses || 0),
+    totalPaid: Number(rows[0].total_paid || 0),
+    balance: Number(rows[0].balance || 0),
+  };
+}
+
+export async function getPlayerMatchResultsByExternalId(externalPlayerId: number) {
+  const rows = await sql`
+    SELECT 
+      mpr.match_id,
+      mpr.calculated_fine,
+      mpr.bonus_received,
+      mpr.is_paid,
+      mpr.faults,
+      mpr.is_worst_player,
+      mpr.is_under_600,
+      COALESCE(mpr.full_faults_count, 0) as full_faults_count,
+      COALESCE(mpr.second_to_last_faults_count, 0) as second_to_last_faults_count,
+      COALESCE(mpr.special_faults_count, 0) as special_faults_count,
+      m.date,
+      m.opponent,
+      m.is_home
+    FROM match_player_results mpr
+    JOIN users u ON mpr.user_id = u.id
+    JOIN matches m ON mpr.match_id = m.external_id
+    WHERE u.external_player_id = ${externalPlayerId}
+    ORDER BY m.date DESC
+  `;
+
+  // Calculate faultless streak chronologically
+  const chronologicalRows = [...rows].sort((a, b) => {
+    const timeA = a.date ? new Date(a.date as string | Date).getTime() : 0;
+    const timeB = b.date ? new Date(b.date as string | Date).getTime() : 0;
+    if (timeA !== timeB) return timeA - timeB;
+    return Number(a.match_id) - Number(b.match_id);
+  });
+
+  const streakMap = new Map<number, number>();
+  let currentStreak = 0;
+  chronologicalRows.forEach((r) => {
+    const faults = Number(r.faults || 0);
+    if (faults === 0) {
+      currentStreak += 1;
+    } else {
+      currentStreak = 0;
+    }
+    streakMap.set(Number(r.match_id), currentStreak);
+  });
+
+  return rows.map((r) => {
+    const matchId = Number(r.match_id);
+    return {
+      matchId,
+      calculatedFine: Number(r.calculated_fine || 0),
+      bonusReceived: Number(r.bonus_received || 0),
+      isPaid: Boolean(r.is_paid),
+      faults: Number(r.faults || 0),
+      isWorstPlayer: Boolean(r.is_worst_player),
+      isUnder600: Boolean(r.is_under_600),
+      fullFaultsCount: Number(r.full_faults_count || 0),
+      secondToLastFaultsCount: Number(r.second_to_last_faults_count || 0),
+      specialFaultsCount: Number(r.special_faults_count || 0),
+      faultlessStreak: streakMap.get(matchId) || 0,
+      date: r.date ? new Date(r.date as string | Date).toISOString() : null,
+      opponent: (r.opponent as string) || null,
+      isHome: r.is_home === null ? null : Boolean(r.is_home),
+    };
+  });
 }

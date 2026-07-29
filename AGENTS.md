@@ -41,7 +41,7 @@ Rules for calculating gatherings (fines) and bonuses for each role.
   - ... and so on.
 - **Special Faults**: 5€ per occurrence (marked manually).
   - Includes: Fault into playing full, missing 2nd to last throw.
-- **Success Gathering**: 10€ for 5 straight games without a fault (marked manually).
+- **Success Gathering**: 10€ for 5th and every subsequent consecutive game without a fault (5th, 6th, 7th... consecutive game with 0 faults).
 
 **Bonuses (to be received):**
 - **Score > 700**: 40€ total (30€ from team bank + 10€ from trainer).

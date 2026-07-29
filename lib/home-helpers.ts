@@ -5,7 +5,7 @@ import {
   PlayerDetail,
   PlayerResult,
 } from '@/lib/api';
-import { getScrapedData, getTrainersWithStats } from '@/lib/db-utils';
+import { getScrapedData, getTrainersWithStats, getPlayerBalances } from '@/lib/db-utils';
 
 export interface PlayerStats {
   avg: number;
@@ -94,6 +94,21 @@ export function formatMatchDate(dateString: string, lang: string): string {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}
+
+export function formatDateOnly(dateString: string, lang: string): string {
+  try {
+    const date = parseUtcDate(dateString);
+    if (Number.isNaN(date.getTime())) return dateString;
+    return new Intl.DateTimeFormat(lang, {
+      timeZone: 'Europe/Bratislava',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
     }).format(date);
   } catch {
     return dateString;
@@ -193,6 +208,13 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
     .filter((id: number | undefined): id is number => id !== undefined);
 
   // 6. Fetch player details and season results for each player
+  const playerBalances = await getPlayerBalances();
+  const balancesMap = new Map(
+    playerBalances
+      .filter((b) => b.externalPlayerId !== null)
+      .map((b) => [b.externalPlayerId, b]),
+  );
+
   const playersWithStats = await Promise.all(
     playerIds.map(async (id) => {
       const [detail, results] = await Promise.all([
@@ -212,7 +234,9 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
         : 0;
       const max = validTotals.length > 0 ? Math.max(...validTotals) : 0;
       const misses = (results || []).reduce((acc, r) => acc + (r.faults || 0), 0);
-      const totalPaid = '0 €';
+
+      const playerBalance = balancesMap.get(id);
+      const totalPaid = playerBalance ? `${playerBalance.totalDue} €` : '0 €';
 
       const player: PlayerWithStats = {
         ...detail,

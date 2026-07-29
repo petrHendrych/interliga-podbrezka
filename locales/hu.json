@@ -52,6 +52,7 @@
   "playerDetail": {
     "totalPayment": "Összesen kifizetve",
     "unpaid": "Kifizetetlen",
+    "bonuses": "Bónuszok",
     "totalFaults": "Összes hiba",
     "matchResults": "Mérkőzés eredmények",
     "date": "Dátum",
@@ -60,6 +61,20 @@
     "clean": "Tarolás",
     "total": "Összesen",
     "faults": "Hiba",
+    "fine": "Bírság",
+    "paidStatus": "Kifizetve",
+    "unpaidStatus": "Nincs kifizetve",
+    "noFine": "Nincs bírság",
+    "fineReasons": {
+      "faults": "{count} hiba",
+      "worstPlayer": "leggyengébb játékos",
+      "under600": "600 alatt",
+      "fullFaults": "{count}x telibe hiba",
+      "secondToLastFaults": "{count}x utolsó előtti gurítás",
+      "specialFaults": "{count}x speciális hiba",
+      "streak": "5+ hibátlan mérkőzés sorozat ({count}. mérkőzés)"
+    },
+    "streakBadge": "{count}. hibátlan",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"
   },

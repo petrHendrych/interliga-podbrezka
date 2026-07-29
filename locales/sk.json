@@ -52,6 +52,7 @@
   "playerDetail": {
     "totalPayment": "Celkom zaplatené",
     "unpaid": "Nezaplatené",
+    "bonuses": "Bonusy",
     "totalFaults": "Chyby celkom",
     "matchResults": "Výsledky zápasov",
     "date": "Dátum",
@@ -60,6 +61,20 @@
     "clean": "Dorážka",
     "total": "Celkom",
     "faults": "Chyby",
+    "fine": "Pokuta",
+    "paidStatus": "Zaplatené",
+    "unpaidStatus": "Nezaplatené",
+    "noFine": "Bez pokuty",
+    "fineReasons": {
+      "faults": "{count} chýb",
+      "worstPlayer": "najhorší hráč",
+      "under600": "pod 600",
+      "fullFaults": "{count}x chyba do plných",
+      "secondToLastFaults": "{count}x predposledný hod",
+      "specialFaults": "{count}x špeciálna chyba",
+      "streak": "séria 5+ zápasov bez chyby ({count}. zápas)"
+    },
+    "streakBadge": "{count}. bez chyby",
     "noResults": "Tento hráč nemá žiadne výsledky.",
     "errorLoading": "Chyba pri načítaní hráča"
   },
