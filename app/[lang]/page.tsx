@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Locale } from '@/lib/i18n/config';
+import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
 export default async function Home({
@@ -88,7 +88,7 @@ export default async function Home({
                 className="border-[3px] border-amber-500 rounded-xl relative bg-card text-card-foreground p-6 shadow-sm"
               >
                 <div className="absolute -top-3.5 left-6 bg-background px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500 rounded-md z-10">
-                  {dict.home.roundFormat.replace('{round}', String(match.round))}
+                  {interpolate(dict.home.roundFormat, { round: match.round })}
                 </div>
 
                 <div className="flex items-center justify-between gap-4">
@@ -125,9 +125,6 @@ export default async function Home({
       {bankBalance && (
         <Card className="mb-8 border-primary/20 bg-primary/5">
           <CardContent className="p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              {dict.home.bank.title}
-            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.actualBalance}</p>
@@ -151,7 +148,10 @@ export default async function Home({
               <div className="mt-6 flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                 <p className="text-sm font-medium">
-                  {dict.home.bank.nextPickup.replace('{date}', formatDateOnly(nextHomeMatch.startDate, lang))}
+                  {interpolate(
+                    dict.home.bank.nextPickup,
+                    { date: formatDateOnly(nextHomeMatch.startDate, lang) },
+                  )}
                 </p>
               </div>
             )}

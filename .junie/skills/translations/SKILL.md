@@ -44,13 +44,34 @@ Whenever a new translation key is added:
 3. If necessary, run `pnpm type-check` to verify that the keys are recognized.
 4. Pass the dictionary or specific strings to components as needed.
 
-### 5. Synchronization Checklist
+### 5. Interpolation
+When a translation string contains variables, use the `{variableName}` syntax in the JSON files and the `interpolate` helper function in the components. This keeps the JSX clean and ensures correct word order in all languages.
+
+**JSON Example:**
+```json
+{
+  "playerDetail": {
+    "bonuses": "Bonusy: {amount} €"
+  }
+}
+```
+
+**Component Example:**
+```tsx
+import { interpolate } from '@/lib/i18n/dictionaries';
+
+// ... inside component
+<p>{interpolate(dict.playerDetail.bonuses, { amount: balance.totalBonuses })}</p>
+```
+
+### 6. Synchronization Checklist
 - [ ] Added key to `sk.json`.
 - [ ] Added key to `cs.json`.
 - [ ] Added key to `hu.json`.
 - [ ] Added key to `sr.json`.
 - [ ] Verified that the key matches exactly across all files.
 - [ ] Updated component to use the new key via `getDictionary`.
+- [ ] Used `interpolate` for strings with variables.
 
 ## Code Example
 To use a dictionary in a Server Component:

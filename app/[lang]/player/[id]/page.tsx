@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { Locale } from '@/lib/i18n/config';
+import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchFineTooltip } from '@/components/MatchFineTooltip';
 
@@ -73,38 +73,21 @@ export default async function PlayerDetailPage({ params }: PageProps) {
             </h1>
             <div className="mt-2 text-muted-foreground">
               <p className="text-lg">
-                {dict.playerDetail.totalPayment}
-                :
-                {' '}
-                {balance.totalPaid}
-                {' '}
-                €
+                {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
                 {' '}
                 <span className="text-sm">
                   (
-                  {dict.playerDetail.unpaid}
-                  :
-                  {' '}
-                  {balance.balance}
-                  {' '}
-                  €)
+                  {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
+                  )
                 </span>
               </p>
               {balance.totalBonuses > 0 ? (
                 <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">
-                  {dict.playerDetail.bonuses}
-                  :
-                  {' '}
-                  {balance.totalBonuses}
-                  {' '}
-                  €
+                  {interpolate(dict.playerDetail.bonuses, { amount: balance.totalBonuses })}
                 </p>
               ) : null}
               <p className="text-lg">
-                {dict.playerDetail.totalFaults}
-                :
-                {' '}
-                {totalFaults}
+                {interpolate(dict.playerDetail.totalFaults, { count: totalFaults })}
               </p>
             </div>
           </div>
@@ -152,8 +135,8 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                     let matchName = 'Tournament / Other';
                     if (result.opponent) {
                       matchName = result.isHome
-                        ? `Podbrezová vs ${result.opponent}`
-                        : `${result.opponent} vs Podbrezová`;
+                        ? interpolate(dict.playerDetail.matchHome, { opponent: result.opponent })
+                        : interpolate(dict.playerDetail.matchAway, { opponent: result.opponent });
                     }
 
                     return (

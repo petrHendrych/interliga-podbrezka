@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { interpolate } from '@/lib/i18n/config';
 import { Tooltip } from '@/components/ui/tooltip';
 
 export interface FineLabels {
@@ -61,26 +62,24 @@ export function MatchFineTooltip({
   const reasonsList: string[] = [];
 
   if (faults > 0) {
-    reasonsList.push(labels.reasons.faults.replace('{count}', String(faults)));
+    reasonsList.push(interpolate(labels.reasons.faults, { count: faults }));
   }
   if (fullFaultsCount > 0) {
     reasonsList.push(
-      labels.reasons.fullFaults.replace('{count}', String(fullFaultsCount)),
+      interpolate(labels.reasons.fullFaults, { count: fullFaultsCount }),
     );
   }
   if (secondToLastFaultsCount > 0) {
     reasonsList.push(
-      labels.reasons.secondToLastFaults.replace(
-        '{count}',
-        String(secondToLastFaultsCount),
-      ),
+      interpolate(labels.reasons.secondToLastFaults, {
+        count: secondToLastFaultsCount,
+      }),
     );
   } else if (specialFaultsCount > 0 && fullFaultsCount === 0) {
     reasonsList.push(
-      labels.reasons.specialFaults.replace(
-        '{count}',
-        String(specialFaultsCount),
-      ),
+      interpolate(labels.reasons.specialFaults, {
+        count: specialFaultsCount,
+      }),
     );
   }
   if (isWorstPlayer) {
@@ -91,9 +90,7 @@ export function MatchFineTooltip({
   }
   if (streakFine > 0 || (faultlessStreak !== undefined && faultlessStreak >= 5)) {
     const streakNum = faultlessStreak || 5;
-    const streakReasonText = labels.reasons.streak.includes('{count}')
-      ? labels.reasons.streak.replace('{count}', String(streakNum))
-      : labels.reasons.streak;
+    const streakReasonText = interpolate(labels.reasons.streak, { count: streakNum });
     reasonsList.push(streakReasonText);
   }
 
