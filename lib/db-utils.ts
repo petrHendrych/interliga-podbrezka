@@ -64,11 +64,13 @@ export async function ensureSchema() {
       team_total_score INTEGER,
       opponent_total_score INTEGER,
       season_id INTEGER,
+      league_name TEXT,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
   await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS season_id INTEGER;`;
+  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_name TEXT;`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS match_player_results (
@@ -94,6 +96,10 @@ export async function ensureSchema() {
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS special_faults_count INTEGER DEFAULT 0;`;
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS full_faults_count INTEGER DEFAULT 0;`;
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS second_to_last_faults_count INTEGER DEFAULT 0;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS "full" INTEGER;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS clean INTEGER;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS total INTEGER;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS avg NUMERIC;`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS trainer_payments (
@@ -221,7 +227,16 @@ export async function getScrapedData<T>(type: string, externalId: number): Promi
   }
 }
 
-export async function getTrainersWithStats() {
+export interface DBTrainerStats {
+  id: string;
+  name: string;
+  count3800: number;
+  count3900: number;
+  zeroMisses: number;
+  totalPaid: string;
+}
+
+export async function getTrainersWithStats(): Promise<DBTrainerStats[]> {
   const trainers = await sql`
     SELECT 
       u.id::text, 
@@ -234,18 +249,49 @@ export async function getTrainersWithStats() {
     LEFT JOIN trainer_payments tp ON u.id = tp.user_id
     WHERE u.role = 'trainer' AND u.is_approved = true
     GROUP BY u.id, u.name
-  ` as unknown as Array<{
-    id: string;
-    name: string;
-    count3800: number;
-    count3900: number;
-    zeroMisses: number;
-    totalPaid: string;
-  }>;
+  ` as unknown as DBTrainerStats[];
   return trainers;
 }
 
-export async function getPlayerBalances() {
+export interface PlayerBalance {
+  totalDue: number;
+  totalBonuses: number;
+  totalPaid: number;
+  balance: number;
+}
+
+export interface PlayerMatchResult {
+  matchId: number;
+  calculatedFine: number;
+  bonusReceived: number;
+  isPaid: boolean;
+  faults: number;
+  full: number;
+  clean: number;
+  total: number;
+  avg: number;
+  isWorstPlayer: boolean;
+  isUnder600: boolean;
+  fullFaultsCount: number;
+  secondToLastFaultsCount: number;
+  specialFaultsCount: number;
+  faultlessStreak: number;
+  date: string | null;
+  opponent: string | null;
+  isHome: boolean | null;
+  leagueName: string | null;
+}
+
+export interface PlayerSeasonBalance {
+  externalPlayerId: number | null;
+  userId: string;
+  totalDue: number;
+  totalBonuses: number;
+  totalPaid: number;
+  balance: number;
+}
+
+export async function getPlayerBalances(): Promise<PlayerSeasonBalance[]> {
   const rows = await sql`
     SELECT 
       external_player_id,
@@ -268,7 +314,9 @@ export async function getPlayerBalances() {
   }));
 }
 
-export async function getPlayerBalanceByExternalId(externalPlayerId: number) {
+export async function getPlayerBalanceByExternalId(
+  externalPlayerId: number,
+): Promise<PlayerBalance> {
   const rows = await sql`
     SELECT 
       SUM(total_due)::text as total_due,
@@ -295,7 +343,9 @@ export async function getPlayerBalanceByExternalId(externalPlayerId: number) {
   };
 }
 
-export async function getPlayerMatchResultsByExternalId(externalPlayerId: number) {
+export async function getPlayerMatchResultsByExternalId(
+  externalPlayerId: number,
+): Promise<PlayerMatchResult[]> {
   const rows = await sql`
     SELECT 
       mpr.match_id,
@@ -303,6 +353,10 @@ export async function getPlayerMatchResultsByExternalId(externalPlayerId: number
       mpr.bonus_received,
       mpr.is_paid,
       mpr.faults,
+      mpr."full",
+      mpr.clean,
+      mpr.total,
+      mpr.avg,
       mpr.is_worst_player,
       mpr.is_under_600,
       COALESCE(mpr.full_faults_count, 0) as full_faults_count,
@@ -310,7 +364,8 @@ export async function getPlayerMatchResultsByExternalId(externalPlayerId: number
       COALESCE(mpr.special_faults_count, 0) as special_faults_count,
       m.date,
       m.opponent,
-      m.is_home
+      m.is_home,
+      m.league_name
     FROM match_player_results mpr
     JOIN users u ON mpr.user_id = u.id
     JOIN matches m ON mpr.match_id = m.external_id
@@ -346,6 +401,10 @@ export async function getPlayerMatchResultsByExternalId(externalPlayerId: number
       bonusReceived: Number(r.bonus_received || 0),
       isPaid: Boolean(r.is_paid),
       faults: Number(r.faults || 0),
+      full: Number(r.full || 0),
+      clean: Number(r.clean || 0),
+      total: Number(r.total || 0),
+      avg: Number(r.avg || 0),
       isWorstPlayer: Boolean(r.is_worst_player),
       isUnder600: Boolean(r.is_under_600),
       fullFaultsCount: Number(r.full_faults_count || 0),
@@ -355,6 +414,7 @@ export async function getPlayerMatchResultsByExternalId(externalPlayerId: number
       date: r.date ? new Date(r.date as string | Date).toISOString() : null,
       opponent: (r.opponent as string) || null,
       isHome: r.is_home === null ? null : Boolean(r.is_home),
+      leagueName: (r.league_name as string) || null,
     };
   });
 }

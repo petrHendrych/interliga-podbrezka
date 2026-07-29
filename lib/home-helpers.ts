@@ -5,7 +5,11 @@ import {
   PlayerDetail,
   PlayerResult,
 } from '@/lib/api';
-import { getScrapedData, getTrainersWithStats, getPlayerBalances } from '@/lib/db-utils';
+import {
+  getScrapedData,
+  getTrainersWithStats,
+  getPlayerBalances,
+} from '@/lib/db-utils';
 
 export interface PlayerStats {
   avg: number;

@@ -1,4 +1,4 @@
-import { PlayerDetail, PlayerResult } from '@/lib/api';
+import { PlayerDetail } from '@/lib/api';
 import {
   getScrapedData,
   getPlayerBalanceByExternalId,
@@ -29,9 +29,8 @@ export default async function PlayerDetailPage({ params }: PageProps) {
 
   try {
     // Fetch data from database instead of directly from API
-    const [player, results, balance, matchFines] = await Promise.all([
+    const [player, balance, matchFines] = await Promise.all([
       getScrapedData<PlayerDetail>('player_detail', playerId),
-      getScrapedData<PlayerResult[]>('player_results', playerId),
       getPlayerBalanceByExternalId(playerId),
       getPlayerMatchResultsByExternalId(playerId),
     ]);
@@ -40,9 +39,8 @@ export default async function PlayerDetailPage({ params }: PageProps) {
       throw new Error(`Player data for ID ${playerId} not found in database. Please run the scraping job.`);
     }
 
-    const matchFinesMap = new Map(matchFines.map((mf) => [mf.matchId, mf]));
     const fullName = `${player.firstName} ${player.lastName}`;
-    const totalFaults = results?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
+    const totalFaults = matchFines?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
 
     const fineLabels = {
       paidStatus: dict.playerDetail.paidStatus || 'Zaplatené',
@@ -123,6 +121,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="whitespace-nowrap">{dict.playerDetail.date}</TableHead>
+                  <TableHead>{dict.playerDetail.league}</TableHead>
                   <TableHead className="min-w-[200px]">{dict.playerDetail.match}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.full}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.clean}</TableHead>
@@ -132,19 +131,17 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results && results.length > 0 ? (
-                  results.map((result, index) => {
-                    const matchId = result.match?.id;
-                    const matchFine = matchId ? matchFinesMap.get(matchId) : undefined;
+                {matchFines && matchFines.length > 0 ? (
+                  matchFines.map((result, index) => {
                     const hasFaults = result.faults !== undefined && result.faults !== null;
-                    const isStreak5 = Boolean(matchFine && matchFine.faultlessStreak >= 5);
+                    const isStreak5 = Boolean(result.faultlessStreak >= 5);
 
                     let faultsContent: React.ReactNode = '-';
                     if (hasFaults) {
                       if (isStreak5) {
                         faultsContent = (
-                          <span className="font-bold text-amber-600 dark:text-amber-400">
-                            0 🔥
+                          <span className="font-bold text-red-600 dark:text-red-400">
+                            0
                           </span>
                         );
                       } else {
@@ -152,57 +149,52 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                       }
                     }
 
+                    let matchName = 'Tournament / Other';
+                    if (result.opponent) {
+                      matchName = result.isHome
+                        ? `Podbrezová vs ${result.opponent}`
+                        : `${result.opponent} vs Podbrezová`;
+                    }
+
                     return (
-                      <TableRow key={result.match?.id || index}>
+                      <TableRow key={result.matchId || index}>
                         <TableCell className="whitespace-nowrap">
-                          {result.match?.date ? formatDateOnly(result.match.date, lang) : '-'}
+                          {result.date ? formatDateOnly(result.date, lang) : '-'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
+                          {result.leagueName === 'Interliga'
+                            ? (dict.playerDetail.leagueInterliga as string)
+                            : (dict.playerDetail.leagueCup as string)}
                         </TableCell>
                         <TableCell>
-                          {result.match?.homeTeam?.club?.name
-                            && result.match?.awayTeam?.club?.name ? (
-                              `${result.match.homeTeam.club.name} vs ${result.match.awayTeam.club.name}`
-                            ) : (
-                              'Tournament / Other'
-                            )}
+                          {matchName}
                         </TableCell>
                         <TableCell className="text-right">{result.full ?? '-'}</TableCell>
                         <TableCell className="text-right">{result.clean ?? '-'}</TableCell>
-                        <TableCell className="text-right font-bold">{result.total ?? '-'}</TableCell>
+                        <TableCell className={`text-right font-bold ${result.total && result.total < 600 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                          {result.total ?? '-'}
+                        </TableCell>
                         <TableCell className="text-right">{faultsContent}</TableCell>
                         <TableCell className="text-right">
-                          {matchFine ? (
-                            <MatchFineTooltip
-                              calculatedFine={matchFine.calculatedFine}
-                              isPaid={matchFine.isPaid}
-                              faults={matchFine.faults}
-                              isWorstPlayer={matchFine.isWorstPlayer}
-                              isUnder600={matchFine.isUnder600}
-                              fullFaultsCount={matchFine.fullFaultsCount}
-                              secondToLastFaultsCount={matchFine.secondToLastFaultsCount}
-                              specialFaultsCount={matchFine.specialFaultsCount}
-                              faultlessStreak={matchFine.faultlessStreak}
-                              labels={fineLabels}
-                            />
-                          ) : (
-                            <MatchFineTooltip
-                              calculatedFine={0}
-                              isPaid={false}
-                              faults={result.faults || 0}
-                              isWorstPlayer={false}
-                              isUnder600={false}
-                              fullFaultsCount={0}
-                              secondToLastFaultsCount={0}
-                              specialFaultsCount={0}
-                              labels={fineLabels}
-                            />
-                          )}
+                          <MatchFineTooltip
+                            calculatedFine={result.calculatedFine}
+                            isPaid={result.isPaid}
+                            faults={result.faults}
+                            isWorstPlayer={result.isWorstPlayer}
+                            isUnder600={result.isUnder600}
+                            fullFaultsCount={result.fullFaultsCount}
+                            secondToLastFaultsCount={result.secondToLastFaultsCount}
+                            specialFaultsCount={result.specialFaultsCount}
+                            faultlessStreak={result.faultlessStreak}
+                            labels={fineLabels}
+                          />
                         </TableCell>
                       </TableRow>
                     );
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {dict.playerDetail.noResults}
                     </TableCell>
                   </TableRow>

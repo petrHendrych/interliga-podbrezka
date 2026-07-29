@@ -9,7 +9,7 @@ export interface SyncMatchData {
   startDate?: string;
   hall?: { name?: string };
   details?: { date?: string; hall?: { name?: string } };
-  league?: { seasonId?: number };
+  league?: { name?: string; seasonId?: number };
   homeTeam?: { id?: number; name?: string; club?: { id?: number; name?: string } };
   awayTeam?: { id?: number; name?: string; club?: { id?: number; name?: string } };
   results?: {
@@ -46,6 +46,7 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
 
     const date = data.details?.date || data.startDate || null;
     const seasonId = data.league?.seasonId || null;
+    const leagueName = data.league?.name || null;
     const opponentTeam = isHome ? data.awayTeam : data.homeTeam;
     const opponent = opponentTeam?.club?.name || opponentTeam?.name || 'Unknown';
     const location = data.details?.hall?.name || data.hall?.name || null;
@@ -63,8 +64,8 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
 
     // 1. Upsert Match
     await sql`
-      INSERT INTO matches (external_id, date, opponent, is_home, location, team_total_score, opponent_total_score, season_id, updated_at)
-      VALUES (${matchId}, ${date}, ${opponent}, ${isHome}, ${location}, ${teamTotalScore}, ${opponentTotalScore}, ${seasonId}, NOW())
+      INSERT INTO matches (external_id, date, opponent, is_home, location, team_total_score, opponent_total_score, season_id, league_name, updated_at)
+      VALUES (${matchId}, ${date}, ${opponent}, ${isHome}, ${location}, ${teamTotalScore}, ${opponentTotalScore}, ${seasonId}, ${leagueName}, NOW())
       ON CONFLICT (external_id) DO UPDATE SET
         date = EXCLUDED.date,
         opponent = EXCLUDED.opponent,
@@ -73,6 +74,7 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
         team_total_score = EXCLUDED.team_total_score,
         opponent_total_score = EXCLUDED.opponent_total_score,
         season_id = EXCLUDED.season_id,
+        league_name = EXCLUDED.league_name,
         updated_at = NOW();
     `;
 
@@ -294,6 +296,7 @@ export async function syncAllPlayerResultsSnapshots() {
     opponent: string;
     isHome: boolean;
     location: string | null;
+    leagueName: string | null;
   }>();
 
   const playerResultsToUpsert: Array<{
@@ -322,6 +325,7 @@ export async function syncAllPlayerResultsSnapshots() {
         startDate?: string;
         created?: string;
         hall?: { name?: string };
+        league?: { name?: string };
         homeTeam?: {
           id?: number;
           name?: string;
@@ -370,6 +374,7 @@ export async function syncAllPlayerResultsSnapshots() {
           const opponentTeam = isHome ? match.awayTeam : match.homeTeam;
           const opponent = opponentTeam?.name || opponentTeam?.club?.name || 'Unknown';
           const location = match.hall?.name || null;
+          const leagueName = match.league?.name || null;
 
           if (!matchesMap.has(matchId)) {
             matchesMap.set(matchId, {
@@ -378,6 +383,7 @@ export async function syncAllPlayerResultsSnapshots() {
               opponent,
               isHome,
               location,
+              leagueName,
             });
           }
 
@@ -413,13 +419,14 @@ export async function syncAllPlayerResultsSnapshots() {
     const chunk = matchEntries.slice(i, i + matchBatchSize);
     await Promise.all(
       chunk.map((m) => sql`
-        INSERT INTO matches (external_id, date, opponent, is_home, location, updated_at)
-        VALUES (${m.externalId}, ${m.date}, ${m.opponent}, ${m.isHome}, ${m.location}, NOW())
+        INSERT INTO matches (external_id, date, opponent, is_home, location, league_name, updated_at)
+        VALUES (${m.externalId}, ${m.date}, ${m.opponent}, ${m.isHome}, ${m.location}, ${m.leagueName}, NOW())
         ON CONFLICT (external_id) DO UPDATE SET
           date = COALESCE(EXCLUDED.date, matches.date),
           opponent = COALESCE(EXCLUDED.opponent, matches.opponent),
           is_home = COALESCE(EXCLUDED.is_home, matches.is_home),
           location = COALESCE(EXCLUDED.location, matches.location),
+          league_name = COALESCE(EXCLUDED.league_name, matches.league_name),
           updated_at = NOW();
       `),
     );
