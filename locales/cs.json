@@ -19,6 +19,11 @@
     "count3800": "3800+",
     "count3900": "3900+",
     "zeroMisses": "0 chyb",
+    "season": "Sezóna",
+    "filterAll": "Všechny",
+    "filterInterliga": "Interliga",
+    "filterPohar": "Slovenský pohár",
+    "filterFinale": "Finále",
     "bank": {
       "title": "Týmová banka",
       "actualBalance": "Aktuální hotovost",

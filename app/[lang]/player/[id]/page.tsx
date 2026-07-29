@@ -4,6 +4,8 @@ import {
   getPlayerBalanceByExternalId,
   getPlayerMatchResultsByExternalId,
 } from '@/lib/db-utils';
+import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
+import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { formatDateOnly } from '@/lib/home-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -19,20 +21,25 @@ import { MatchFineTooltip } from '@/components/MatchFineTooltip';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
+  searchParams: Promise<{ season?: string; league?: string }>;
 }
 
-export default async function PlayerDetailPage({ params }: PageProps) {
+export default async function PlayerDetailPage({ params, searchParams }: PageProps) {
   const { id, lang: langParam } = await params;
+  const { season: seasonParam, league: leagueParam } = await searchParams;
   const lang = langParam as Locale;
   const dict = await getDictionary(lang);
   const playerId = parseInt(id, 10);
+
+  const selectedSeasonId = seasonParam ? parseInt(seasonParam, 10) : DEFAULT_SEASON_ID;
+  const selectedLeagueKey = leagueParam || 'all';
 
   try {
     // Fetch data from database instead of directly from API
     const [player, balance, matchFines] = await Promise.all([
       getScrapedData<PlayerDetail>('player_detail', playerId),
-      getPlayerBalanceByExternalId(playerId),
-      getPlayerMatchResultsByExternalId(playerId),
+      getPlayerBalanceByExternalId(playerId, selectedSeasonId, selectedLeagueKey),
+      getPlayerMatchResultsByExternalId(playerId, selectedSeasonId, selectedLeagueKey),
     ]);
 
     if (!player) {
@@ -75,7 +82,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
               <p className="text-lg">
                 {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
                 {' '}
-                <span className="text-sm">
+                <span className="text-sm text-red-600 dark:text-red-400 font-medium">
                   (
                   {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
                   )
@@ -94,6 +101,18 @@ export default async function PlayerDetailPage({ params }: PageProps) {
         </div>
 
         <Separator className="my-8" />
+
+        <SeasonLeagueFilter
+          seasons={SEASONS_CONFIG}
+          selectedSeasonId={selectedSeasonId}
+          selectedLeagueKey={selectedLeagueKey}
+          labels={{
+            seasonLabel: dict.home.season || 'Sezóna',
+            allLeagues: dict.home.filterAll || 'Všetky',
+            interliga: dict.home.filterInterliga || 'Interliga',
+            pohar: dict.home.filterPohar || 'Slovenský pohár',
+          }}
+        />
 
         <Card>
           <CardHeader>
@@ -139,6 +158,15 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                         : interpolate(dict.playerDetail.matchAway, { opponent: result.opponent });
                     }
 
+                    let totalColorClass = '';
+                    if (result.total) {
+                      if (result.total < 600) {
+                        totalColorClass = 'text-red-600 dark:text-red-400';
+                      } else if (result.total > 700) {
+                        totalColorClass = 'text-emerald-600 dark:text-emerald-400';
+                      }
+                    }
+
                     return (
                       <TableRow key={result.matchId || index}>
                         <TableCell className="whitespace-nowrap">
@@ -154,7 +182,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                         </TableCell>
                         <TableCell className="text-right">{result.full ?? '-'}</TableCell>
                         <TableCell className="text-right">{result.clean ?? '-'}</TableCell>
-                        <TableCell className={`text-right font-bold ${result.total && result.total < 600 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                        <TableCell className={`text-right font-bold ${totalColorClass}`}>
                           {result.total ?? '-'}
                         </TableCell>
                         <TableCell className="text-right">{faultsContent}</TableCell>

@@ -12,6 +12,8 @@ import {
   formatDateOnly,
   FetchDataResult,
 } from '@/lib/home-helpers';
+import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
+import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -20,18 +22,24 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 
 export default async function Home({
   params,
+  searchParams,
 }: {
   params: Promise<{ lang: string }>;
+  searchParams: Promise<{ season?: string; league?: string }>;
 }) {
   const { lang: langParam } = await params;
+  const { season: seasonParam, league: leagueParam } = await searchParams;
   const lang = langParam as Locale;
   const dict = await getDictionary(lang);
+
+  const selectedSeasonId = seasonParam ? parseInt(seasonParam, 10) : DEFAULT_SEASON_ID;
+  const selectedLeagueKey = leagueParam || 'all';
 
   let data: FetchDataResult | null = null;
   let errorMsg: string | null = null;
 
   try {
-    data = await fetchHomeData(TEAM_ID);
+    data = await fetchHomeData(TEAM_ID, selectedSeasonId, selectedLeagueKey);
   } catch (e: unknown) {
     errorMsg = e instanceof Error ? e.message : 'An unknown error occurred';
   }
@@ -164,6 +172,18 @@ export default async function Home({
         <Separator className="my-8" />
       )}
 
+      <SeasonLeagueFilter
+        seasons={SEASONS_CONFIG}
+        selectedSeasonId={selectedSeasonId}
+        selectedLeagueKey={selectedLeagueKey}
+        labels={{
+          seasonLabel: dict.home.season || 'Sezóna',
+          allLeagues: dict.home.filterAll || 'Všetky',
+          interliga: dict.home.filterInterliga || 'Interliga',
+          pohar: dict.home.filterPohar || 'Slovenský pohár',
+        }}
+      />
+
       {(players.length > 0 || trainers.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {trainers.map((trainer) => (
@@ -233,7 +253,7 @@ export default async function Home({
           {players.map((player, index) => (
             <Link
               key={player.id}
-              href={`/${lang}/player/${player.id}`}
+              href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
               className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
             >
               <Card className="relative overflow-hidden hover:border-primary transition-colors h-full">

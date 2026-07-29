@@ -19,6 +19,11 @@
     "count3800": "3800+",
     "count3900": "3900+",
     "zeroMisses": "0 grešaka",
+    "season": "Sezona",
+    "filterAll": "Sve",
+    "filterInterliga": "Interliga",
+    "filterPohar": "Slovački kup",
+    "filterFinale": "Finale",
     "bank": {
       "title": "Timski bank",
       "actualBalance": "Stvarni novac",

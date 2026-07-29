@@ -3,6 +3,7 @@ import {
   TeamResult,
   MatchDetail,
   PlayerDetail,
+  TEAM_ID,
 } from '@/lib/api';
 import {
   getScrapedData,
@@ -10,6 +11,7 @@ import {
   getPlayerBalances,
   getTeamBankBalance,
 } from '@/lib/db-utils';
+import { DEFAULT_SEASON_ID, getLeagueConfig, getTeamIdsForSeason } from '@/lib/season-config';
 
 export interface PlayerStats {
   avg: number;
@@ -122,16 +124,31 @@ export function formatDateOnly(dateString: string, lang: string): string {
   }
 }
 
-export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
-  const bankBalance = await getTeamBankBalance();
+export async function fetchHomeData(
+  teamId: number = TEAM_ID,
+  seasonId: number = DEFAULT_SEASON_ID,
+  leagueKey: string = 'all',
+): Promise<FetchDataResult> {
+  const bankBalance = await getTeamBankBalance(seasonId);
+
+  const effectiveTeamId = leagueKey !== 'all'
+    ? (getLeagueConfig(seasonId, leagueKey)?.teamId || teamId)
+    : (getTeamIdsForSeason(seasonId)[0] || teamId);
+
   // 1. Fetch upcoming match list
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
-  const matchList = await getScrapedData<MatchListItem[]>('match_list', teamId);
+  let matchList = await getScrapedData<MatchListItem[]>('match_list', effectiveTeamId);
+  if (!matchList || matchList.length === 0) {
+    matchList = await getScrapedData<MatchListItem[]>('match_list', teamId);
+  }
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList.filter(
-      (m) => m.homeId === teamId || m.awayId === teamId,
+      (m) => m.homeId === effectiveTeamId
+        || m.awayId === effectiveTeamId
+        || m.homeId === teamId
+        || m.awayId === teamId,
     );
 
     if (teamMatches.length > 0) {
@@ -147,7 +164,9 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
       const startOfToday = getStartOfBratislavaToday(now);
 
       nextHomeMatch = teamMatches.find(
-        (m) => m.homeId === teamId && m.startDate && parseUtcDate(m.startDate) >= startOfToday,
+        (m) => (m.homeId === effectiveTeamId || m.homeId === teamId)
+          && m.startDate
+          && parseUtcDate(m.startDate) >= startOfToday,
       ) || null;
 
       let firstUpcomingIdx = teamMatches.findIndex(
@@ -173,8 +192,10 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
   const upcomingMatch = upcomingMatches[0] || null;
 
   // 2. Fetch team results from database
-  // (fallback to ID 4844 if current season has no played results yet)
-  let teamResults = await getScrapedData<TeamResult[]>('team_results', teamId);
+  let teamResults = await getScrapedData<TeamResult[]>('team_results', effectiveTeamId);
+  if (!teamResults || teamResults.length === 0) {
+    teamResults = await getScrapedData<TeamResult[]>('team_results', teamId);
+  }
   if (!teamResults || teamResults.length === 0) {
     teamResults = await getScrapedData<TeamResult[]>('team_results', 4844);
   }
@@ -193,11 +214,11 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
     };
   }
 
-  // 3. Fetch player details and season results for all players with balance
-  const playerBalances = await getPlayerBalances();
+  // 3. Fetch player details and season results for all players with balance and played matches
+  const playerBalances = await getPlayerBalances(seasonId, leagueKey);
   const playersWithStats = await Promise.all(
     playerBalances
-      .filter((b) => b.externalPlayerId !== null)
+      .filter((b) => b.externalPlayerId !== null && b.matchesCount > 0)
       .map(async (b) => {
         const id = b.externalPlayerId!;
         const detail = await getScrapedData<PlayerDetail>('player_detail', id);
@@ -228,8 +249,8 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
   // Sort players by AVG descending
   validPlayers.sort((a, b) => b.stats.avg - a.stats.avg);
 
-  // 7. Fetch trainer data
-  const trainersData = await getTrainersWithStats();
+  // 7. Fetch trainer data (omit for Slovak Cup UI)
+  const trainersData = leagueKey === 'pohar' ? [] : await getTrainersWithStats(seasonId, leagueKey);
   const trainers: TrainerWithStats[] = trainersData.map((t) => ({
     id: t.id,
     name: t.name,

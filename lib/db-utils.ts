@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import sql from './db';
+import { DEFAULT_SEASON_ID } from './season-config';
 
 export async function ensureSchema() {
   await sql`
@@ -71,6 +72,7 @@ export async function ensureSchema() {
 
   await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS season_id INTEGER;`;
   await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_name TEXT;`;
+  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_id INTEGER;`;
 
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS team_id INTEGER;`;
 
@@ -139,7 +141,21 @@ export async function ensureSchema() {
         SUM(CASE WHEN mpr.is_paid THEN mpr.calculated_fine ELSE 0 END) as paid_fines,
         SUM(CASE WHEN mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END) as paid_bonuses,
         COUNT(mpr.match_id) as matches_count,
-        AVG(mpr.total) as avg_score,
+        CASE 
+          WHEN (
+            (CASE WHEN COUNT(CASE WHEN m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
+            COUNT(CASE WHEN m.is_home = false OR m.is_home IS NULL THEN 1 END)
+          ) > 0 THEN (
+            (CASE WHEN COUNT(CASE WHEN m.is_home = true THEN 1 END) > 0 THEN 
+              SUM(CASE WHEN m.is_home = true THEN mpr.total ELSE 0 END)::numeric / COUNT(CASE WHEN m.is_home = true THEN 1 END) 
+            ELSE 0 END) + 
+            SUM(CASE WHEN m.is_home = false OR m.is_home IS NULL THEN mpr.total ELSE 0 END)::numeric
+          ) / (
+            (CASE WHEN COUNT(CASE WHEN m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
+            COUNT(CASE WHEN m.is_home = false OR m.is_home IS NULL THEN 1 END)
+          )
+          ELSE 0 
+        END as avg_score,
         MAX(mpr.total) as max_score,
         SUM(mpr.faults) as total_faults
       FROM match_player_results mpr
@@ -253,20 +269,36 @@ export interface DBTrainerStats {
   totalPaid: string;
 }
 
-export async function getTrainersWithStats(): Promise<DBTrainerStats[]> {
-  const trainers = await sql`
+export async function getTrainersWithStats(
+  seasonId?: number,
+  leagueKey?: string,
+): Promise<DBTrainerStats[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  let leagueCondition = sql``;
+  if (leagueKey === 'interliga') {
+    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
+  } else if (leagueKey === 'pohar') {
+    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+  }
+
+  const trainers = (await sql`
     SELECT 
       u.id::text, 
       u.name,
-      COUNT(CASE WHEN tp.condition_type = 'score_bonus' AND tp.amount = 10 THEN 1 END)::int as count3800,
-      COUNT(CASE WHEN tp.condition_type = 'score_bonus' AND tp.amount = 15 THEN 1 END)::int as count3900,
-      COUNT(CASE WHEN tp.condition_type = 'zero_faults' THEN 1 END)::int as "zeroMisses",
-      (COALESCE(SUM(tp.amount), 0)::text || ' €') as "totalPaid"
+      COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 10 THEN 1 END)::int as count3800,
+      COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 15 THEN 1 END)::int as count3900,
+      COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'zero_faults' THEN 1 END)::int as "zeroMisses",
+      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN tp.amount ELSE 0 END), 0)::text || ' €') as "totalPaid"
     FROM users u
     LEFT JOIN trainer_payments tp ON u.id = tp.user_id
+    LEFT JOIN matches m ON tp.match_id = m.external_id 
+      AND (m.season_id = ${targetSeasonId})
+      ${leagueCondition}
     WHERE u.role = 'trainer' AND u.is_approved = true
     GROUP BY u.id, u.name
-  ` as unknown as DBTrainerStats[];
+    ORDER BY u.name ASC
+  `) as unknown as DBTrainerStats[];
   return trainers;
 }
 
@@ -315,31 +347,56 @@ export interface PlayerSeasonBalance {
   totalFaults: number;
 }
 
-export async function getPlayerBalances(): Promise<PlayerSeasonBalance[]> {
-  // Get the latest season ID
-  const latestSeasonResult = await sql`
-    SELECT season_id FROM matches WHERE season_id IS NOT NULL ORDER BY date DESC LIMIT 1
-  `;
-  const latestSeasonId = latestSeasonResult.length > 0 ? latestSeasonResult[0].season_id : null;
+export async function getPlayerBalances(
+  seasonId?: number,
+  leagueKey?: string,
+): Promise<PlayerSeasonBalance[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  let leagueCondition = sql``;
+  if (leagueKey === 'interliga') {
+    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
+  } else if (leagueKey === 'pohar') {
+    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+  }
 
   const rows = await sql`
     SELECT 
-      external_player_id,
-      name,
-      user_id::text,
-      SUM(total_due)::text as total_due,
-      SUM(total_bonuses)::text as total_bonuses,
-      SUM(total_paid)::text as total_paid,
-      SUM(balance)::text as balance,
-      SUM(matches_count)::text as matches_count,
-      AVG(avg_score)::numeric as avg_score,
-      MAX(max_score)::int as max_score,
-      SUM(total_faults)::int as total_faults
-    FROM view_user_balances
-    WHERE role = 'player'
-    AND (season_id IS NOT DISTINCT FROM ${latestSeasonId}::integer OR season_id IS NULL)
-    GROUP BY external_player_id, name, user_id
+      u.external_player_id,
+      u.name,
+      u.id::text as user_id,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_paid,
+      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0))::text as balance,
+      COUNT(m.external_id)::text as matches_count,
+      COALESCE(MAX(CASE WHEN m.external_id IS NOT NULL THEN mpr.total END), 0)::int as max_score,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.faults ELSE 0 END), 0)::int as total_faults,
+      CASE 
+        WHEN (
+          (CASE WHEN COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
+          COUNT(CASE WHEN m.external_id IS NOT NULL AND (m.is_home = false OR m.is_home IS NULL) THEN 1 END)
+        ) > 0 THEN (
+          (CASE WHEN COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) > 0 THEN 
+            SUM(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN mpr.total ELSE 0 END)::numeric / COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) 
+          ELSE 0 END) + 
+          SUM(CASE WHEN m.external_id IS NOT NULL AND (m.is_home = false OR m.is_home IS NULL) THEN mpr.total ELSE 0 END)::numeric
+        ) / (
+          (CASE WHEN COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
+          COUNT(CASE WHEN m.external_id IS NOT NULL AND (m.is_home = false OR m.is_home IS NULL) THEN 1 END)
+        )
+        ELSE 0 
+      END::numeric as avg_score
+    FROM users u
+    LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
+    LEFT JOIN matches m ON mpr.match_id = m.external_id 
+      AND (m.season_id = ${targetSeasonId})
+      ${leagueCondition}
+    WHERE u.role = 'player' AND u.is_approved = true
+    GROUP BY u.external_player_id, u.name, u.id
+    ORDER BY u.name ASC
   `;
+
   return rows.map((r) => ({
     externalPlayerId: r.external_player_id ? Number(r.external_player_id) : null,
     name: String(r.name || 'Unknown'),
@@ -357,24 +414,32 @@ export async function getPlayerBalances(): Promise<PlayerSeasonBalance[]> {
 
 export async function getPlayerBalanceByExternalId(
   externalPlayerId: number,
+  seasonId?: number,
+  leagueKey?: string,
 ): Promise<PlayerBalance> {
-  // Get the latest season ID
-  const latestSeasonResult = await sql`
-    SELECT season_id FROM matches WHERE season_id IS NOT NULL ORDER BY date DESC LIMIT 1
-  `;
-  const latestSeasonId = latestSeasonResult.length > 0 ? latestSeasonResult[0].season_id : null;
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  let leagueCondition = sql``;
+  if (leagueKey === 'interliga') {
+    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
+  } else if (leagueKey === 'pohar') {
+    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+  }
 
   const rows = await sql`
     SELECT 
-      SUM(total_due)::text as total_due,
-      SUM(total_bonuses)::text as total_bonuses,
-      SUM(paid_bonuses)::text as paid_bonuses,
-      SUM(total_paid)::text as total_paid,
-      SUM(balance)::text as balance
-    FROM view_user_balances
-    WHERE external_player_id = ${externalPlayerId}
-    AND (season_id IS NOT DISTINCT FROM ${latestSeasonId}::integer OR season_id IS NULL)
-    GROUP BY external_player_id
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END), 0)::text as paid_bonuses,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_paid,
+      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0))::text as balance
+    FROM users u
+    LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
+    LEFT JOIN matches m ON mpr.match_id = m.external_id 
+      AND (m.season_id = ${targetSeasonId})
+      ${leagueCondition}
+    WHERE u.external_player_id = ${externalPlayerId}
+    GROUP BY u.external_player_id
   `;
   if (rows.length === 0) {
     return {
@@ -396,7 +461,18 @@ export async function getPlayerBalanceByExternalId(
 
 export async function getPlayerMatchResultsByExternalId(
   externalPlayerId: number,
+  seasonId?: number,
+  leagueKey?: string,
 ): Promise<PlayerMatchResult[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  let leagueCondition = sql``;
+  if (leagueKey === 'interliga') {
+    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
+  } else if (leagueKey === 'pohar') {
+    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+  }
+
   const rows = await sql`
     SELECT 
       mpr.match_id,
@@ -422,6 +498,8 @@ export async function getPlayerMatchResultsByExternalId(
     JOIN users u ON mpr.user_id = u.id
     JOIN matches m ON mpr.match_id = m.external_id
     WHERE u.external_player_id = ${externalPlayerId}
+      AND (m.season_id = ${targetSeasonId})
+      ${leagueCondition}
     ORDER BY m.date DESC
   `;
 
@@ -472,16 +550,10 @@ export async function getPlayerMatchResultsByExternalId(
   });
 }
 
-export async function getTeamBankBalance(): Promise<{ actual: number; total: number }> {
-  // Get the latest season ID to filter the bank balance
-  const latestSeasonResult = await sql`
-    SELECT season_id 
-    FROM matches 
-    WHERE season_id IS NOT NULL 
-    ORDER BY date DESC 
-    LIMIT 1
-  `;
-  const latestSeasonId = latestSeasonResult.length > 0 ? latestSeasonResult[0].season_id : null;
+export async function getTeamBankBalance(
+  seasonId?: number,
+): Promise<{ actual: number; total: number }> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
   const result = await sql`
     WITH player_totals AS (
@@ -492,7 +564,7 @@ export async function getTeamBankBalance(): Promise<{ actual: number; total: num
         SUM(mpr.bonus_received) as all_bonuses
       FROM match_player_results mpr
       JOIN matches m ON mpr.match_id = m.external_id
-      WHERE (m.season_id IS NOT DISTINCT FROM ${latestSeasonId}::integer OR m.season_id IS NULL)
+      WHERE (m.season_id = ${targetSeasonId})
     ),
     trainer_totals AS (
       SELECT
@@ -500,7 +572,7 @@ export async function getTeamBankBalance(): Promise<{ actual: number; total: num
         SUM(tp.amount) as all_payments
       FROM trainer_payments tp
       JOIN matches m ON tp.match_id = m.external_id
-      WHERE (m.season_id IS NOT DISTINCT FROM ${latestSeasonId}::integer OR m.season_id IS NULL)
+      WHERE (m.season_id = ${targetSeasonId})
     )
     SELECT 
       (COALESCE(p.paid_fines, 0) + COALESCE(t.paid_payments, 0) - COALESCE(p.paid_bonuses, 0))::numeric as actual,
