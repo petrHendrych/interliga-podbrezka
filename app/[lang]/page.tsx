@@ -1,15 +1,21 @@
 import Link from 'next/link';
-import { Home as HomeIcon, Bus, Crown } from 'lucide-react';
+import {
+  Home as HomeIcon,
+  Bus,
+  Crown,
+  AlertTriangle,
+} from 'lucide-react';
 import { TEAM_ID } from '@/lib/api';
 import {
   fetchHomeData,
   formatMatchDate,
+  formatDateOnly,
   FetchDataResult,
 } from '@/lib/home-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Locale } from '@/lib/i18n/config';
+import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
 export default async function Home({
@@ -60,7 +66,13 @@ export default async function Home({
     );
   }
 
-  const { upcomingMatches, players, trainers } = data;
+  const {
+    upcomingMatches,
+    players,
+    trainers,
+    bankBalance,
+    nextHomeMatch,
+  } = data;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
@@ -76,7 +88,7 @@ export default async function Home({
                 className="border-[3px] border-amber-500 rounded-xl relative bg-card text-card-foreground p-6 shadow-sm"
               >
                 <div className="absolute -top-3.5 left-6 bg-background px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500 rounded-md z-10">
-                  {dict.home.roundFormat.replace('{round}', String(match.round))}
+                  {interpolate(dict.home.roundFormat, { round: match.round })}
                 </div>
 
                 <div className="flex items-center justify-between gap-4">
@@ -110,7 +122,45 @@ export default async function Home({
         </div>
       )}
 
-      {upcomingMatches.length > 0 && (players.length > 0 || trainers.length > 0) && (
+      {bankBalance && (
+        <Card className="mb-8 border-primary/20 bg-primary/5">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.actualBalance}</p>
+                <p className={`text-3xl font-bold ${bankBalance.actual < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {bankBalance.actual.toFixed(2)}
+                  {' '}
+                  €
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.grandTotal}</p>
+                <p className={`text-3xl font-bold ${bankBalance.total < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {bankBalance.total.toFixed(2)}
+                  {' '}
+                  €
+                </p>
+              </div>
+            </div>
+
+            {nextHomeMatch && (
+              <div className="mt-6 flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium">
+                  {interpolate(
+                    dict.home.bank.nextPickup,
+                    { date: formatDateOnly(nextHomeMatch.startDate, lang) },
+                  )}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {(upcomingMatches.length > 0 || bankBalance)
+        && (players.length > 0 || trainers.length > 0) && (
         <Separator className="my-8" />
       )}
 
@@ -209,6 +259,12 @@ export default async function Home({
                         {player.firstName}
                         {' '}
                         {player.lastName}
+                        {' '}
+                        <span className="text-muted-foreground font-normal text-base">
+                          (
+                          {player.stats.matchesCount}
+                          )
+                        </span>
                       </h2>
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">

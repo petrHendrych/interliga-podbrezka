@@ -18,7 +18,13 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
-    "zeroMisses": "0 hiba"
+    "zeroMisses": "0 hiba",
+    "bank": {
+      "title": "Csapat bank",
+      "actualBalance": "Jelenlegi készpénz",
+      "grandTotal": "Mindösszesen (beleértve a kifizetetleneket is)",
+      "nextPickup": "Következő pénzfelvétel: {date}"
+    }
   },
   "common": {
     "loading": "Betöltés...",
@@ -50,16 +56,36 @@
     }
   },
   "playerDetail": {
-    "totalPayment": "Összesen kifizetve",
-    "unpaid": "Kifizetetlen",
-    "totalFaults": "Összes hiba",
+    "totalPayment": "Összesen kifizetve: {amount} €",
+    "unpaid": "Kifizetetlen: {amount} €",
+    "bonuses": "Bónuszok: {amount} €",
+    "totalFaults": "Összes hiba: {count}",
     "matchResults": "Mérkőzés eredmények",
+    "league": "Bajnokság",
+    "leagueInterliga": "Interliga",
+    "leagueCup": "Szlovák kupa",
     "date": "Dátum",
     "match": "Mérkőzés",
+    "matchHome": "Podbrezová vs {opponent}",
+    "matchAway": "{opponent} vs Podbrezová",
     "full": "Teli",
     "clean": "Tarolás",
     "total": "Összesen",
     "faults": "Hiba",
+    "fine": "Bírság",
+    "paidStatus": "Kifizetve",
+    "unpaidStatus": "Nincs kifizetve",
+    "noFine": "Nincs bírság",
+    "fineReasons": {
+      "faults": "{count} hiba",
+      "worstPlayer": "leggyengébb játékos",
+      "under600": "600 alatt",
+      "fullFaults": "{count}x telibe hiba",
+      "secondToLastFaults": "{count}x utolsó előtti gurítás",
+      "specialFaults": "{count}x speciális hiba",
+      "streak": "5+ hibátlan mérkőzés sorozat ({count}. mérkőzés)"
+    },
+    "streakBadge": "{count}. hibátlan",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"
   },

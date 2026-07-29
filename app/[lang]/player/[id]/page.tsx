@@ -1,5 +1,10 @@
-import { PlayerDetail, PlayerResult } from '@/lib/api';
-import { getScrapedData } from '@/lib/db-utils';
+import { PlayerDetail } from '@/lib/api';
+import {
+  getScrapedData,
+  getPlayerBalanceByExternalId,
+  getPlayerMatchResultsByExternalId,
+} from '@/lib/db-utils';
+import { formatDateOnly } from '@/lib/home-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -8,8 +13,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { Locale } from '@/lib/i18n/config';
+import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
+import { MatchFineTooltip } from '@/components/MatchFineTooltip';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
@@ -23,9 +29,10 @@ export default async function PlayerDetailPage({ params }: PageProps) {
 
   try {
     // Fetch data from database instead of directly from API
-    const [player, results] = await Promise.all([
+    const [player, balance, matchFines] = await Promise.all([
       getScrapedData<PlayerDetail>('player_detail', playerId),
-      getScrapedData<PlayerResult[]>('player_results', playerId),
+      getPlayerBalanceByExternalId(playerId),
+      getPlayerMatchResultsByExternalId(playerId),
     ]);
 
     if (!player) {
@@ -33,7 +40,22 @@ export default async function PlayerDetailPage({ params }: PageProps) {
     }
 
     const fullName = `${player.firstName} ${player.lastName}`;
-    const totalFaults = results?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
+    const totalFaults = matchFines?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
+
+    const fineLabels = {
+      paidStatus: dict.playerDetail.paidStatus,
+      unpaidStatus: dict.playerDetail.unpaidStatus,
+      noFine: dict.playerDetail.noFine,
+      reasons: {
+        faults: dict.playerDetail.fineReasons.faults,
+        worstPlayer: dict.playerDetail.fineReasons.worstPlayer,
+        under600: dict.playerDetail.fineReasons.under600,
+        fullFaults: dict.playerDetail.fineReasons.fullFaults,
+        secondToLastFaults: dict.playerDetail.fineReasons.secondToLastFaults,
+        specialFaults: dict.playerDetail.fineReasons.specialFaults,
+        streak: dict.playerDetail.fineReasons.streak,
+      },
+    };
 
     return (
       <div className="mx-auto py-8 px-4 max-w-4xl w-full">
@@ -51,20 +73,21 @@ export default async function PlayerDetailPage({ params }: PageProps) {
             </h1>
             <div className="mt-2 text-muted-foreground">
               <p className="text-lg">
-                {dict.playerDetail.totalPayment}
-                : 0 €
+                {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
                 {' '}
                 <span className="text-sm">
                   (
-                  {dict.playerDetail.unpaid}
-                  : 0 €)
+                  {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
+                  )
                 </span>
               </p>
+              {balance.totalBonuses > 0 ? (
+                <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">
+                  {interpolate(dict.playerDetail.bonuses, { amount: balance.totalBonuses })}
+                </p>
+              ) : null}
               <p className="text-lg">
-                {dict.playerDetail.totalFaults}
-                :
-                {' '}
-                {totalFaults}
+                {interpolate(dict.playerDetail.totalFaults, { count: totalFaults })}
               </p>
             </div>
           </div>
@@ -81,37 +104,80 @@ export default async function PlayerDetailPage({ params }: PageProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="whitespace-nowrap">{dict.playerDetail.date}</TableHead>
+                  <TableHead>{dict.playerDetail.league}</TableHead>
                   <TableHead className="min-w-[200px]">{dict.playerDetail.match}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.full}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.clean}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.total}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.faults}</TableHead>
+                  <TableHead className="text-right">{dict.playerDetail.fine}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results && results.length > 0 ? (
-                  results.map((result, index) => (
-                    <TableRow key={result.match?.id || index}>
-                      <TableCell className="whitespace-nowrap">
-                        {result.match?.date ? new Date(result.match.date).toLocaleDateString() : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {result.match?.homeTeam?.club?.name
-                          && result.match?.awayTeam?.club?.name ? (
-                            `${result.match.homeTeam.club.name} vs ${result.match.awayTeam.club.name}`
-                          ) : (
-                            'Tournament / Other'
-                          )}
-                      </TableCell>
-                      <TableCell className="text-right">{result.full ?? '-'}</TableCell>
-                      <TableCell className="text-right">{result.clean ?? '-'}</TableCell>
-                      <TableCell className="text-right font-bold">{result.total ?? '-'}</TableCell>
-                      <TableCell className="text-right">{result.faults ?? '-'}</TableCell>
-                    </TableRow>
-                  ))
+                {matchFines && matchFines.length > 0 ? (
+                  matchFines.map((result, index) => {
+                    const hasFaults = result.faults !== undefined && result.faults !== null;
+                    const isStreak5 = Boolean(result.faultlessStreak >= 5);
+
+                    let faultsContent: React.ReactNode = '-';
+                    if (hasFaults) {
+                      if (isStreak5) {
+                        faultsContent = (
+                          <span className="font-bold text-red-600 dark:text-red-400">
+                            0
+                          </span>
+                        );
+                      } else {
+                        faultsContent = <span>{result.faults}</span>;
+                      }
+                    }
+
+                    let matchName = 'Tournament / Other';
+                    if (result.opponent) {
+                      matchName = result.isHome
+                        ? interpolate(dict.playerDetail.matchHome, { opponent: result.opponent })
+                        : interpolate(dict.playerDetail.matchAway, { opponent: result.opponent });
+                    }
+
+                    return (
+                      <TableRow key={result.matchId || index}>
+                        <TableCell className="whitespace-nowrap">
+                          {result.date ? formatDateOnly(result.date, lang) : '-'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
+                          {result.leagueName === 'Interliga'
+                            ? (dict.playerDetail.leagueInterliga as string)
+                            : (dict.playerDetail.leagueCup as string)}
+                        </TableCell>
+                        <TableCell>
+                          {matchName}
+                        </TableCell>
+                        <TableCell className="text-right">{result.full ?? '-'}</TableCell>
+                        <TableCell className="text-right">{result.clean ?? '-'}</TableCell>
+                        <TableCell className={`text-right font-bold ${result.total && result.total < 600 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                          {result.total ?? '-'}
+                        </TableCell>
+                        <TableCell className="text-right">{faultsContent}</TableCell>
+                        <TableCell className="text-right">
+                          <MatchFineTooltip
+                            calculatedFine={result.calculatedFine}
+                            isPaid={result.isPaid}
+                            faults={result.faults}
+                            isWorstPlayer={result.isWorstPlayer}
+                            isUnder600={result.isUnder600}
+                            fullFaultsCount={result.fullFaultsCount}
+                            secondToLastFaultsCount={result.secondToLastFaultsCount}
+                            specialFaultsCount={result.specialFaultsCount}
+                            faultlessStreak={result.faultlessStreak}
+                            labels={fineLabels}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {dict.playerDetail.noResults}
                     </TableCell>
                   </TableRow>
