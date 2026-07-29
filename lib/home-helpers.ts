@@ -9,6 +9,7 @@ import {
   getScrapedData,
   getTrainersWithStats,
   getPlayerBalances,
+  getTeamBankBalance,
 } from '@/lib/db-utils';
 
 export interface PlayerStats {
@@ -43,6 +44,8 @@ export interface FetchDataResult {
   matchDetail: MatchDetail | null;
   players: PlayerWithStats[];
   trainers: TrainerWithStats[];
+  bankBalance: { actual: number; total: number } | null;
+  nextHomeMatch: MatchListItem | null;
 }
 
 export function parseUtcDate(dateString: string): Date {
@@ -120,8 +123,10 @@ export function formatDateOnly(dateString: string, lang: string): string {
 }
 
 export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
+  const bankBalance = await getTeamBankBalance();
   // 1. Fetch upcoming match list
   let upcomingMatches: MatchListItem[] = [];
+  let nextHomeMatch: MatchListItem | null = null;
   const matchList = await getScrapedData<MatchListItem[]>('match_list', teamId);
 
   if (matchList && matchList.length > 0) {
@@ -140,6 +145,10 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
 
       const now = new Date();
       const startOfToday = getStartOfBratislavaToday(now);
+
+      nextHomeMatch = teamMatches.find(
+        (m) => m.homeId === teamId && m.startDate && parseUtcDate(m.startDate) >= startOfToday,
+      ) || null;
 
       let firstUpcomingIdx = teamMatches.findIndex(
         (m) => m.startDate && parseUtcDate(m.startDate) >= startOfToday,
@@ -179,6 +188,8 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
       matchDetail: null,
       players: [],
       trainers: [],
+      bankBalance,
+      nextHomeMatch,
     };
   }
 
@@ -197,6 +208,8 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
       matchDetail: null,
       players: [],
       trainers: [],
+      bankBalance,
+      nextHomeMatch,
     };
   }
 
@@ -284,5 +297,7 @@ export async function fetchHomeData(teamId: number): Promise<FetchDataResult> {
     matchDetail,
     players: validPlayers,
     trainers,
+    bankBalance,
+    nextHomeMatch,
   };
 }

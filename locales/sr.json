@@ -18,7 +18,13 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
-    "zeroMisses": "0 grešaka"
+    "zeroMisses": "0 grešaka",
+    "bank": {
+      "title": "Timski bank",
+      "actualBalance": "Stvarni novac",
+      "grandTotal": "Ukupan iznos (uključujući neplaćene)",
+      "nextPickup": "Sledeće podizanje novca: {date}"
+    }
   },
   "common": {
     "loading": "Učitavam...",

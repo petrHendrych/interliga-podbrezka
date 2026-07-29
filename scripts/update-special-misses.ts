@@ -9,6 +9,7 @@ async function main() {
     getPlayedMatches,
     getMatchPlayers,
     updatePlayerSpecialMisses,
+    updatePlayerPaymentStatus,
   } = await import('../lib/special-misses');
 
   await ensureSchema();
@@ -60,12 +61,39 @@ async function main() {
     process.exit(0);
   }
 
+  if (args.includes('--update-payment')) {
+    const matchIdIdx = args.indexOf('--match-id');
+    const userIdIdx = args.indexOf('--user-id');
+    const isPaidIdx = args.indexOf('--is-paid');
+    const isBonusPaidIdx = args.indexOf('--is-bonus-paid');
+
+    if (matchIdIdx === -1 || userIdIdx === -1 || isPaidIdx === -1 || isBonusPaidIdx === -1) {
+      console.error(
+        'Error: --match-id, --user-id, --is-paid, and --is-bonus-paid are required',
+      );
+      process.exit(1);
+    }
+
+    const matchId = Number(args[matchIdIdx + 1]);
+    const userId = args[userIdIdx + 1];
+    const isPaid = args[isPaidIdx + 1] === 'true';
+    const isBonusPaid = args[isBonusPaidIdx + 1] === 'true';
+
+    await updatePlayerPaymentStatus(matchId, userId, isPaid, isBonusPaid);
+    console.log(`Successfully updated payment status for player ${userId} in match ${matchId}.`);
+    process.exit(0);
+  }
+
   console.log('Usage:');
   console.log('  npx tsx scripts/update-special-misses.ts --list-matches');
   console.log('  npx tsx scripts/update-special-misses.ts --get-players --match-id <matchId>');
   console.log(
     '  npx tsx scripts/update-special-misses.ts --update-misses '
       + '--match-id <matchId> --user-id <userId> --full-faults <N> --second-to-last-faults <M>',
+  );
+  console.log(
+    '  npx tsx scripts/update-special-misses.ts --update-payment '
+      + '--match-id <matchId> --user-id <userId> --is-paid <true|false> --is-bonus-paid <true|false>',
   );
   process.exit(0);
 }

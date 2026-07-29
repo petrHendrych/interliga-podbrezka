@@ -89,6 +89,7 @@ export async function ensureSchema() {
       calculated_fine NUMERIC DEFAULT 0,
       bonus_received NUMERIC DEFAULT 0,
       is_paid BOOLEAN DEFAULT FALSE,
+      is_bonus_paid BOOLEAN DEFAULT FALSE,
       PRIMARY KEY (match_id, user_id)
     );
   `;
@@ -100,6 +101,7 @@ export async function ensureSchema() {
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS clean INTEGER;`;
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS total INTEGER;`;
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS avg NUMERIC;`;
+  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS is_bonus_paid BOOLEAN DEFAULT FALSE;`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS trainer_payments (
@@ -121,6 +123,8 @@ export async function ensureSchema() {
   await sql`CREATE INDEX IF NOT EXISTS idx_users_external_id ON users(external_player_id);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_match_player_results_user_id ON match_player_results(user_id);`;
 
+  await sql`DROP VIEW IF EXISTS view_user_balances;`;
+
   await sql`
     CREATE OR REPLACE VIEW view_user_balances AS
     WITH player_stats AS (
@@ -129,7 +133,8 @@ export async function ensureSchema() {
         m.season_id,
         SUM(mpr.calculated_fine) as total_fines,
         SUM(mpr.bonus_received) as total_bonuses,
-        SUM(CASE WHEN mpr.is_paid THEN mpr.calculated_fine ELSE 0 END) as paid_fines
+        SUM(CASE WHEN mpr.is_paid THEN mpr.calculated_fine ELSE 0 END) as paid_fines,
+        SUM(CASE WHEN mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END) as paid_bonuses
       FROM match_player_results mpr
       LEFT JOIN matches m ON mpr.match_id = m.external_id
       GROUP BY mpr.user_id, m.season_id
@@ -157,6 +162,7 @@ export async function ensureSchema() {
       us.season_id,
       COALESCE(ps.total_fines, 0) + COALESCE(ts.total_trainer_payments, 0) as total_due,
       COALESCE(ps.total_bonuses, 0) as total_bonuses,
+      COALESCE(ps.paid_bonuses, 0) as paid_bonuses,
       COALESCE(ps.paid_fines, 0) + COALESCE(ts.paid_trainer_payments, 0) as total_paid,
       (COALESCE(ps.total_fines, 0) + COALESCE(ts.total_trainer_payments, 0)) 
       - (COALESCE(ps.paid_fines, 0) + COALESCE(ts.paid_trainer_payments, 0)) as balance
@@ -256,6 +262,7 @@ export async function getTrainersWithStats(): Promise<DBTrainerStats[]> {
 export interface PlayerBalance {
   totalDue: number;
   totalBonuses: number;
+  paidBonuses: number;
   totalPaid: number;
   balance: number;
 }
@@ -265,6 +272,7 @@ export interface PlayerMatchResult {
   calculatedFine: number;
   bonusReceived: number;
   isPaid: boolean;
+  isBonusPaid: boolean;
   faults: number;
   full: number;
   clean: number;
@@ -321,6 +329,7 @@ export async function getPlayerBalanceByExternalId(
     SELECT 
       SUM(total_due)::text as total_due,
       SUM(total_bonuses)::text as total_bonuses,
+      SUM(paid_bonuses)::text as paid_bonuses,
       SUM(total_paid)::text as total_paid,
       SUM(balance)::text as balance
     FROM view_user_balances
@@ -331,6 +340,7 @@ export async function getPlayerBalanceByExternalId(
     return {
       totalDue: 0,
       totalBonuses: 0,
+      paidBonuses: 0,
       totalPaid: 0,
       balance: 0,
     };
@@ -338,6 +348,7 @@ export async function getPlayerBalanceByExternalId(
   return {
     totalDue: Number(rows[0].total_due || 0),
     totalBonuses: Number(rows[0].total_bonuses || 0),
+    paidBonuses: Number(rows[0].paid_bonuses || 0),
     totalPaid: Number(rows[0].total_paid || 0),
     balance: Number(rows[0].balance || 0),
   };
@@ -352,6 +363,7 @@ export async function getPlayerMatchResultsByExternalId(
       mpr.calculated_fine,
       mpr.bonus_received,
       mpr.is_paid,
+      mpr.is_bonus_paid,
       mpr.faults,
       mpr."full",
       mpr.clean,
@@ -400,6 +412,7 @@ export async function getPlayerMatchResultsByExternalId(
       calculatedFine: Number(r.calculated_fine || 0),
       bonusReceived: Number(r.bonus_received || 0),
       isPaid: Boolean(r.is_paid),
+      isBonusPaid: Boolean(r.is_bonus_paid),
       faults: Number(r.faults || 0),
       full: Number(r.full || 0),
       clean: Number(r.clean || 0),
@@ -417,4 +430,33 @@ export async function getPlayerMatchResultsByExternalId(
       leagueName: (r.league_name as string) || null,
     };
   });
+}
+
+export async function getTeamBankBalance(): Promise<{ actual: number; total: number }> {
+  const result = await sql`
+    WITH player_totals AS (
+      SELECT 
+        SUM(CASE WHEN is_paid THEN calculated_fine ELSE 0 END) as paid_fines,
+        SUM(calculated_fine) as all_fines,
+        SUM(CASE WHEN is_bonus_paid THEN bonus_received ELSE 0 END) as paid_bonuses,
+        SUM(bonus_received) as all_bonuses
+      FROM match_player_results
+    ),
+    trainer_totals AS (
+      SELECT
+        SUM(CASE WHEN is_paid THEN amount ELSE 0 END) as paid_payments,
+        SUM(amount) as all_payments
+      FROM trainer_payments
+      WHERE condition_type != 'elite_player'
+    )
+    SELECT 
+      (COALESCE(p.paid_fines, 0) + COALESCE(t.paid_payments, 0) - COALESCE(p.paid_bonuses, 0))::numeric as actual,
+      (COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0) - COALESCE(p.all_bonuses, 0))::numeric as total
+    FROM player_totals p, trainer_totals t
+  `;
+
+  return {
+    actual: Number(result[0].actual || 0),
+    total: Number(result[0].total || 0),
+  };
 }

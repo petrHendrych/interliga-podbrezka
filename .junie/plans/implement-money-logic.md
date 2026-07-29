@@ -16,7 +16,7 @@ Implement money calculation logic according to defined rules for Players, Traine
   - Database view updates (`view_user_balances`) to handle fines, bonuses, trainer payments, paid amounts, and net balances.
   - Updating `fetchHomeData` and player detail page (`app/[lang]/player/[id]/page.tsx`) to display real calculated money totals (total fines, total bonuses, unpaid balances) instead of hardcoded `0 €`.
 - **Out of Scope**:
-  - Manual special fault marking flows (handled separately in `mark-special-misses` skill).
+  - Manual special fault marking flows (handled separately in `manage-match-results-and-payments` skill).
 
 ### Functional Requirements
 - **Player Fines & Bonuses**:

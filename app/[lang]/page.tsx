@@ -1,9 +1,15 @@
 import Link from 'next/link';
-import { Home as HomeIcon, Bus, Crown } from 'lucide-react';
+import {
+  Home as HomeIcon,
+  Bus,
+  Crown,
+  AlertTriangle,
+} from 'lucide-react';
 import { TEAM_ID } from '@/lib/api';
 import {
   fetchHomeData,
   formatMatchDate,
+  formatDateOnly,
   FetchDataResult,
 } from '@/lib/home-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,7 +66,13 @@ export default async function Home({
     );
   }
 
-  const { upcomingMatches, players, trainers } = data;
+  const {
+    upcomingMatches,
+    players,
+    trainers,
+    bankBalance,
+    nextHomeMatch,
+  } = data;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
@@ -110,7 +122,45 @@ export default async function Home({
         </div>
       )}
 
-      {upcomingMatches.length > 0 && (players.length > 0 || trainers.length > 0) && (
+      {bankBalance && (
+        <Card className="mb-8 border-primary/20 bg-primary/5">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              {dict.home.bank.title}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.actualBalance}</p>
+                <p className={`text-3xl font-bold ${bankBalance.actual < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {bankBalance.actual.toFixed(2)}
+                  {' '}
+                  €
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.grandTotal}</p>
+                <p className={`text-3xl font-bold ${bankBalance.total < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {bankBalance.total.toFixed(2)}
+                  {' '}
+                  €
+                </p>
+              </div>
+            </div>
+
+            {nextHomeMatch && (
+              <div className="mt-6 flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium">
+                  {dict.home.bank.nextPickup.replace('{date}', formatDateOnly(nextHomeMatch.startDate, lang))}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {(upcomingMatches.length > 0 || bankBalance)
+        && (players.length > 0 || trainers.length > 0) && (
         <Separator className="my-8" />
       )}
 

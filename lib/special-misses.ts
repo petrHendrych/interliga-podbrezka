@@ -32,6 +32,9 @@ export interface MatchPlayerResult {
   second_to_last_faults_count: number;
   special_faults_count: number;
   calculated_fine: number;
+  bonus_received: number;
+  is_paid: boolean;
+  is_bonus_paid: boolean;
 }
 
 export async function getPlayedMatches(): Promise<PlayedMatch[]> {
@@ -70,7 +73,10 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
       COALESCE(mpr.full_faults_count, 0) as full_faults_count,
       COALESCE(mpr.second_to_last_faults_count, 0) as second_to_last_faults_count,
       COALESCE(mpr.special_faults_count, 0) as special_faults_count,
-      COALESCE(mpr.calculated_fine, 0) as calculated_fine
+      COALESCE(mpr.calculated_fine, 0) as calculated_fine,
+      COALESCE(mpr.bonus_received, 0) as bonus_received,
+      mpr.is_paid,
+      mpr.is_bonus_paid
     FROM match_player_results mpr
     JOIN users u ON mpr.user_id = u.id
     WHERE mpr.match_id = ${matchId}
@@ -89,6 +95,9 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
     second_to_last_faults_count: Number(r.second_to_last_faults_count || 0),
     special_faults_count: Number(r.special_faults_count || 0),
     calculated_fine: Number(r.calculated_fine || 0),
+    bonus_received: Number(r.bonus_received || 0),
+    is_paid: Boolean(r.is_paid),
+    is_bonus_paid: Boolean(r.is_bonus_paid),
   }));
 }
 
@@ -111,6 +120,22 @@ export async function updatePlayerSpecialMisses(
                         (CASE WHEN is_worst_player THEN 1 ELSE 0 END) + 
                         (CASE WHEN is_under_600 THEN 1 ELSE 0 END) +
                         (${totalSpecialFaults} * 5)
+    WHERE match_id = ${matchId} AND user_id = ${userId}
+  `;
+}
+
+export async function updatePlayerPaymentStatus(
+  matchId: number,
+  userId: string,
+  isPaid: boolean,
+  isBonusPaid: boolean,
+): Promise<void> {
+  await autoEnsureSchema();
+  await sql`
+    UPDATE match_player_results
+    SET 
+      is_paid = ${isPaid},
+      is_bonus_paid = ${isBonusPaid}
     WHERE match_id = ${matchId} AND user_id = ${userId}
   `;
 }

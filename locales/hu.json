@@ -18,7 +18,13 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
-    "zeroMisses": "0 hiba"
+    "zeroMisses": "0 hiba",
+    "bank": {
+      "title": "Csapat bank",
+      "actualBalance": "Jelenlegi készpénz",
+      "grandTotal": "Mindösszesen (beleértve a kifizetetleneket is)",
+      "nextPickup": "Következő pénzfelvétel: {date}"
+    }
   },
   "common": {
     "loading": "Betöltés...",

@@ -18,7 +18,13 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
-    "zeroMisses": "0 chýb"
+    "zeroMisses": "0 chyb",
+    "bank": {
+      "title": "Tímová banka",
+      "actualBalance": "Aktuálna hotovosť",
+      "grandTotal": "Celková suma (vrátane nezaplatených)",
+      "nextPickup": "Najbližší výber peňazí: {date}"
+    }
   },
   "common": {
     "loading": "Načítavam...",

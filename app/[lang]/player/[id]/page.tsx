@@ -43,17 +43,17 @@ export default async function PlayerDetailPage({ params }: PageProps) {
     const totalFaults = matchFines?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
 
     const fineLabels = {
-      paidStatus: dict.playerDetail.paidStatus || 'Zaplatené',
-      unpaidStatus: dict.playerDetail.unpaidStatus || 'Nezaplatené',
-      noFine: dict.playerDetail.noFine || 'Bez pokuty',
+      paidStatus: dict.playerDetail.paidStatus,
+      unpaidStatus: dict.playerDetail.unpaidStatus,
+      noFine: dict.playerDetail.noFine,
       reasons: {
-        faults: dict.playerDetail.fineReasons?.faults || '{count} chýb',
-        worstPlayer: dict.playerDetail.fineReasons?.worstPlayer || 'najhorší hráč',
-        under600: dict.playerDetail.fineReasons?.under600 || 'pod 600',
-        fullFaults: dict.playerDetail.fineReasons?.fullFaults || '{count}x chyba do plných',
-        secondToLastFaults: dict.playerDetail.fineReasons?.secondToLastFaults || '{count}x predposledný hod',
-        specialFaults: dict.playerDetail.fineReasons?.specialFaults || '{count}x špeciálna chyba',
-        streak: dict.playerDetail.fineReasons?.streak || 'séria 5+ zápasov bez chyby ({count}. zápas)',
+        faults: dict.playerDetail.fineReasons.faults,
+        worstPlayer: dict.playerDetail.fineReasons.worstPlayer,
+        under600: dict.playerDetail.fineReasons.under600,
+        fullFaults: dict.playerDetail.fineReasons.fullFaults,
+        secondToLastFaults: dict.playerDetail.fineReasons.secondToLastFaults,
+        specialFaults: dict.playerDetail.fineReasons.specialFaults,
+        streak: dict.playerDetail.fineReasons.streak,
       },
     };
 
@@ -92,7 +92,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
               </p>
               {balance.totalBonuses > 0 ? (
                 <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">
-                  {dict.playerDetail.bonuses || 'Bonusy'}
+                  {dict.playerDetail.bonuses}
                   :
                   {' '}
                   {balance.totalBonuses}
@@ -127,7 +127,7 @@ export default async function PlayerDetailPage({ params }: PageProps) {
                   <TableHead className="text-right">{dict.playerDetail.clean}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.total}</TableHead>
                   <TableHead className="text-right">{dict.playerDetail.faults}</TableHead>
-                  <TableHead className="text-right">{dict.playerDetail.fine || 'Pokuta'}</TableHead>
+                  <TableHead className="text-right">{dict.playerDetail.fine}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
