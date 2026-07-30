@@ -2,7 +2,7 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 import sql from './db';
-import { TEAM_ID } from './api';
+import { getAllTeamIds } from './season-config';
 
 export interface SyncMatchData {
   id?: number;
@@ -42,7 +42,9 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
     const homeClubId = data.homeTeam?.club?.id;
     const homeTeamId = data.homeTeam?.id;
     const homeName = data.homeTeam?.club?.name || data.homeTeam?.name || '';
-    const isHome = homeClubId === 649 || homeTeamId === TEAM_ID || homeTeamId === 4844 || homeName.includes('Podbrezová');
+    const isHome = homeClubId === 649
+      || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
+      || homeName.includes('Podbrezová');
 
     const date = data.details?.date || data.startDate || null;
     const seasonId = data.league?.seasonId || null;
@@ -356,8 +358,7 @@ export async function syncAllPlayerResultsSnapshots() {
           const homeTeamId = match.homeTeam?.id;
           const homeName = match.homeTeam?.name || match.homeTeam?.club?.name || '';
           const isHome = homeClubId === 649
-            || homeTeamId === TEAM_ID
-            || homeTeamId === 4844
+            || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
             || homeName.includes('Podbrezová');
 
           const opponentTeam = isHome ? match.awayTeam : match.homeTeam;
@@ -369,7 +370,7 @@ export async function syncAllPlayerResultsSnapshots() {
 
           // Only sync results if the player was playing for Podbrezová in this match
           const playerTeamId = Number(item.teamId);
-          const podbrezovaATeamIds = [TEAM_ID, 4844, 4948];
+          const podbrezovaATeamIds = getAllTeamIds();
           const mainPlayerIds = [170512, 169214, 169215, 170511, 19728, 20299];
 
           const playerTeam = (match.homeTeam?.id === playerTeamId)

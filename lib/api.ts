@@ -1,3 +1,5 @@
+import { DEFAULT_SEASON_ID } from './season-config';
+
 const BASE_URL = 'https://api.vysledky.kolky.sk';
 
 export const TEAM_ID = 5008;
@@ -113,7 +115,7 @@ export async function getMatchDetail(matchId: number) {
   });
 }
 
-export async function getPlayerResults(playerId: number, seasonId: number = 12) {
+export async function getPlayerResults(playerId: number, seasonId: number = DEFAULT_SEASON_ID) {
   const data = await fetchLeagueApi<{ list: PlayerResult[] }>('/player/results', {
     id: playerId,
     seasonId,

@@ -2,15 +2,16 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import {
-  TEAM_ID,
   getTeamResults,
   getMatchDetail,
   getPlayerDetail,
   getPlayerResults,
   getMatchList,
+  PlayerResult,
 } from './api';
 import { ensureSchema, upsertScrapedData, saveSnapshot } from './db-utils';
 import { syncData } from './sync';
+import { getAllTeamIds, SEASONS_CONFIG } from './season-config';
 
 /**
  * Main scraping job that fetches data from the external API and persists it to Neon DB.
@@ -22,27 +23,39 @@ export async function runScrapingJob() {
     // Ensure database table exists
     await ensureSchema();
 
-    // 1. Fetch match list for Podbrezová
-    console.log(`Fetching match list for team ${TEAM_ID}...`);
-    try {
-      const matchList = await getMatchList(TEAM_ID);
-      await upsertScrapedData('match_list', TEAM_ID, matchList);
-      await saveSnapshot('match_list', TEAM_ID, matchList);
-    } catch (error) {
-      console.error(`Failed to fetch match list for team ${TEAM_ID}:`, error);
+    const teamIds = getAllTeamIds();
+    const matchIdsSet = new Set<number>();
+
+    // 1 & 2. Fetch match list and team results for all team IDs across configured seasons
+    for (const teamId of teamIds) {
+      console.log(`Fetching match list for team ${teamId}...`);
+      try {
+        const matchList = await getMatchList(teamId);
+        await upsertScrapedData('match_list', teamId, matchList);
+        await saveSnapshot('match_list', teamId, matchList);
+      } catch (error) {
+        console.error(`Failed to fetch match list for team ${teamId}:`, error);
+      }
+
+      console.log(`Fetching team results for team ${teamId}...`);
+      try {
+        const teamResults = await getTeamResults(teamId);
+        await upsertScrapedData('team_results', teamId, teamResults);
+        await saveSnapshot('team_results', teamId, teamResults);
+        teamResults.forEach((m) => {
+          if (m.matchId) {
+            matchIdsSet.add(m.matchId);
+          }
+        });
+      } catch (error) {
+        console.error(`Failed to fetch team results for team ${teamId}:`, error);
+      }
     }
 
-    // 2. Fetch team results for Podbrezová
-    console.log(`Fetching team results for team ${TEAM_ID}...`);
-    const teamResults = await getTeamResults(TEAM_ID);
-    await upsertScrapedData('team_results', TEAM_ID, teamResults);
-    await saveSnapshot('team_results', TEAM_ID, teamResults);
-
     const playerIds = new Set<number>();
-    const matchIds = teamResults.map((m) => m.matchId).filter(Boolean);
 
-    // 2. Fetch match details and collect player IDs
-    for (const matchId of matchIds) {
+    // 3. Fetch match details and collect player IDs
+    for (const matchId of Array.from(matchIdsSet)) {
       try {
         console.log(`Fetching match detail for ${matchId}...`);
         const matchDetail = await getMatchDetail(matchId);
@@ -50,7 +63,10 @@ export async function runScrapingJob() {
         await saveSnapshot('match_detail', matchId, matchDetail);
 
         // Extract players from Podbrezová lineup in this match
-        const isHome = matchDetail.homeTeam?.club?.id === TEAM_ID;
+        const homeClubId = matchDetail.homeTeam?.club?.id;
+        const homeTeamId = matchDetail.homeTeam?.id;
+        const isHome = (homeClubId && teamIds.includes(homeClubId))
+          || (homeTeamId && teamIds.includes(homeTeamId));
         const teamKey = isHome ? 'home' : 'away';
         const lineup = matchDetail.lineUp?.[teamKey] || [];
 
@@ -69,7 +85,7 @@ export async function runScrapingJob() {
       }
     }
 
-    // 3. Fetch player details and results for all identified players
+    // 4. Fetch player details and results for all identified players across all seasons
     for (const playerId of Array.from(playerIds)) {
       try {
         console.log(`Fetching data for player ${playerId}...`);
@@ -78,9 +94,20 @@ export async function runScrapingJob() {
         await upsertScrapedData('player_detail', playerId, playerDetail);
         await saveSnapshot('player_detail', playerId, playerDetail);
 
-        const playerResults = await getPlayerResults(playerId);
-        await upsertScrapedData('player_results', playerId, playerResults);
-        await saveSnapshot('player_results', playerId, playerResults);
+        const allPlayerResults: PlayerResult[] = [];
+        for (const season of SEASONS_CONFIG) {
+          try {
+            const playerResults = await getPlayerResults(playerId, season.id);
+            if (Array.isArray(playerResults)) {
+              allPlayerResults.push(...playerResults);
+            }
+          } catch (err) {
+            console.error(`Failed to scrape player ${playerId} for season ${season.id}:`, err);
+          }
+        }
+
+        await upsertScrapedData('player_results', playerId, allPlayerResults);
+        await saveSnapshot('player_results', playerId, allPlayerResults);
 
         await new Promise((resolve) => {
           setTimeout(resolve, 500);
