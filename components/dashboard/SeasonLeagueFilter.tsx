@@ -1,6 +1,8 @@
 'use client';
 
+import { useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { SeasonConfig } from '@/lib/season-config';
 
 interface SeasonLeagueFilterProps {
@@ -24,12 +26,14 @@ export function SeasonLeagueFilter({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const handleSeasonChange = (newSeasonId: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('season', newSeasonId);
-    // Keep or reset league key if needed
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
   const handleLeagueChange = (newLeagueKey: string) => {
@@ -38,7 +42,9 @@ export function SeasonLeagueFilter({
     if (!params.has('season')) {
       params.set('season', String(selectedSeasonId));
     }
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
   };
 
   const leagueTabs = [
@@ -48,24 +54,31 @@ export function SeasonLeagueFilter({
   ];
 
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 bg-card border border-border/80 rounded-xl p-3 shadow-sm">
+    <div
+      className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 bg-card border border-border/80 rounded-xl p-3 shadow-sm transition-opacity duration-200 ${
+        isPending ? 'opacity-75' : ''
+      }`}
+    >
       <div className="flex items-center gap-2.5">
-        <label htmlFor="season-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+        <label htmlFor="season-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5">
           {labels.seasonLabel}
           :
         </label>
-        <select
-          id="season-select"
-          value={selectedSeasonId}
-          onChange={(e) => handleSeasonChange(e.target.value)}
-          className="bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors cursor-pointer"
-        >
-          {seasons.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+        <div className="relative flex items-center">
+          <select
+            id="season-select"
+            value={selectedSeasonId}
+            onChange={(e) => handleSeasonChange(e.target.value)}
+            disabled={isPending}
+            className="bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {seasons.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
@@ -75,13 +88,17 @@ export function SeasonLeagueFilter({
             <button
               key={tab.key}
               type="button"
+              disabled={isPending}
               onClick={() => handleLeagueChange(tab.key)}
-              className={`px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap ${
+              className={`inline-flex items-center justify-center px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors hover:cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-80 ${
                 isActive
                   ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
                   : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground font-medium'
               }`}
             >
+              {isPending && isActive && (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-current" />
+              )}
               {tab.label}
             </button>
           );

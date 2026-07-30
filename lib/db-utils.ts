@@ -260,6 +260,32 @@ export async function getScrapedData<T>(type: string, externalId: number): Promi
   }
 }
 
+export async function getScrapedDataBatch<T>(
+  type: string,
+  externalIds: number[],
+): Promise<Map<number, T>> {
+  if (externalIds.length === 0) return new Map();
+
+  try {
+    const results = await sql`
+      SELECT external_id, data FROM scraped_data 
+      WHERE type = ${type} AND external_id = ANY(${externalIds});
+    `;
+
+    const map = new Map<number, T>();
+    results.forEach((row) => {
+      map.set(Number(row.external_id), row.data as T);
+    });
+    return map;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      await ensureSchema();
+      return getScrapedDataBatch(type, externalIds);
+    }
+    throw error;
+  }
+}
+
 export interface DBTrainerStats {
   id: string;
   name: string;

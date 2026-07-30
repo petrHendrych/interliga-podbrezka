@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import {
   MatchListItem,
   TeamResult,
@@ -7,6 +8,7 @@ import {
 } from '@/lib/api';
 import {
   getScrapedData,
+  getScrapedDataBatch,
   getTrainersWithStats,
   getPlayerBalances,
   getTeamBankBalance,
@@ -124,7 +126,7 @@ export function formatDateOnly(dateString: string, lang: string): string {
   }
 }
 
-export async function fetchHomeData(
+async function fetchHomeDataInternal(
   teamId: number = TEAM_ID,
   seasonId: number = DEFAULT_SEASON_ID,
   leagueKey: string = 'all',
@@ -216,31 +218,36 @@ export async function fetchHomeData(
 
   // 3. Fetch player details and season results for all players with balance and played matches
   const playerBalances = await getPlayerBalances(seasonId, leagueKey);
-  const playersWithStats = await Promise.all(
-    playerBalances
-      .filter((b) => b.externalPlayerId !== null && b.matchesCount > 0)
-      .map(async (b) => {
-        const id = b.externalPlayerId!;
-        const detail = await getScrapedData<PlayerDetail>('player_detail', id);
-
-        if (!detail) return null;
-
-        const totalPaid = `${b.totalDue} €`;
-
-        const player: PlayerWithStats = {
-          ...detail,
-          stats: {
-            avg: b.avgScore,
-            max: b.maxScore,
-            misses: b.totalFaults,
-            totalPaid,
-            matchesCount: b.matchesCount,
-          },
-        };
-
-        return player;
-      }),
+  const eligibleBalances = playerBalances.filter(
+    (b) => b.externalPlayerId !== null && b.matchesCount > 0,
   );
+  const externalPlayerIds = eligibleBalances.map((b) => b.externalPlayerId!);
+  const playerDetailsMap = await getScrapedDataBatch<PlayerDetail>(
+    'player_detail',
+    externalPlayerIds,
+  );
+
+  const playersWithStats = eligibleBalances.map((b) => {
+    const id = b.externalPlayerId!;
+    const detail = playerDetailsMap.get(id);
+
+    if (!detail) return null;
+
+    const totalPaid = `${b.totalDue} €`;
+
+    const player: PlayerWithStats = {
+      ...detail,
+      stats: {
+        avg: b.avgScore,
+        max: b.maxScore,
+        misses: b.totalFaults,
+        totalPaid,
+        matchesCount: b.matchesCount,
+      },
+    };
+
+    return player;
+  });
 
   const validPlayers = playersWithStats.filter(
     (p): p is PlayerWithStats => p !== null,
@@ -274,3 +281,16 @@ export async function fetchHomeData(
     nextHomeMatch,
   };
 }
+
+export const fetchHomeData = unstable_cache(
+  async (
+    teamId: number = TEAM_ID,
+    seasonId: number = DEFAULT_SEASON_ID,
+    leagueKey: string = 'all',
+  ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
+  ['home-data'],
+  {
+    revalidate: 60,
+    tags: ['home-data'],
+  },
+);
