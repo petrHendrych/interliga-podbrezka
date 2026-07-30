@@ -4,6 +4,13 @@ import { useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { SeasonConfig } from '@/lib/season-config';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 interface SeasonLeagueFilterProps {
   seasons: SeasonConfig[];
@@ -53,6 +60,11 @@ export function SeasonLeagueFilter({
     { key: 'pohar', label: labels.pohar },
   ];
 
+  const seasonItems = seasons.map((s) => ({
+    value: String(s.id),
+    label: s.name,
+  }));
+
   return (
     <div
       className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 bg-card border border-border/80 rounded-xl p-3 shadow-sm transition-opacity duration-200 ${
@@ -60,25 +72,28 @@ export function SeasonLeagueFilter({
       }`}
     >
       <div className="flex items-center gap-2.5">
-        <label htmlFor="season-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5">
-          {labels.seasonLabel}
-          :
-        </label>
-        <div className="relative flex items-center">
-          <select
-            id="season-select"
-            value={selectedSeasonId}
-            onChange={(e) => handleSeasonChange(e.target.value)}
-            disabled={isPending}
-            className="bg-background border border-input rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-          >
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5">
+          {`${labels.seasonLabel}:`}
+        </span>
+        <Select
+          value={String(selectedSeasonId)}
+          onValueChange={(value) => {
+            if (value) handleSeasonChange(value);
+          }}
+          items={seasonItems}
+          disabled={isPending}
+        >
+          <SelectTrigger className="w-[150px] sm:w-[170px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
             {seasons.map((s) => (
-              <option key={s.id} value={s.id}>
+              <SelectItem key={s.id} value={String(s.id)}>
                 {s.name}
-              </option>
+              </SelectItem>
             ))}
-          </select>
-        </div>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
