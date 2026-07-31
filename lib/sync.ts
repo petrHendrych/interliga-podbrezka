@@ -3,6 +3,7 @@
 /* eslint-disable no-await-in-loop */
 import sql from './db';
 import { getAllTeamIds } from './season-config';
+import { MatchListItem } from './api';
 
 export interface SyncMatchData {
   id?: number;
@@ -527,6 +528,27 @@ export async function syncData() {
 
     for (const snapshot of matchSnapshots) {
       await syncMatch(Number(snapshot.external_id), snapshot.data as SyncMatchData);
+    }
+
+    console.log('Syncing match rounds from match_list snapshots...');
+    const matchListSnapshots = await sql`
+      SELECT data FROM scraped_snapshots
+      WHERE type = 'match_list'
+      ORDER BY scraped_at DESC
+      LIMIT 10;
+    `;
+    for (const snapshot of matchListSnapshots) {
+      const list = snapshot.data as MatchListItem[];
+      if (Array.isArray(list)) {
+        for (const m of list) {
+          if (m.id && m.round) {
+            await sql`
+              UPDATE matches SET round = ${m.round}
+              WHERE external_id = ${m.id} AND round IS NULL;
+            `;
+          }
+        }
+      }
     }
 
     console.log('Syncing player results snapshots...');
