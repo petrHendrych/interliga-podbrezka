@@ -1,8 +1,8 @@
 import { PlayerDetail } from '@/lib/api';
 import {
   getScrapedData,
-  getPlayerBalanceByExternalId,
-  getPlayerMatchResultsByExternalId,
+  getCachedPlayerBalance,
+  getCachedPlayerMatchResults,
 } from '@/lib/db-utils';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
@@ -37,9 +37,9 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
   try {
     // Fetch data from database instead of directly from API
     const [player, balance, matchFines] = await Promise.all([
-      getScrapedData<PlayerDetail>('player_detail', playerId),
-      getPlayerBalanceByExternalId(playerId, selectedSeasonId, selectedLeagueKey),
-      getPlayerMatchResultsByExternalId(playerId, selectedSeasonId, selectedLeagueKey),
+      getScrapedData<PlayerDetail>('player_detail', playerId, ['firstName', 'lastName']),
+      getCachedPlayerBalance(playerId, selectedSeasonId, selectedLeagueKey),
+      getCachedPlayerMatchResults(playerId, selectedSeasonId, selectedLeagueKey),
     ]);
 
     if (!player) {

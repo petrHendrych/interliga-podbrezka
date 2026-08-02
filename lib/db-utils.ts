@@ -1,6 +1,17 @@
 /* eslint-disable no-console */
+import { unstable_cache } from 'next/cache';
 import sql from './db';
 import { DEFAULT_SEASON_ID } from './season-config';
+import { MatchListItem } from './api';
+
+export async function purgeScrapedSnapshots() {
+  try {
+    await sql`TRUNCATE TABLE scraped_snapshots;`;
+    console.log('Successfully purged scraped_snapshots table.');
+  } catch (error) {
+    console.error('Failed to purge scraped_snapshots table:', error);
+  }
+}
 
 export async function ensureSchema() {
   await sql`
@@ -15,7 +26,15 @@ export async function ensureSchema() {
   `;
 
   await sql`
-    CREATE INDEX IF NOT EXISTS idx_scraped_data_type_id ON scraped_data(type, external_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_scraped_data_unique_type_id ON scraped_data(type, external_id);
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS system_status (
+      name TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
   `;
 
   await sql`
@@ -72,6 +91,7 @@ export async function ensureSchema() {
 
   await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS season_id INTEGER;`;
   await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_name TEXT;`;
+  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS round INTEGER;`;
   await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_id INTEGER;`;
 
   await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS team_id INTEGER;`;
@@ -198,6 +218,8 @@ export async function ensureSchema() {
     LEFT JOIN player_stats ps ON us.user_id = ps.user_id AND us.season_id IS NOT DISTINCT FROM ps.season_id
     LEFT JOIN trainer_stats ts ON us.user_id = ts.user_id AND us.season_id IS NOT DISTINCT FROM ts.season_id;
   `;
+
+  await purgeScrapedSnapshots();
 }
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
@@ -207,14 +229,16 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
   }
 
   try {
-    const jsonString = JSON.stringify(data);
+    const payload = typeof data === 'object' && data !== null ? data : { value: data };
+    const jsonString = JSON.stringify(payload);
     await sql`
       INSERT INTO scraped_data (type, external_id, data, updated_at)
       VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW())
       ON CONFLICT (type, external_id)
       DO UPDATE SET 
         data = EXCLUDED.data, 
-        updated_at = NOW();
+        updated_at = NOW()
+      WHERE scraped_data.data IS DISTINCT FROM EXCLUDED.data;
     `;
   } catch (error) {
     console.error(`Failed to upsert ${type} for ID ${externalId}:`, error);
@@ -222,28 +246,85 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
   }
 }
 
-export async function saveSnapshot(type: string, externalId: number, data: unknown) {
-  if (data === undefined) {
-    console.error(`Attempted to save undefined snapshot for ${type}:${externalId}`);
-    return;
-  }
+export async function tryAcquireLock(
+  jobName: string,
+  timeoutMinutes: number = 30,
+): Promise<boolean> {
+  const lockName = `lock:${jobName}`;
+  const now = new Date();
+  const timeoutMs = timeoutMinutes * 60 * 1000;
 
   try {
-    const jsonString = JSON.stringify(data);
-    await sql`
-      INSERT INTO scraped_snapshots (type, external_id, data, scraped_at)
-      VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW());
+    // Check if lock exists and is still valid
+    const existing = await sql`
+      SELECT value, updated_at FROM system_status WHERE name = ${lockName}
     `;
+
+    if (existing.length > 0) {
+      const updatedAt = new Date(existing[0].updated_at);
+      const isExpired = (now.getTime() - updatedAt.getTime()) > timeoutMs;
+
+      if (!isExpired && existing[0].value === 'locked') {
+        console.log(`Lock ${jobName} is already held and not expired.`);
+        return false;
+      }
+    }
+
+    // Acquire or renew lock
+    await sql`
+      INSERT INTO system_status (name, value, updated_at)
+      VALUES (${lockName}, 'locked', NOW())
+      ON CONFLICT (name)
+      DO UPDATE SET 
+        value = 'locked',
+        updated_at = NOW();
+    `;
+    return true;
   } catch (error) {
-    console.error(`Failed to save snapshot for ${type} ID ${externalId}:`, error);
-    throw error;
+    console.error(`Failed to acquire lock for ${jobName}:`, error);
+    return false;
   }
 }
 
-export async function getScrapedData<T>(type: string, externalId: number): Promise<T | null> {
+export async function releaseLock(jobName: string): Promise<void> {
+  const lockName = `lock:${jobName}`;
+  try {
+    await sql`
+      UPDATE system_status 
+      SET value = 'released', updated_at = NOW() 
+      WHERE name = ${lockName}
+    `;
+  } catch (error) {
+    console.error(`Failed to release lock for ${jobName}:`, error);
+  }
+}
+
+/**
+ * @deprecated Snapshot history is deprecated to reduce DB transfer.
+ * Only single latest scrape in `scraped_data` is stored.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function saveSnapshot(type: string, externalId: number, data: unknown) {
+  /* Deprecated no-op */
+}
+
+export async function getScrapedData<T>(
+  type: string,
+  externalId: number,
+  fields?: string[],
+): Promise<T | null> {
   try {
     const results = await sql`
-      SELECT data FROM scraped_data 
+      SELECT 
+        CASE 
+          WHEN ${fields || null} IS NOT NULL AND array_length(${fields || null}::text[], 1) > 0 THEN (
+            SELECT jsonb_object_agg(k, v)
+            FROM jsonb_each(data) as e(k, v)
+            WHERE k = ANY(${fields || null}::text[])
+          )
+          ELSE data
+        END as data
+      FROM scraped_data 
       WHERE type = ${type} AND external_id = ${externalId}
       LIMIT 1;
     `;
@@ -254,7 +335,7 @@ export async function getScrapedData<T>(type: string, externalId: number): Promi
     // If the table doesn't exist, ensure schema and try again
     if (error instanceof Error && error.message.includes('does not exist')) {
       await ensureSchema();
-      return getScrapedData(type, externalId);
+      return getScrapedData(type, externalId, fields);
     }
     throw error;
   }
@@ -263,12 +344,23 @@ export async function getScrapedData<T>(type: string, externalId: number): Promi
 export async function getScrapedDataBatch<T>(
   type: string,
   externalIds: number[],
+  fields?: string[],
 ): Promise<Map<number, T>> {
   if (externalIds.length === 0) return new Map();
 
   try {
     const results = await sql`
-      SELECT external_id, data FROM scraped_data 
+      SELECT 
+        external_id,
+        CASE 
+          WHEN ${fields || null} IS NOT NULL AND array_length(${fields || null}::text[], 1) > 0 THEN (
+            SELECT jsonb_object_agg(k, v)
+            FROM jsonb_each(data) as e(k, v)
+            WHERE k = ANY(${fields || null}::text[])
+          )
+          ELSE data
+        END as data
+      FROM scraped_data 
       WHERE type = ${type} AND external_id = ANY(${externalIds});
     `;
 
@@ -280,7 +372,7 @@ export async function getScrapedDataBatch<T>(
   } catch (error) {
     if (error instanceof Error && error.message.includes('does not exist')) {
       await ensureSchema();
-      return getScrapedDataBatch(type, externalIds);
+      return getScrapedDataBatch(type, externalIds, fields);
     }
     throw error;
   }
@@ -363,6 +455,8 @@ export interface PlayerSeasonBalance {
   externalPlayerId: number | null;
   name: string;
   userId: string;
+  firstName?: string;
+  lastName?: string;
   totalDue: number;
   totalBonuses: number;
   totalPaid: number;
@@ -391,6 +485,8 @@ export async function getPlayerBalances(
       u.external_player_id,
       u.name,
       u.id::text as user_id,
+      sd.data->>'firstName' as first_name,
+      sd.data->>'lastName' as last_name,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_paid,
@@ -414,12 +510,13 @@ export async function getPlayerBalances(
         ELSE 0 
       END::numeric as avg_score
     FROM users u
+    LEFT JOIN scraped_data sd ON sd.type = 'player_detail' AND sd.external_id = u.external_player_id
     LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
     LEFT JOIN matches m ON mpr.match_id = m.external_id 
       AND (m.season_id = ${targetSeasonId})
       ${leagueCondition}
     WHERE u.role = 'player' AND u.is_approved = true
-    GROUP BY u.external_player_id, u.name, u.id
+    GROUP BY u.external_player_id, u.name, u.id, sd.data
     ORDER BY u.name ASC
   `;
 
@@ -427,6 +524,8 @@ export async function getPlayerBalances(
     externalPlayerId: r.external_player_id ? Number(r.external_player_id) : null,
     name: String(r.name || 'Unknown'),
     userId: String(r.user_id),
+    firstName: r.first_name ? String(r.first_name) : undefined,
+    lastName: r.last_name ? String(r.last_name) : undefined,
     totalDue: Number(r.total_due || 0),
     totalBonuses: Number(r.total_bonuses || 0),
     totalPaid: Number(r.total_paid || 0),
@@ -484,6 +583,14 @@ export async function getPlayerBalanceByExternalId(
     balance: Number(rows[0].balance || 0),
   };
 }
+
+export const getCachedPlayerBalance = unstable_cache(
+  async (playerId: number, seasonId: number, leagueKey: string) => (
+    getPlayerBalanceByExternalId(playerId, seasonId, leagueKey)
+  ),
+  ['player-balance'],
+  { revalidate: 60, tags: ['player-balance'] },
+);
 
 export async function getPlayerMatchResultsByExternalId(
   externalPlayerId: number,
@@ -572,6 +679,55 @@ export async function getPlayerMatchResultsByExternalId(
       opponent: (r.opponent as string) || null,
       isHome: r.is_home === null ? null : Boolean(r.is_home),
       leagueName: (r.league_name as string) || null,
+    };
+  });
+}
+
+export const getCachedPlayerMatchResults = unstable_cache(
+  async (playerId: number, seasonId: number, leagueKey: string) => (
+    getPlayerMatchResultsByExternalId(playerId, seasonId, leagueKey)
+  ),
+  ['player-match-results'],
+  { revalidate: 60, tags: ['player-match-results'] },
+);
+
+export async function getMatchesByTeamId(
+  teamId: number,
+  seasonId: number,
+): Promise<MatchListItem[]> {
+  const rows = await sql`
+    SELECT 
+      external_id as id,
+      date as "startDate",
+      opponent,
+      is_home,
+      location,
+      round,
+      team_total_score,
+      opponent_total_score,
+      league_name
+    FROM matches
+    WHERE season_id = ${seasonId}
+    ORDER BY date ASC
+  `;
+
+  return rows.map((r) => {
+    const isHome = Boolean(r.is_home);
+    return {
+      id: Number(r.id),
+      startDate: r.startDate ? new Date(r.startDate as string).toISOString() : '',
+      opponent: String(r.opponent || ''),
+      isHome,
+      location: String(r.location || ''),
+      round: r.round ? Number(r.round) : 0,
+      teamTotalScore: r.team_total_score ? Number(r.team_total_score) : null,
+      opponentTotalScore: r.opponent_total_score ? Number(r.opponent_total_score) : null,
+      leagueName: String(r.league_name || ''),
+      // Map to MatchListItem compatibility
+      homeName: String(isHome ? 'ŠK Železiarne Podbrezová' : r.opponent),
+      awayName: String(isHome ? r.opponent : 'ŠK Železiarne Podbrezová'),
+      homeId: isHome ? teamId : 0,
+      awayId: isHome ? 0 : teamId,
     };
   });
 }

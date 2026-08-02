@@ -7,11 +7,10 @@ import {
   TEAM_ID,
 } from '@/lib/api';
 import {
-  getScrapedData,
-  getScrapedDataBatch,
   getTrainersWithStats,
   getPlayerBalances,
   getTeamBankBalance,
+  getMatchesByTeamId,
 } from '@/lib/db-utils';
 import { DEFAULT_SEASON_ID, getLeagueConfig, getTeamIdsForSeason } from '@/lib/season-config';
 
@@ -137,48 +136,38 @@ async function fetchHomeDataInternal(
     ? (getLeagueConfig(seasonId, leagueKey)?.teamId || teamId)
     : (getTeamIdsForSeason(seasonId)[0] || teamId);
 
-  // 1. Fetch upcoming match list
+  // 1. Fetch match list from database
+  const matchList = await getMatchesByTeamId(effectiveTeamId, seasonId);
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
-  let matchList = await getScrapedData<MatchListItem[]>('match_list', effectiveTeamId);
-  if (!matchList || matchList.length === 0) {
-    matchList = await getScrapedData<MatchListItem[]>('match_list', teamId);
-  }
+  const teamResults: TeamResult[] = [];
 
   if (matchList && matchList.length > 0) {
-    const teamMatches = matchList.filter(
-      (m) => m.homeId === effectiveTeamId
-        || m.awayId === effectiveTeamId
-        || m.homeId === teamId
-        || m.awayId === teamId,
+    const teamMatches = matchList; // Already filtered by season and includes team info
+
+    // Sort matches by date
+    teamMatches.sort((a, b) => {
+      const dateA = a.startDate ? parseUtcDate(a.startDate).getTime() : Infinity;
+      const dateB = b.startDate ? parseUtcDate(b.startDate).getTime() : Infinity;
+      return dateA - dateB;
+    });
+
+    const now = new Date();
+    const startOfToday = getStartOfBratislavaToday(now);
+
+    nextHomeMatch = teamMatches.find(
+      (m) => m.isHome
+        && m.startDate
+        && parseUtcDate(m.startDate) >= startOfToday,
+    ) || null;
+
+    const firstUpcomingIdx = teamMatches.findIndex(
+      (m) => m.startDate && parseUtcDate(m.startDate) >= startOfToday,
     );
 
-    if (teamMatches.length > 0) {
-      teamMatches.sort((a, b) => {
-        const dateA = parseUtcDate(a.startDate).getTime();
-        const dateB = parseUtcDate(b.startDate).getTime();
-        if (Number.isNaN(dateA)) return 1;
-        if (Number.isNaN(dateB)) return -1;
-        return dateA - dateB;
-      });
-
-      const now = new Date();
-      const startOfToday = getStartOfBratislavaToday(now);
-
-      nextHomeMatch = teamMatches.find(
-        (m) => (m.homeId === effectiveTeamId || m.homeId === teamId)
-          && m.startDate
-          && parseUtcDate(m.startDate) >= startOfToday,
-      ) || null;
-
-      let firstUpcomingIdx = teamMatches.findIndex(
-        (m) => m.startDate && parseUtcDate(m.startDate) >= startOfToday,
-      );
-
-      if (firstUpcomingIdx === -1) {
-        firstUpcomingIdx = 0;
-      }
-
+    if (firstUpcomingIdx === -1) {
+      // If no upcoming matches, we don't show any in the upcoming section
+    } else {
       const firstMatch = teamMatches[firstUpcomingIdx];
       upcomingMatches = [firstMatch];
 
@@ -189,54 +178,41 @@ async function fetchHomeDataInternal(
         }
       }
     }
+
+    // Fill teamResults for compatibility (latest matches first)
+    const finishedMatches = [...teamMatches]
+      .filter((m) => m.teamTotalScore !== null)
+      .reverse();
+
+    finishedMatches.forEach((m) => {
+      teamResults.push({
+        id: m.id,
+        matchId: m.id,
+        teamId: effectiveTeamId,
+        date: m.startDate,
+        opponent: m.opponent,
+        isHome: m.isHome,
+        teamScore: m.teamTotalScore,
+        opponentScore: m.opponentTotalScore,
+      } as TeamResult);
+    });
   }
 
   const upcomingMatch = upcomingMatches[0] || null;
-
-  // 2. Fetch team results from database
-  let teamResults = await getScrapedData<TeamResult[]>('team_results', effectiveTeamId);
-  if (!teamResults || teamResults.length === 0) {
-    teamResults = await getScrapedData<TeamResult[]>('team_results', teamId);
-  }
-  if (!teamResults || teamResults.length === 0) {
-    teamResults = await getScrapedData<TeamResult[]>('team_results', 4844);
-  }
-
-  if (!teamResults || teamResults.length === 0) {
-    return {
-      upcomingMatches,
-      upcomingMatch,
-      teamResults: [],
-      latestMatch: null,
-      matchDetail: null,
-      players: [],
-      trainers: [],
-      bankBalance,
-      nextHomeMatch,
-    };
-  }
 
   // 3. Fetch player details and season results for all players with balance and played matches
   const playerBalances = await getPlayerBalances(seasonId, leagueKey);
   const eligibleBalances = playerBalances.filter(
     (b) => b.externalPlayerId !== null && b.matchesCount > 0,
   );
-  const externalPlayerIds = eligibleBalances.map((b) => b.externalPlayerId!);
-  const playerDetailsMap = await getScrapedDataBatch<PlayerDetail>(
-    'player_detail',
-    externalPlayerIds,
-  );
 
   const playersWithStats = eligibleBalances.map((b) => {
-    const id = b.externalPlayerId!;
-    const detail = playerDetailsMap.get(id);
-
-    if (!detail) return null;
-
     const totalPaid = `${b.totalDue} €`;
 
     const player: PlayerWithStats = {
-      ...detail,
+      id: b.externalPlayerId!,
+      firstName: b.firstName || 'Player',
+      lastName: b.lastName || String(b.externalPlayerId),
       stats: {
         avg: b.avgScore,
         max: b.maxScore,
@@ -291,6 +267,6 @@ export const fetchHomeData = unstable_cache(
   ['home-data'],
   {
     revalidate: 60,
-    tags: ['home-data'],
+    tags: ['home-data', 'matches', 'player-balances'],
   },
 );
