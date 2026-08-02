@@ -46,6 +46,10 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
 
 export const DEFAULT_SEASON_ID = 13;
 
+export function isCurrentSeason(seasonId: number): boolean {
+  return seasonId === DEFAULT_SEASON_ID;
+}
+
 export function getSeasonConfig(seasonId: number): SeasonConfig | undefined {
   return SEASONS_CONFIG.find((s) => s.id === seasonId);
 }

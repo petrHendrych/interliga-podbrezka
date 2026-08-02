@@ -12,7 +12,7 @@ import {
   formatDateOnly,
   FetchDataResult,
 } from '@/lib/home-helpers';
-import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
+import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,11 +56,12 @@ export default async function Home({
     );
   }
 
-  const upcomingMatches = data?.upcomingMatches || [];
+  const isCurrent = isCurrentSeason(selectedSeasonId);
+  const upcomingMatches = isCurrent ? (data?.upcomingMatches || []) : [];
   const players = data?.players || [];
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
-  const nextHomeMatch = data?.nextHomeMatch || null;
+  const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
   const hasNoData = !data
     || (upcomingMatches.length === 0

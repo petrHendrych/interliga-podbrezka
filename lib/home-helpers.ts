@@ -12,7 +12,12 @@ import {
   getTeamBankBalance,
   getMatchesByTeamId,
 } from '@/lib/db-utils';
-import { DEFAULT_SEASON_ID, getLeagueConfig, getTeamIdsForSeason } from '@/lib/season-config';
+import {
+  DEFAULT_SEASON_ID,
+  getLeagueConfig,
+  getTeamIdsForSeason,
+  isCurrentSeason,
+} from '@/lib/season-config';
 
 export interface PlayerStats {
   avg: number;
@@ -156,29 +161,29 @@ async function fetchHomeDataInternal(
       return dateA - dateB;
     });
 
-    const now = new Date();
-    const startOfToday = getStartOfBratislavaToday(now);
+    if (isCurrentSeason(seasonId)) {
+      const now = new Date();
+      const startOfToday = getStartOfBratislavaToday(now);
 
-    nextHomeMatch = teamMatches.find(
-      (m) => m.isHome
-        && m.startDate
-        && parseUtcDate(m.startDate) >= startOfToday,
-    ) || null;
+      nextHomeMatch = teamMatches.find(
+        (m) => m.isHome
+          && m.startDate
+          && parseUtcDate(m.startDate) >= startOfToday,
+      ) || null;
 
-    const firstUpcomingIdx = teamMatches.findIndex(
-      (m) => m.startDate && parseUtcDate(m.startDate) >= startOfToday,
-    );
+      const firstUpcomingIdx = teamMatches.findIndex(
+        (m) => m.startDate && parseUtcDate(m.startDate) >= startOfToday,
+      );
 
-    if (firstUpcomingIdx === -1) {
-      // If no upcoming matches, we don't show any in the upcoming section
-    } else {
-      const firstMatch = teamMatches[firstUpcomingIdx];
-      upcomingMatches = [firstMatch];
+      if (firstUpcomingIdx !== -1) {
+        const firstMatch = teamMatches[firstUpcomingIdx];
+        upcomingMatches = [firstMatch];
 
-      const secondMatch = teamMatches[firstUpcomingIdx + 1];
-      if (secondMatch && firstMatch.startDate && secondMatch.startDate) {
-        if (isNextDay(firstMatch.startDate, secondMatch.startDate)) {
-          upcomingMatches.push(secondMatch);
+        const secondMatch = teamMatches[firstUpcomingIdx + 1];
+        if (secondMatch && firstMatch.startDate && secondMatch.startDate) {
+          if (isNextDay(firstMatch.startDate, secondMatch.startDate)) {
+            upcomingMatches.push(secondMatch);
+          }
         }
       }
     }
