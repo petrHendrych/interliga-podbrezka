@@ -82,20 +82,32 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
     `;
 
     // 2. Process Player Results & Auto-Provision Users
+    const externalIds = teamLineup
+      .map((p) => p.player?.id)
+      .filter((id): id is number => id != null);
+    const existingUsers = externalIds.length > 0
+      ? await sql`
+          SELECT id, external_player_id FROM users WHERE external_player_id = ANY(${externalIds})
+        `
+      : [];
+    const userMap = new Map<number, string>();
+    existingUsers.forEach((u) => {
+      userMap.set(Number(u.external_player_id), String(u.id));
+    });
+
     const playerResultsList = [];
 
     for (const p of teamLineup) {
       const externalPlayerId = p.player?.id;
       if (externalPlayerId) {
-        let userId: string;
-        const existingUsers = await sql`SELECT id FROM users WHERE external_player_id = ${externalPlayerId}`;
+        let userId = userMap.get(externalPlayerId);
 
-        if (existingUsers.length > 0) {
-          userId = String(existingUsers[0].id);
-        } else {
+        if (!userId) {
           const playerFirstName = p.player?.firstName || '';
           const playerLastName = p.player?.lastName || '';
-          const name = [playerFirstName, playerLastName].filter(Boolean).join(' ') || p.player?.name || `Player ${externalPlayerId}`;
+          const name = [playerFirstName, playerLastName].filter(Boolean).join(' ')
+            || p.player?.name
+            || `Player ${externalPlayerId}`;
 
           const createdUsers = await sql`
             INSERT INTO users (name, external_player_id, role, is_approved)
@@ -104,6 +116,7 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
             RETURNING id;
           `;
           userId = String(createdUsers[0].id);
+          userMap.set(externalPlayerId, userId);
         }
 
         const full = p.full || 0;
@@ -131,24 +144,44 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
       minTotal = Math.min(...activePlayers.map((p) => p.total));
     }
 
-    for (const pr of playerResultsList) {
-      const isWorstPlayer = pr.total === minTotal && pr.total > 0;
-      const isUnder600 = pr.total < 600 && pr.total > 0;
+    if (playerResultsList.length > 0) {
+      const prRows = playerResultsList.map((pr) => {
+        const isWorstPlayer = pr.total === minTotal && pr.total > 0;
+        const isUnder600 = pr.total < 600 && pr.total > 0;
 
-      let calculatedFine = (pr.faults * (pr.faults + 1)) / 2;
-      if (isWorstPlayer) calculatedFine += 1;
-      if (isUnder600) calculatedFine += 1;
+        let calculatedFine = (pr.faults * (pr.faults + 1)) / 2;
+        if (isWorstPlayer) calculatedFine += 1;
+        if (isUnder600) calculatedFine += 1;
 
-      const bonusReceived = pr.total > 700 ? 30 : 0;
+        const bonusReceived = pr.total > 700 ? 30 : 0;
 
+        return {
+          match_id: matchId,
+          user_id: pr.userId,
+          full: pr.full,
+          clean: pr.clean,
+          total: pr.total,
+          avg: pr.avg,
+          faults: pr.faults,
+          is_worst_player: isWorstPlayer,
+          is_under_600: isUnder600,
+          calculated_fine: calculatedFine,
+          bonus_received: bonusReceived,
+        };
+      });
+
+      const jsonPrRows = JSON.stringify(prRows);
       await sql`
         INSERT INTO match_player_results (
           match_id, user_id, "full", clean, total, avg, faults, 
           is_worst_player, is_under_600, calculated_fine, bonus_received
         )
-        VALUES (
-          ${matchId}, ${pr.userId}, ${pr.full}, ${pr.clean}, ${pr.total}, ${pr.avg}, ${pr.faults},
-          ${isWorstPlayer}, ${isUnder600}, ${calculatedFine}, ${bonusReceived}
+        SELECT 
+          match_id, user_id, "full", clean, total, avg, faults,
+          is_worst_player, is_under_600, calculated_fine, bonus_received
+        FROM jsonb_to_recordset(${jsonPrRows}::jsonb) AS v(
+          match_id bigint, user_id uuid, "full" int, clean int, total int, avg numeric, faults int,
+          is_worst_player boolean, is_under_600 boolean, calculated_fine numeric, bonus_received numeric
         )
         ON CONFLICT (match_id, user_id) DO UPDATE SET
           "full" = EXCLUDED."full",
@@ -158,7 +191,7 @@ export async function syncMatch(matchId: number, data: SyncMatchData) {
           faults = EXCLUDED.faults,
           is_worst_player = EXCLUDED.is_worst_player,
           is_under_600 = EXCLUDED.is_under_600,
-          calculated_fine = ((${pr.faults} * (${pr.faults} + 1)) / 2) + 
+          calculated_fine = ((EXCLUDED.faults * (EXCLUDED.faults + 1)) / 2) + 
                              (CASE WHEN EXCLUDED.is_worst_player THEN 1 ELSE 0 END) + 
                              (CASE WHEN EXCLUDED.is_under_600 THEN 1 ELSE 0 END) +
                              (COALESCE(match_player_results.special_faults_count, 0) * 5),
@@ -248,6 +281,8 @@ export async function recalculateFaultlessStreaks() {
     playerResultsMap.get(userId)!.push(row);
   }
 
+  const updates: Array<{ match_id: number; user_id: string; fine: number }> = [];
+
   for (const [userId, userRows] of playerResultsMap.entries()) {
     let streak = 0;
     for (const r of userRows) {
@@ -266,21 +301,30 @@ export async function recalculateFaultlessStreaks() {
 
       const totalFine = sequentialFine + worstFine + under600Fine + specialFine + streakFine;
 
-      await sql`
-        UPDATE match_player_results
-        SET calculated_fine = ${totalFine}
-        WHERE match_id = ${r.match_id} AND user_id = ${userId};
-      `;
+      updates.push({
+        match_id: Number(r.match_id),
+        user_id: userId,
+        fine: totalFine,
+      });
     }
+  }
+
+  if (updates.length > 0) {
+    const jsonUpdates = JSON.stringify(updates);
+    await sql`
+      UPDATE match_player_results AS m
+      SET calculated_fine = v.fine
+      FROM jsonb_to_recordset(${jsonUpdates}::jsonb) AS v(match_id bigint, user_id uuid, fine numeric)
+      WHERE m.match_id = v.match_id AND m.user_id = v.user_id;
+    `;
   }
 }
 
 export async function syncAllPlayerResultsSnapshots() {
   const playerSnapshots = await sql`
-    SELECT DISTINCT ON (external_id) external_id, data, scraped_at
-    FROM scraped_snapshots
-    WHERE type = 'player_results'
-    ORDER BY external_id, scraped_at DESC;
+    SELECT external_id, data, updated_at as scraped_at
+    FROM scraped_data
+    WHERE type = 'player_results';
   `;
 
   if (playerSnapshots.length === 0) return;
@@ -455,58 +499,79 @@ export async function syncAllPlayerResultsSnapshots() {
     }
   }
 
-  // Upsert matches in concurrent batches
+  // Upsert matches in bulk
   const matchEntries = Array.from(matchesMap.values());
-  const matchBatchSize = 25;
-  for (let i = 0; i < matchEntries.length; i += matchBatchSize) {
-    const chunk = matchEntries.slice(i, i + matchBatchSize);
-    await Promise.all(
-      chunk.map((m) => sql`
-        INSERT INTO matches (external_id, date, opponent, is_home, location, league_name, season_id, updated_at)
-        VALUES (${m.externalId}, ${m.date}, ${m.opponent}, ${m.isHome}, ${m.location}, ${m.leagueName}, ${m.seasonId}, NOW())
-        ON CONFLICT (external_id) DO UPDATE SET
-          date = COALESCE(EXCLUDED.date, matches.date),
-          opponent = COALESCE(EXCLUDED.opponent, matches.opponent),
-          is_home = COALESCE(EXCLUDED.is_home, matches.is_home),
-          location = COALESCE(EXCLUDED.location, matches.location),
-          league_name = COALESCE(EXCLUDED.league_name, matches.league_name),
-          season_id = COALESCE(EXCLUDED.season_id, matches.season_id),
-          updated_at = NOW();
-      `),
-    );
+  if (matchEntries.length > 0) {
+    const matchRows = matchEntries.map((m) => ({
+      external_id: m.externalId,
+      date: m.date,
+      opponent: m.opponent,
+      is_home: m.isHome,
+      location: m.location,
+      league_name: m.leagueName,
+      season_id: m.seasonId,
+    }));
+    const matchJson = JSON.stringify(matchRows);
+    await sql`
+      INSERT INTO matches (external_id, date, opponent, is_home, location, league_name, season_id, updated_at)
+      SELECT external_id, date, opponent, is_home, location, league_name, season_id, NOW()
+      FROM jsonb_to_recordset(${matchJson}::jsonb) AS v(
+        external_id bigint, date timestamp with time zone, opponent text, is_home boolean,
+        location text, league_name text, season_id int
+      )
+      ON CONFLICT (external_id) DO UPDATE SET
+        date = COALESCE(EXCLUDED.date, matches.date),
+        opponent = COALESCE(EXCLUDED.opponent, matches.opponent),
+        is_home = COALESCE(EXCLUDED.is_home, matches.is_home),
+        location = COALESCE(EXCLUDED.location, matches.location),
+        league_name = COALESCE(EXCLUDED.league_name, matches.league_name),
+        season_id = COALESCE(EXCLUDED.season_id, matches.season_id),
+        updated_at = NOW();
+    `;
   }
 
-  // Upsert player results in concurrent batches
-  const prBatchSize = 25;
-  for (let i = 0; i < playerResultsToUpsert.length; i += prBatchSize) {
-    const chunk = playerResultsToUpsert.slice(i, i + prBatchSize);
-    await Promise.all(
-      chunk.map((pr) => sql`
-        INSERT INTO match_player_results (
-          match_id, user_id, "full", clean, total, avg, faults, 
-          is_under_600, calculated_fine, bonus_received, team_id
-        )
-        VALUES (
-          ${pr.matchId}, ${pr.userId}, ${pr.full}, ${pr.clean}, ${pr.total}, ${pr.avg}, ${pr.faults},
-          ${pr.isUnder600},
-          ((${pr.faults} * (${pr.faults} + 1)) / 2) + (CASE WHEN ${pr.isUnder600} THEN 1 ELSE 0 END),
-          ${pr.bonusReceived}, ${pr.teamId}
-        )
-        ON CONFLICT (match_id, user_id) DO UPDATE SET
-          "full" = EXCLUDED."full",
-          clean = EXCLUDED.clean,
-          total = EXCLUDED.total,
-          avg = EXCLUDED.avg,
-          faults = EXCLUDED.faults,
-          is_under_600 = EXCLUDED.is_under_600,
-          calculated_fine = ((${pr.faults} * (${pr.faults} + 1)) / 2) + 
-                             (CASE WHEN match_player_results.is_worst_player THEN 1 ELSE 0 END) + 
-                             (CASE WHEN EXCLUDED.is_under_600 THEN 1 ELSE 0 END) +
-                             (COALESCE(match_player_results.special_faults_count, 0) * 5),
-          bonus_received = EXCLUDED.bonus_received,
-          team_id = EXCLUDED.team_id;
-      `),
-    );
+  // Upsert player results in bulk
+  if (playerResultsToUpsert.length > 0) {
+    const prRows = playerResultsToUpsert.map((pr) => ({
+      match_id: pr.matchId,
+      user_id: pr.userId,
+      full: pr.full,
+      clean: pr.clean,
+      total: pr.total,
+      avg: pr.avg,
+      faults: pr.faults,
+      is_under_600: pr.isUnder600,
+      calculated_fine: ((pr.faults * (pr.faults + 1)) / 2) + (pr.isUnder600 ? 1 : 0),
+      bonus_received: pr.bonusReceived,
+      team_id: pr.teamId,
+    }));
+    const prJson = JSON.stringify(prRows);
+    await sql`
+      INSERT INTO match_player_results (
+        match_id, user_id, "full", clean, total, avg, faults, 
+        is_under_600, calculated_fine, bonus_received, team_id
+      )
+      SELECT 
+        match_id, user_id, "full", clean, total, avg, faults,
+        is_under_600, calculated_fine, bonus_received, team_id
+      FROM jsonb_to_recordset(${prJson}::jsonb) AS v(
+        match_id bigint, user_id uuid, "full" int, clean int, total int, avg numeric,
+        faults int, is_under_600 boolean, calculated_fine numeric, bonus_received numeric, team_id int
+      )
+      ON CONFLICT (match_id, user_id) DO UPDATE SET
+        "full" = EXCLUDED."full",
+        clean = EXCLUDED.clean,
+        total = EXCLUDED.total,
+        avg = EXCLUDED.avg,
+        faults = EXCLUDED.faults,
+        is_under_600 = EXCLUDED.is_under_600,
+        calculated_fine = ((EXCLUDED.faults * (EXCLUDED.faults + 1)) / 2) + 
+                           (CASE WHEN match_player_results.is_worst_player THEN 1 ELSE 0 END) + 
+                           (CASE WHEN EXCLUDED.is_under_600 THEN 1 ELSE 0 END) +
+                           (COALESCE(match_player_results.special_faults_count, 0) * 5),
+        bonus_received = EXCLUDED.bonus_received,
+        team_id = EXCLUDED.team_id;
+    `;
   }
 }
 
@@ -514,28 +579,25 @@ export async function syncAllPlayerResultsSnapshots() {
  * Syncs scraped snapshots into relational tables.
  */
 export async function syncData() {
-  console.log('Starting data sync from snapshots...');
+  console.log('Starting data sync from scraped_data...');
 
   try {
     const matchSnapshots = await sql`
-      SELECT DISTINCT ON (external_id) external_id, data, scraped_at
-      FROM scraped_snapshots
-      WHERE type = 'match_detail'
-      ORDER BY external_id, scraped_at DESC;
+      SELECT external_id, data, updated_at as scraped_at
+      FROM scraped_data
+      WHERE type = 'match_detail';
     `;
 
-    console.log(`Found ${matchSnapshots.length} match snapshots to sync.`);
+    console.log(`Found ${matchSnapshots.length} matches in scraped_data to sync.`);
 
     for (const snapshot of matchSnapshots) {
       await syncMatch(Number(snapshot.external_id), snapshot.data as SyncMatchData);
     }
 
-    console.log('Syncing match rounds from match_list snapshots...');
+    console.log('Syncing match rounds from match_list in scraped_data...');
     const matchListSnapshots = await sql`
-      SELECT data FROM scraped_snapshots
-      WHERE type = 'match_list'
-      ORDER BY scraped_at DESC
-      LIMIT 10;
+      SELECT data FROM scraped_data
+      WHERE type = 'match_list';
     `;
     for (const snapshot of matchListSnapshots) {
       const list = snapshot.data as MatchListItem[];

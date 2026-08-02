@@ -24,6 +24,18 @@ export async function GET(request: Request) {
     }
   }
 
+  const startDate = new Date('2026-09-13T00:00:00Z');
+  const now = new Date();
+
+  if (now < startDate) {
+    console.log(`Periodic cron scraping paused until ${startDate.toISOString()}. Current date: ${now.toISOString()}`);
+    return NextResponse.json({
+      success: true,
+      message: `Scraping paused until ${startDate.toISOString().split('T')[0]}`,
+      timestamp: now.toISOString(),
+    });
+  }
+
   try {
     // Run the scraping job
     await runScrapingJob('cron');

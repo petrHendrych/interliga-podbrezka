@@ -12,7 +12,6 @@ import {
 import {
   ensureSchema,
   upsertScrapedData,
-  saveSnapshot,
   tryAcquireLock,
   releaseLock,
 } from './db-utils';
@@ -44,7 +43,6 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
       try {
         const matchList = await getMatchList(teamId);
         await upsertScrapedData('match_list', teamId, matchList);
-        await saveSnapshot('match_list', teamId, matchList);
       } catch (error) {
         console.error(`Failed to fetch match list for team ${teamId}:`, error);
       }
@@ -53,7 +51,6 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
       try {
         const teamResults = await getTeamResults(teamId);
         await upsertScrapedData('team_results', teamId, teamResults);
-        await saveSnapshot('team_results', teamId, teamResults);
         teamResults.forEach((m) => {
           if (m.matchId) {
             matchIdsSet.add(m.matchId);
@@ -79,7 +76,6 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
           console.log(`Fetching match detail for ${matchId}...`);
           const matchDetail = await getMatchDetail(matchId);
           await upsertScrapedData('match_detail', matchId, matchDetail);
-          await saveSnapshot('match_detail', matchId, matchDetail);
 
           // Extract players from Podbrezová lineup in this match
           const homeClubId = matchDetail.homeTeam?.club?.id;
@@ -119,7 +115,6 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
 
           const playerDetail = await getPlayerDetail(playerId);
           await upsertScrapedData('player_detail', playerId, playerDetail);
-          await saveSnapshot('player_detail', playerId, playerDetail);
 
           const allPlayerResults: PlayerResult[] = [];
           for (const season of SEASONS_CONFIG) {
@@ -134,7 +129,6 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
           }
 
           await upsertScrapedData('player_results', playerId, allPlayerResults);
-          await saveSnapshot('player_results', playerId, allPlayerResults);
         } catch (error) {
           console.error(`Failed to scrape player ${playerId}:`, error);
         }

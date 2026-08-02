@@ -4,6 +4,15 @@ import sql from './db';
 import { DEFAULT_SEASON_ID } from './season-config';
 import { MatchListItem } from './api';
 
+export async function purgeScrapedSnapshots() {
+  try {
+    await sql`TRUNCATE TABLE scraped_snapshots;`;
+    console.log('Successfully purged scraped_snapshots table.');
+  } catch (error) {
+    console.error('Failed to purge scraped_snapshots table:', error);
+  }
+}
+
 export async function ensureSchema() {
   await sql`
     CREATE TABLE IF NOT EXISTS scraped_data (
@@ -209,6 +218,8 @@ export async function ensureSchema() {
     LEFT JOIN player_stats ps ON us.user_id = ps.user_id AND us.season_id IS NOT DISTINCT FROM ps.season_id
     LEFT JOIN trainer_stats ts ON us.user_id = ts.user_id AND us.season_id IS NOT DISTINCT FROM ts.season_id;
   `;
+
+  await purgeScrapedSnapshots();
 }
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
@@ -218,10 +229,7 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
   }
 
   try {
-    const payload = {
-      ...(typeof data === 'object' && data !== null ? data : { value: data }),
-      _scrapedAt: new Date().toISOString(),
-    };
+    const payload = typeof data === 'object' && data !== null ? data : { value: data };
     const jsonString = JSON.stringify(payload);
     await sql`
       INSERT INTO scraped_data (type, external_id, data, updated_at)
@@ -229,7 +237,8 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
       ON CONFLICT (type, external_id)
       DO UPDATE SET 
         data = EXCLUDED.data, 
-        updated_at = NOW();
+        updated_at = NOW()
+      WHERE scraped_data.data IS DISTINCT FROM EXCLUDED.data;
     `;
   } catch (error) {
     console.error(`Failed to upsert ${type} for ID ${externalId}:`, error);
@@ -290,26 +299,13 @@ export async function releaseLock(jobName: string): Promise<void> {
   }
 }
 
+/**
+ * @deprecated Snapshot history is deprecated to reduce DB transfer.
+ * Only single latest scrape in `scraped_data` is stored.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function saveSnapshot(type: string, externalId: number, data: unknown) {
-  if (data === undefined) {
-    console.error(`Attempted to save undefined snapshot for ${type}:${externalId}`);
-    return;
-  }
-
-  try {
-    const payload = {
-      ...(typeof data === 'object' && data !== null ? data : { value: data }),
-      _scrapedAt: new Date().toISOString(),
-    };
-    const jsonString = JSON.stringify(payload);
-    await sql`
-      INSERT INTO scraped_snapshots (type, external_id, data, scraped_at)
-      VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW());
-    `;
-  } catch (error) {
-    console.error(`Failed to save snapshot for ${type} ID ${externalId}:`, error);
-    throw error;
-  }
+  /* Deprecated no-op */
 }
 
 export async function getScrapedData<T>(
