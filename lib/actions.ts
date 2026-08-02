@@ -11,7 +11,7 @@ import { runScrapingJob } from './scraper';
 export async function triggerSync() {
   try {
     console.log('Manual sync triggered via Server Action');
-    await runScrapingJob();
+    await runScrapingJob('manual');
 
     // Revalidate the home page to show updated data
     revalidatePath('/');

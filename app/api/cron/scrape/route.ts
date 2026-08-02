@@ -11,13 +11,22 @@ export async function GET(request: Request) {
 
   // Basic security check to ensure only authorized callers can trigger this
   const isLocal = process.env.NODE_ENV === 'development';
-  if (!isLocal && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response('Unauthorized', { status: 401 });
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!isLocal) {
+    if (!cronSecret) {
+      console.error('CRON_SECRET is not configured in environment variables');
+      return new Response('Cron secret not configured', { status: 500 });
+    }
+
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return new Response('Unauthorized', { status: 401 });
+    }
   }
 
   try {
     // Run the scraping job
-    await runScrapingJob();
+    await runScrapingJob('cron');
 
     return NextResponse.json({
       success: true,

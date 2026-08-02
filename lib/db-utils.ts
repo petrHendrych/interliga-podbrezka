@@ -17,7 +17,15 @@ export async function ensureSchema() {
   `;
 
   await sql`
-    CREATE INDEX IF NOT EXISTS idx_scraped_data_type_id ON scraped_data(type, external_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_scraped_data_unique_type_id ON scraped_data(type, external_id);
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS system_status (
+      name TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
   `;
 
   await sql`
@@ -210,7 +218,11 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
   }
 
   try {
-    const jsonString = JSON.stringify(data);
+    const payload = {
+      ...(typeof data === 'object' && data !== null ? data : { value: data }),
+      _scrapedAt: new Date().toISOString(),
+    };
+    const jsonString = JSON.stringify(payload);
     await sql`
       INSERT INTO scraped_data (type, external_id, data, updated_at)
       VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW())
@@ -225,6 +237,59 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
   }
 }
 
+export async function tryAcquireLock(
+  jobName: string,
+  timeoutMinutes: number = 30,
+): Promise<boolean> {
+  const lockName = `lock:${jobName}`;
+  const now = new Date();
+  const timeoutMs = timeoutMinutes * 60 * 1000;
+
+  try {
+    // Check if lock exists and is still valid
+    const existing = await sql`
+      SELECT value, updated_at FROM system_status WHERE name = ${lockName}
+    `;
+
+    if (existing.length > 0) {
+      const updatedAt = new Date(existing[0].updated_at);
+      const isExpired = (now.getTime() - updatedAt.getTime()) > timeoutMs;
+
+      if (!isExpired && existing[0].value === 'locked') {
+        console.log(`Lock ${jobName} is already held and not expired.`);
+        return false;
+      }
+    }
+
+    // Acquire or renew lock
+    await sql`
+      INSERT INTO system_status (name, value, updated_at)
+      VALUES (${lockName}, 'locked', NOW())
+      ON CONFLICT (name)
+      DO UPDATE SET 
+        value = 'locked',
+        updated_at = NOW();
+    `;
+    return true;
+  } catch (error) {
+    console.error(`Failed to acquire lock for ${jobName}:`, error);
+    return false;
+  }
+}
+
+export async function releaseLock(jobName: string): Promise<void> {
+  const lockName = `lock:${jobName}`;
+  try {
+    await sql`
+      UPDATE system_status 
+      SET value = 'released', updated_at = NOW() 
+      WHERE name = ${lockName}
+    `;
+  } catch (error) {
+    console.error(`Failed to release lock for ${jobName}:`, error);
+  }
+}
+
 export async function saveSnapshot(type: string, externalId: number, data: unknown) {
   if (data === undefined) {
     console.error(`Attempted to save undefined snapshot for ${type}:${externalId}`);
@@ -232,7 +297,11 @@ export async function saveSnapshot(type: string, externalId: number, data: unkno
   }
 
   try {
-    const jsonString = JSON.stringify(data);
+    const payload = {
+      ...(typeof data === 'object' && data !== null ? data : { value: data }),
+      _scrapedAt: new Date().toISOString(),
+    };
+    const jsonString = JSON.stringify(payload);
     await sql`
       INSERT INTO scraped_snapshots (type, external_id, data, scraped_at)
       VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW());
