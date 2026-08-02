@@ -512,7 +512,8 @@ export async function getMatchesByTeamId(
       round,
       team_total_score,
       opponent_total_score,
-      league_name
+      league_name,
+      league_id
     FROM matches
     WHERE season_id = ${seasonId}
     ORDER BY date ASC
@@ -527,9 +528,14 @@ export async function getMatchesByTeamId(
       isHome,
       location: String(r.location || ''),
       round: r.round ? Number(r.round) : 0,
-      teamTotalScore: r.team_total_score ? Number(r.team_total_score) : null,
-      opponentTotalScore: r.opponent_total_score ? Number(r.opponent_total_score) : null,
+      teamTotalScore: r.team_total_score != null
+        ? Number(r.team_total_score)
+        : null,
+      opponentTotalScore: r.opponent_total_score != null
+        ? Number(r.opponent_total_score)
+        : null,
       leagueName: String(r.league_name || ''),
+      leagueId: r.league_id ? Number(r.league_id) : undefined,
       // Map to MatchListItem compatibility
       homeName: String(isHome ? 'ŠK Železiarne Podbrezová' : r.opponent),
       awayName: String(isHome ? r.opponent : 'ŠK Železiarne Podbrezová'),

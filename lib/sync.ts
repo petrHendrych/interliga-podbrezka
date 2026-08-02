@@ -15,7 +15,7 @@ import {
   trainerPayments,
   scrapedData,
 } from './db/schema';
-import { getAllTeamIds } from './season-config';
+import { getAllTeamIds, getSeasonAndLeagueConfig } from './season-config';
 import { MatchListItem } from './api';
 
 export interface SyncMatchData {
@@ -151,6 +151,7 @@ export async function syncAllPlayerResultsSnapshots() {
     location: string | null;
     leagueName: string | null;
     seasonId: number | null;
+    leagueId: number | null;
     updatedAt: Date;
   }>();
 
@@ -220,10 +221,17 @@ export async function syncAllPlayerResultsSnapshots() {
           const opponentTeam = isHome ? match.awayTeam : match.homeTeam;
           const opponent = opponentTeam?.name || opponentTeam?.club?.name || 'Unknown';
           const location = match.hall?.name || null;
-          const leagueName = match.league?.name || null;
-          const seasonId = match.league?.seasonId || null;
 
           const playerTeamId = Number(item.teamId);
+          const config = getSeasonAndLeagueConfig(
+            playerTeamId,
+            match.league?.seasonId,
+            match.league?.name,
+          );
+          const seasonId = config?.seasonId || match.league?.seasonId || null;
+          const leagueId = config?.leagueId || null;
+          const leagueName = config?.leagueName || match.league?.name || null;
+
           const podbrezovaATeamIds = getAllTeamIds();
           const mainPlayerIds = [170512, 169214, 169215, 170511, 19728, 20299];
 
@@ -247,6 +255,7 @@ export async function syncAllPlayerResultsSnapshots() {
                   location,
                   leagueName,
                   seasonId,
+                  leagueId,
                   updatedAt: new Date(),
                 });
               }
@@ -299,6 +308,7 @@ export async function syncAllPlayerResultsSnapshots() {
           location: sql`COALESCE(EXCLUDED.location, matches.location)`,
           leagueName: sql`COALESCE(EXCLUDED.league_name, matches.league_name)`,
           seasonId: sql`COALESCE(EXCLUDED.season_id, matches.season_id)`,
+          leagueId: sql`COALESCE(EXCLUDED.league_id, matches.league_id)`,
           updatedAt: sql`NOW()`,
         },
       });
@@ -418,18 +428,97 @@ export async function syncData() {
     });
 
     // 2. Prepare bulk match rows, match player result rows, and trainer payment rows
-    const matchesToUpsert: Array<{
+    const matchesMapByExtId = new Map<number, {
       externalId: number;
       date: Date | null;
       opponent: string;
       isHome: boolean;
       location: string | null;
-      teamTotalScore: number;
-      opponentTotalScore: number;
+      teamTotalScore: number | null;
+      opponentTotalScore: number | null;
       seasonId: number | null;
       leagueName: string | null;
+      round: number | null;
+      leagueId: number | null;
       updatedAt: Date;
-    }> = [];
+    }>();
+
+    // 2a. First, collect matches from match_list in scraped_data (upcoming matches included)
+    const matchListSnapshots = await db
+      .select({
+        externalId: scrapedData.externalId,
+        data: scrapedData.data,
+      })
+      .from(scrapedData)
+      .where(eq(scrapedData.type, 'match_list'));
+
+    const allPodbrezovaTeamIds = getAllTeamIds();
+
+    for (const snapshot of matchListSnapshots) {
+      const teamId = snapshot.externalId ? Number(snapshot.externalId) : undefined;
+      const list = snapshot.data as MatchListItem[];
+      if (Array.isArray(list)) {
+        for (const m of list) {
+          if (!m.id) continue;
+          const matchId = Number(m.id);
+
+          const homeTeamId = m.homeId ? Number(m.homeId) : undefined;
+          const awayTeamId = m.awayId ? Number(m.awayId) : undefined;
+          const homeName = m.homeName || '';
+          const awayName = m.awayName || '';
+
+          const isHome = (homeTeamId && allPodbrezovaTeamIds.includes(homeTeamId))
+            || (teamId && homeTeamId === teamId)
+            || homeName.includes('Podbrezová') || homeName.includes('Podbrezova');
+
+          const isAway = (awayTeamId && allPodbrezovaTeamIds.includes(awayTeamId))
+            || (teamId && awayTeamId === teamId)
+            || awayName.includes('Podbrezová') || awayName.includes('Podbrezova');
+
+          if (isHome || isAway) {
+            const matchedTeamId = teamId || (isHome ? homeTeamId : awayTeamId);
+            const matchedLeagueId = m.leagueId ? Number(m.leagueId) : undefined;
+            const mLeagueName = typeof m.leagueName === 'string' ? m.leagueName : undefined;
+            const mHallName = typeof m.hallName === 'string' ? m.hallName : null;
+            const config = getSeasonAndLeagueConfig(matchedTeamId, matchedLeagueId, mLeagueName);
+
+            const opponent = isHome ? awayName : homeName;
+            const dateStr = m.startDate || null;
+            const date = dateStr ? new Date(dateStr) : null;
+
+            let teamTotalScore: number | null = null;
+            let opponentTotalScore: number | null = null;
+
+            if (isHome) {
+              teamTotalScore = m.homeTotal !== undefined ? (m.homeTotal as number | null) : null;
+              opponentTotalScore = m.awayTotal !== undefined
+                ? (m.awayTotal as number | null)
+                : null;
+            } else {
+              teamTotalScore = m.awayTotal !== undefined ? (m.awayTotal as number | null) : null;
+              opponentTotalScore = m.homeTotal !== undefined
+                ? (m.homeTotal as number | null)
+                : null;
+            }
+
+            matchesMapByExtId.set(matchId, {
+              externalId: matchId,
+              date,
+              opponent,
+              isHome,
+              location: mHallName,
+              teamTotalScore,
+              opponentTotalScore,
+              seasonId: config?.seasonId || null,
+              leagueName: config?.leagueName || mLeagueName || null,
+              round: m.round ? Number(m.round) : null,
+              leagueId: config?.leagueId || matchedLeagueId || null,
+              updatedAt: new Date(),
+            });
+          }
+        }
+      }
+    }
 
     const prRowsToUpsert: Array<{
       matchId: number;
@@ -467,8 +556,15 @@ export async function syncData() {
 
       const dateStr = data.details?.date || data.startDate || null;
       const date = dateStr ? new Date(dateStr) : null;
-      const seasonId = data.league?.seasonId || null;
-      const leagueName = data.league?.name || null;
+
+      const matchedTeamId = isHome ? homeTeamId : (data.awayTeam?.id || undefined);
+      const matchedLeagueId = (data as unknown as { leagueId?: number }).leagueId;
+      const config = getSeasonAndLeagueConfig(matchedTeamId, matchedLeagueId, data.league?.name);
+
+      const seasonId = config?.seasonId || data.league?.seasonId || null;
+      const leagueName = config?.leagueName || data.league?.name || null;
+      const leagueId = config?.leagueId || matchedLeagueId || null;
+
       const opponentTeam = isHome ? data.awayTeam : data.homeTeam;
       const opponent = opponentTeam?.club?.name || opponentTeam?.name || 'Unknown';
       const location = data.details?.hall?.name || data.hall?.name || null;
@@ -482,20 +578,26 @@ export async function syncData() {
         || [];
 
       const teamTotalScore = data.results?.[teamKey]?.total
-        || teamLineup.reduce((sum, p) => sum + (p.total || 0), 0);
+        || teamLineup.reduce((sum, p) => sum + (p.total || 0), 0)
+        || null;
       const opponentTotalScore = data.results?.[opponentKey]?.total
-        || opponentLineup.reduce((sum, p) => sum + (p.total || 0), 0);
+        || opponentLineup.reduce((sum, p) => sum + (p.total || 0), 0)
+        || null;
 
-      matchesToUpsert.push({
+      const existingMatch = matchesMapByExtId.get(matchId);
+
+      matchesMapByExtId.set(matchId, {
         externalId: matchId,
-        date,
-        opponent,
+        date: date || existingMatch?.date || null,
+        opponent: opponent !== 'Unknown' ? opponent : (existingMatch?.opponent || 'Unknown'),
         isHome,
-        location,
-        teamTotalScore,
-        opponentTotalScore,
-        seasonId,
-        leagueName,
+        location: location || existingMatch?.location || null,
+        teamTotalScore: teamTotalScore || existingMatch?.teamTotalScore || null,
+        opponentTotalScore: opponentTotalScore || existingMatch?.opponentTotalScore || null,
+        seasonId: seasonId || existingMatch?.seasonId || null,
+        leagueName: leagueName || existingMatch?.leagueName || null,
+        round: existingMatch?.round || null,
+        leagueId: leagueId || existingMatch?.leagueId || null,
         updatedAt: new Date(),
       });
 
@@ -555,8 +657,8 @@ export async function syncData() {
 
       for (const trainer of trainers) {
         let scoreBonusAmount = 0;
-        if (teamTotalScore > 3900) scoreBonusAmount = 15;
-        else if (teamTotalScore > 3800) scoreBonusAmount = 10;
+        if (teamTotalScore !== null && teamTotalScore > 3900) scoreBonusAmount = 15;
+        else if (teamTotalScore !== null && teamTotalScore > 3800) scoreBonusAmount = 10;
 
         if (scoreBonusAmount > 0) {
           trainerPaymentsToUpsert.push({
@@ -590,6 +692,8 @@ export async function syncData() {
       }
     }
 
+    const matchesToUpsert = Array.from(matchesMapByExtId.values());
+
     // Execute bulk match upsert in 1 query
     if (matchesToUpsert.length > 0) {
       await db
@@ -598,14 +702,16 @@ export async function syncData() {
         .onConflictDoUpdate({
           target: matches.externalId,
           set: {
-            date: sql`EXCLUDED.date`,
-            opponent: sql`EXCLUDED.opponent`,
-            isHome: sql`EXCLUDED.is_home`,
-            location: sql`EXCLUDED.location`,
-            teamTotalScore: sql`EXCLUDED.team_total_score`,
-            opponentTotalScore: sql`EXCLUDED.opponent_total_score`,
-            seasonId: sql`EXCLUDED.season_id`,
-            leagueName: sql`EXCLUDED.league_name`,
+            date: sql`COALESCE(EXCLUDED.date, matches.date)`,
+            opponent: sql`COALESCE(EXCLUDED.opponent, matches.opponent)`,
+            isHome: sql`COALESCE(EXCLUDED.is_home, matches.is_home)`,
+            location: sql`COALESCE(EXCLUDED.location, matches.location)`,
+            teamTotalScore: sql`COALESCE(EXCLUDED.team_total_score, matches.team_total_score)`,
+            opponentTotalScore: sql`COALESCE(EXCLUDED.opponent_total_score, matches.opponent_total_score)`,
+            seasonId: sql`COALESCE(EXCLUDED.season_id, matches.season_id)`,
+            leagueName: sql`COALESCE(EXCLUDED.league_name, matches.league_name)`,
+            round: sql`COALESCE(EXCLUDED.round, matches.round)`,
+            leagueId: sql`COALESCE(EXCLUDED.league_id, matches.league_id)`,
             updatedAt: sql`NOW()`,
           },
         });
@@ -646,43 +752,11 @@ export async function syncData() {
         });
     }
 
-    // 3. Sync match rounds from match_list in 1 query
-    console.log('Syncing match rounds from match_list in scraped_data...');
-    const matchListSnapshots = await db
-      .select({ data: scrapedData.data })
-      .from(scrapedData)
-      .where(eq(scrapedData.type, 'match_list'));
-
-    const roundUpdatesMap = new Map<number, number>();
-    for (const snapshot of matchListSnapshots) {
-      const list = snapshot.data as MatchListItem[];
-      if (Array.isArray(list)) {
-        for (const m of list) {
-          if (m.id && m.round) {
-            roundUpdatesMap.set(m.id, m.round);
-          }
-        }
-      }
-    }
-
-    if (roundUpdatesMap.size > 0) {
-      const roundArray = Array.from(roundUpdatesMap.entries())
-        .map(([id, round]) => ({ id, round }));
-      const jsonRounds = JSON.stringify(roundArray);
-      await db.execute(sql`
-        UPDATE matches AS m
-        SET round = v.round
-        FROM jsonb_to_recordset(${jsonRounds}::jsonb)
-          AS v(id bigint, round int)
-        WHERE m.external_id = v.id AND m.round IS NULL;
-      `);
-    }
-
-    // 4. Sync player_results snapshots in bulk
+    // 3. Sync player_results snapshots in bulk
     console.log('Syncing player results snapshots...');
     await syncAllPlayerResultsSnapshots();
 
-    // 5. Recalculate faultless streaks in 1 query
+    // 4. Recalculate faultless streaks in 1 query
     console.log('Recalculating faultless streaks...');
     await recalculateFaultlessStreaks();
 

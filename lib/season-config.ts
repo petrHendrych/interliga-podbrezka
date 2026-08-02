@@ -71,3 +71,46 @@ export function getTeamIdsForSeason(seasonId: number): number[] {
   if (!season) return [];
   return season.leagues.map((l) => l.teamId);
 }
+
+export function getSeasonAndLeagueConfig(
+  teamId?: number,
+  leagueId?: number,
+  leagueName?: string,
+): { seasonId: number; leagueId: number; leagueName: string } | null {
+  const allLeagues = SEASONS_CONFIG.flatMap((season) => (
+    season.leagues.map((league) => ({
+      seasonId: season.id,
+      leagueId: league.leagueId,
+      leagueName: league.name,
+      teamId: league.teamId,
+    }))
+  ));
+
+  const matchById = allLeagues.find((l) => (
+    (teamId && l.teamId === teamId)
+    || (leagueId && l.leagueId === leagueId)
+  ));
+
+  if (matchById) {
+    return {
+      seasonId: matchById.seasonId,
+      leagueId: matchById.leagueId,
+      leagueName: matchById.leagueName,
+    };
+  }
+
+  if (leagueName) {
+    const matchByName = allLeagues.find(
+      (l) => l.leagueName.toLowerCase() === leagueName.toLowerCase(),
+    );
+    if (matchByName) {
+      return {
+        seasonId: matchByName.seasonId,
+        leagueId: matchByName.leagueId,
+        leagueName: matchByName.leagueName,
+      };
+    }
+  }
+
+  return null;
+}

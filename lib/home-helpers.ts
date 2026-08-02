@@ -137,7 +137,11 @@ async function fetchHomeDataInternal(
     : (getTeamIdsForSeason(seasonId)[0] || teamId);
 
   // 1. Fetch match list from database
-  const matchList = await getMatchesByTeamId(effectiveTeamId, seasonId);
+  const rawMatchList = await getMatchesByTeamId(effectiveTeamId, seasonId);
+  const targetLeague = leagueKey !== 'all' ? getLeagueConfig(seasonId, leagueKey) : undefined;
+  const matchList = targetLeague
+    ? rawMatchList.filter((m) => !m.leagueId || m.leagueId === targetLeague.leagueId)
+    : rawMatchList;
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
   const teamResults: TeamResult[] = [];
