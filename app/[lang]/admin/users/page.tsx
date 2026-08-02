@@ -1,5 +1,7 @@
 import React from 'react';
-import sql from '@/lib/db';
+import { desc } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { users as usersTable } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import {
   Card, CardHeader, CardTitle, CardContent,
@@ -17,14 +19,20 @@ export default async function AdminUsersPage({
   const { lang } = await params;
   const dict = await getDictionary(lang as Locale);
 
-  const users = await sql`
-    SELECT id, name, email, role, is_approved, created_at
-    FROM users
-    ORDER BY created_at DESC
-  `;
+  const userRows = await db
+    .select({
+      id: usersTable.id,
+      name: usersTable.name,
+      email: usersTable.email,
+      role: usersTable.role,
+      isApproved: usersTable.isApproved,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .orderBy(desc(usersTable.createdAt));
 
-  const pendingUsers = users.filter((u) => !u.is_approved);
-  const approvedUsers = users.filter((u) => u.is_approved);
+  const pendingUsers = userRows.filter((u) => !u.isApproved);
+  const approvedUsers = userRows.filter((u) => u.isApproved);
 
   return (
     <div className="p-4 sm:p-8 space-y-8 max-w-8xl mx-auto">
@@ -50,17 +58,17 @@ export default async function AdminUsersPage({
             ) : (
               <div className="space-y-4">
                 {pendingUsers.map((user) => (
-                  <div key={user.id as string} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                  <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
                     <div>
-                      <p className="font-medium">{user.name as string}</p>
-                      <p className="text-sm text-muted-foreground">{user.email as string}</p>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
                     </div>
                     <div className="flex gap-2">
-                      <form action={approveUser.bind(null, user.id as string)}>
+                      <form action={approveUser.bind(null, user.id)}>
                         <Button type="submit" size="sm">{dict.admin.users.approve}</Button>
                       </form>
                       <DeleteUserButton
-                        userId={user.id as string}
+                        userId={user.id}
                         label={dict.admin.users.reject}
                         variant="destructive"
                         title={dict.admin.users.rejectTitle}
@@ -94,19 +102,19 @@ export default async function AdminUsersPage({
             ) : (
               <div className="space-y-4">
                 {approvedUsers.map((user) => (
-                  <div key={user.id as string} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
+                  <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4">
                     <div>
-                      <p className="font-medium">{user.name as string}</p>
+                      <p className="font-medium">{user.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {user.email as string}
+                        {user.email}
                         {' '}
                         •
-                        {user.role as string}
+                        {user.role}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <DeleteUserButton
-                        userId={user.id as string}
+                        userId={user.id}
                         label={dict.admin.users.remove}
                         variant="ghost"
                         title={dict.admin.users.removeTitle}

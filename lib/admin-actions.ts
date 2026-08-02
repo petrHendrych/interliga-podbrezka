@@ -3,7 +3,9 @@
 /* eslint-disable no-console */
 
 import { revalidatePath } from 'next/cache';
-import sql from './db';
+import { eq } from 'drizzle-orm';
+import { db } from './db';
+import { users } from './db/schema';
 import { getSession } from './session';
 
 export async function approveUser(userId: string) {
@@ -13,9 +15,10 @@ export async function approveUser(userId: string) {
   }
 
   try {
-    await sql`
-      UPDATE users SET is_approved = TRUE WHERE id = ${userId}
-    `;
+    await db
+      .update(users)
+      .set({ isApproved: true })
+      .where(eq(users.id, userId));
     revalidatePath('/admin/users');
   } catch (error) {
     console.error('Failed to approve user:', error);
@@ -34,9 +37,9 @@ export async function deleteUser(userId: string) {
   }
 
   try {
-    await sql`
-      DELETE FROM users WHERE id = ${userId}
-    `;
+    await db
+      .delete(users)
+      .where(eq(users.id, userId));
     revalidatePath('/admin/users');
   } catch (error) {
     console.error('Failed to delete user:', error);

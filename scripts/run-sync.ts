@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 async function main() {
-  console.log('Starting data sync...');
+  console.log('Starting data sync from scraped_data...');
   try {
     const { syncData } = await import('../lib/sync');
     await syncData();

@@ -1,5 +1,6 @@
-import sql from './db';
-import { ensureSchema } from './db-utils';
+import { eq, and } from 'drizzle-orm';
+import { db } from './db';
+import { trainerPayments, users } from './db/schema';
 
 export interface TrainerPayment {
   id: number;
@@ -12,29 +13,28 @@ export interface TrainerPayment {
 }
 
 export async function getMatchTrainerPayments(matchId: number): Promise<TrainerPayment[]> {
-  await ensureSchema();
-  const rows = await sql`
-    SELECT 
-      tp.id,
-      tp.match_id,
-      tp.user_id,
-      u.name as user_name,
-      tp.condition_type,
-      tp.amount,
-      tp.is_paid
-    FROM trainer_payments tp
-    JOIN users u ON tp.user_id = u.id
-    WHERE tp.match_id = ${matchId}
-    ORDER BY u.name ASC
-  `;
+  const rows = await db
+    .select({
+      id: trainerPayments.id,
+      matchId: trainerPayments.matchId,
+      userId: trainerPayments.userId,
+      userName: users.name,
+      conditionType: trainerPayments.conditionType,
+      amount: trainerPayments.amount,
+      isPaid: trainerPayments.isPaid,
+    })
+    .from(trainerPayments)
+    .innerJoin(users, eq(trainerPayments.userId, users.id))
+    .where(eq(trainerPayments.matchId, matchId));
+
   return rows.map((r) => ({
     id: Number(r.id),
-    matchId: Number(r.match_id),
-    userId: String(r.user_id),
-    userName: String(r.user_name),
-    conditionType: String(r.condition_type),
+    matchId: Number(r.matchId),
+    userId: String(r.userId),
+    userName: String(r.userName),
+    conditionType: String(r.conditionType),
     amount: Number(r.amount),
-    isPaid: Boolean(r.is_paid),
+    isPaid: Boolean(r.isPaid),
   }));
 }
 
@@ -42,12 +42,10 @@ export async function updateTrainerPaymentStatus(
   paymentId: number,
   isPaid: boolean,
 ): Promise<void> {
-  await ensureSchema();
-  await sql`
-    UPDATE trainer_payments
-    SET is_paid = ${isPaid}
-    WHERE id = ${paymentId}
-  `;
+  await db
+    .update(trainerPayments)
+    .set({ isPaid })
+    .where(eq(trainerPayments.id, paymentId));
 }
 
 export async function updateTrainerPaymentStatusByKeys(
@@ -56,10 +54,14 @@ export async function updateTrainerPaymentStatusByKeys(
   conditionType: string,
   isPaid: boolean,
 ): Promise<void> {
-  await ensureSchema();
-  await sql`
-    UPDATE trainer_payments
-    SET is_paid = ${isPaid}
-    WHERE match_id = ${matchId} AND user_id = ${userId} AND condition_type = ${conditionType}
-  `;
+  await db
+    .update(trainerPayments)
+    .set({ isPaid })
+    .where(
+      and(
+        eq(trainerPayments.matchId, matchId),
+        eq(trainerPayments.userId, userId),
+        eq(trainerPayments.conditionType, conditionType),
+      ),
+    );
 }

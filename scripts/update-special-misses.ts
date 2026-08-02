@@ -4,7 +4,6 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 async function main() {
-  const { ensureSchema } = await import('../lib/db-utils');
   const {
     getPlayedMatches,
     getMatchPlayers,
@@ -12,7 +11,6 @@ async function main() {
     updatePlayerPaymentStatus,
   } = await import('../lib/special-misses');
 
-  await ensureSchema();
   const args = process.argv.slice(2);
 
   if (args.includes('--list-matches')) {

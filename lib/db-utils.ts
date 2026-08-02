@@ -1,225 +1,25 @@
 /* eslint-disable no-console */
 import { unstable_cache } from 'next/cache';
-import sql from './db';
+import { eq, and, inArray } from 'drizzle-orm';
+import { db, sql } from './db';
+import { scrapedSnapshots, scrapedData, systemStatus } from './db/schema';
 import { DEFAULT_SEASON_ID } from './season-config';
 import { MatchListItem } from './api';
 
 export async function purgeScrapedSnapshots() {
   try {
-    await sql`TRUNCATE TABLE scraped_snapshots;`;
+    await db.delete(scrapedSnapshots);
     console.log('Successfully purged scraped_snapshots table.');
   } catch (error) {
     console.error('Failed to purge scraped_snapshots table:', error);
   }
 }
 
+/**
+ * @deprecated Database schema is managed via Drizzle Kit schema migrations (pnpm db:push).
+ */
 export async function ensureSchema() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS scraped_data (
-      id SERIAL PRIMARY KEY,
-      type TEXT NOT NULL,
-      external_id BIGINT,
-      data JSONB NOT NULL,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(type, external_id)
-    );
-  `;
-
-  await sql`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_scraped_data_unique_type_id ON scraped_data(type, external_id);
-  `;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS system_status (
-      name TEXT PRIMARY KEY,
-      value TEXT,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      name TEXT NOT NULL,
-      email TEXT UNIQUE,
-      password_hash TEXT,
-      is_approved BOOLEAN DEFAULT FALSE,
-      external_player_id BIGINT UNIQUE,
-      role TEXT NOT NULL CHECK (role IN ('player', 'trainer', 'admin')),
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT FALSE;`;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id SERIAL PRIMARY KEY,
-      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-      token TEXT UNIQUE NOT NULL,
-      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS scraped_snapshots (
-      id SERIAL PRIMARY KEY,
-      type TEXT NOT NULL,
-      external_id BIGINT NOT NULL,
-      data JSONB NOT NULL,
-      scraped_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS matches (
-      external_id BIGINT PRIMARY KEY,
-      date TIMESTAMP WITH TIME ZONE,
-      opponent TEXT,
-      is_home BOOLEAN,
-      location TEXT,
-      team_total_score INTEGER,
-      opponent_total_score INTEGER,
-      season_id INTEGER,
-      league_name TEXT,
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-
-  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS season_id INTEGER;`;
-  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_name TEXT;`;
-  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS round INTEGER;`;
-  await sql`ALTER TABLE matches ADD COLUMN IF NOT EXISTS league_id INTEGER;`;
-
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS team_id INTEGER;`;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS match_player_results (
-      match_id BIGINT REFERENCES matches(external_id),
-      user_id UUID REFERENCES users(id),
-      "full" INTEGER,
-      clean INTEGER,
-      total INTEGER,
-      avg NUMERIC,
-      faults INTEGER,
-      special_faults_count INTEGER DEFAULT 0,
-      full_faults_count INTEGER DEFAULT 0,
-      second_to_last_faults_count INTEGER DEFAULT 0,
-      is_worst_player BOOLEAN DEFAULT FALSE,
-      is_under_600 BOOLEAN DEFAULT FALSE,
-      calculated_fine NUMERIC DEFAULT 0,
-      bonus_received NUMERIC DEFAULT 0,
-      is_paid BOOLEAN DEFAULT FALSE,
-      is_bonus_paid BOOLEAN DEFAULT FALSE,
-      team_id INTEGER,
-      PRIMARY KEY (match_id, user_id)
-    );
-  `;
-
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS special_faults_count INTEGER DEFAULT 0;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS full_faults_count INTEGER DEFAULT 0;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS second_to_last_faults_count INTEGER DEFAULT 0;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS "full" INTEGER;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS clean INTEGER;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS total INTEGER;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS avg NUMERIC;`;
-  await sql`ALTER TABLE match_player_results ADD COLUMN IF NOT EXISTS is_bonus_paid BOOLEAN DEFAULT FALSE;`;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS trainer_payments (
-      id SERIAL PRIMARY KEY,
-      match_id BIGINT REFERENCES matches(external_id),
-      user_id UUID REFERENCES users(id),
-      condition_type TEXT NOT NULL CHECK (condition_type IN ('score_bonus', 'zero_faults', 'elite_player')),
-      amount NUMERIC NOT NULL,
-      is_paid BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(match_id, user_id, condition_type)
-    );
-  `;
-
-  await sql`ALTER TABLE trainer_payments DROP CONSTRAINT IF EXISTS trainer_payments_condition_type_check;`;
-  await sql`ALTER TABLE trainer_payments ADD CONSTRAINT trainer_payments_condition_type_check CHECK (condition_type IN ('score_bonus', 'zero_faults', 'elite_player'));`;
-
-  await sql`CREATE INDEX IF NOT EXISTS idx_scraped_snapshots_type_id ON scraped_snapshots(type, external_id);`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_users_external_id ON users(external_player_id);`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_match_player_results_user_id ON match_player_results(user_id);`;
-
-  await sql`DROP VIEW IF EXISTS view_user_balances;`;
-
-  await sql`
-    CREATE OR REPLACE VIEW view_user_balances AS
-    WITH player_stats AS (
-      SELECT 
-        mpr.user_id,
-        m.season_id,
-        SUM(mpr.calculated_fine) as total_fines,
-        SUM(mpr.bonus_received) as total_bonuses,
-        SUM(CASE WHEN mpr.is_paid THEN mpr.calculated_fine ELSE 0 END) as paid_fines,
-        SUM(CASE WHEN mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END) as paid_bonuses,
-        COUNT(mpr.match_id) as matches_count,
-        CASE 
-          WHEN (
-            (CASE WHEN COUNT(CASE WHEN m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
-            COUNT(CASE WHEN m.is_home = false OR m.is_home IS NULL THEN 1 END)
-          ) > 0 THEN (
-            (CASE WHEN COUNT(CASE WHEN m.is_home = true THEN 1 END) > 0 THEN 
-              SUM(CASE WHEN m.is_home = true THEN mpr.total ELSE 0 END)::numeric / COUNT(CASE WHEN m.is_home = true THEN 1 END) 
-            ELSE 0 END) + 
-            SUM(CASE WHEN m.is_home = false OR m.is_home IS NULL THEN mpr.total ELSE 0 END)::numeric
-          ) / (
-            (CASE WHEN COUNT(CASE WHEN m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
-            COUNT(CASE WHEN m.is_home = false OR m.is_home IS NULL THEN 1 END)
-          )
-          ELSE 0 
-        END as avg_score,
-        MAX(mpr.total) as max_score,
-        SUM(mpr.faults) as total_faults
-      FROM match_player_results mpr
-      LEFT JOIN matches m ON mpr.match_id = m.external_id
-      GROUP BY mpr.user_id, m.season_id
-    ),
-    trainer_stats AS (
-      SELECT
-        tp.user_id,
-        m.season_id,
-        SUM(tp.amount) as total_trainer_payments,
-        SUM(CASE WHEN tp.is_paid THEN tp.amount ELSE 0 END) as paid_trainer_payments
-      FROM trainer_payments tp
-      LEFT JOIN matches m ON tp.match_id = m.external_id
-      GROUP BY tp.user_id, m.season_id
-    ),
-    user_seasons AS (
-      SELECT user_id, season_id FROM player_stats
-      UNION
-      SELECT user_id, season_id FROM trainer_stats
-    )
-    SELECT
-      u.id as user_id,
-      u.name,
-      u.role,
-      u.external_player_id,
-      us.season_id,
-      COALESCE(ps.total_fines, 0) + COALESCE(ts.total_trainer_payments, 0) as total_due,
-      COALESCE(ps.total_bonuses, 0) as total_bonuses,
-      COALESCE(ps.paid_bonuses, 0) as paid_bonuses,
-      COALESCE(ps.paid_fines, 0) + COALESCE(ts.paid_trainer_payments, 0) as total_paid,
-      (COALESCE(ps.total_fines, 0) + COALESCE(ts.total_trainer_payments, 0)) 
-      - (COALESCE(ps.paid_fines, 0) + COALESCE(ts.paid_trainer_payments, 0)) as balance,
-      COALESCE(ps.matches_count, 0) as matches_count,
-      COALESCE(ps.avg_score, 0) as avg_score,
-      COALESCE(ps.max_score, 0) as max_score,
-      COALESCE(ps.total_faults, 0) as total_faults
-    FROM users u
-    LEFT JOIN user_seasons us ON u.id = us.user_id
-    LEFT JOIN player_stats ps ON us.user_id = ps.user_id AND us.season_id IS NOT DISTINCT FROM ps.season_id
-    LEFT JOIN trainer_stats ts ON us.user_id = ts.user_id AND us.season_id IS NOT DISTINCT FROM ts.season_id;
-  `;
-
-  await purgeScrapedSnapshots();
+  // No-op: schema is managed declaratively via drizzle-kit
 }
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
@@ -230,16 +30,21 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
 
   try {
     const payload = typeof data === 'object' && data !== null ? data : { value: data };
-    const jsonString = JSON.stringify(payload);
-    await sql`
-      INSERT INTO scraped_data (type, external_id, data, updated_at)
-      VALUES (${type}, ${externalId}, ${jsonString}::jsonb, NOW())
-      ON CONFLICT (type, external_id)
-      DO UPDATE SET 
-        data = EXCLUDED.data, 
-        updated_at = NOW()
-      WHERE scraped_data.data IS DISTINCT FROM EXCLUDED.data;
-    `;
+    await db
+      .insert(scrapedData)
+      .values({
+        type,
+        externalId,
+        data: payload as Record<string, unknown>,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [scrapedData.type, scrapedData.externalId],
+        set: {
+          data: payload as Record<string, unknown>,
+          updatedAt: new Date(),
+        },
+      });
   } catch (error) {
     console.error(`Failed to upsert ${type} for ID ${externalId}:`, error);
     throw error;
@@ -255,13 +60,13 @@ export async function tryAcquireLock(
   const timeoutMs = timeoutMinutes * 60 * 1000;
 
   try {
-    // Check if lock exists and is still valid
-    const existing = await sql`
-      SELECT value, updated_at FROM system_status WHERE name = ${lockName}
-    `;
+    const existing = await db
+      .select({ value: systemStatus.value, updatedAt: systemStatus.updatedAt })
+      .from(systemStatus)
+      .where(eq(systemStatus.name, lockName));
 
-    if (existing.length > 0) {
-      const updatedAt = new Date(existing[0].updated_at);
+    if (existing.length > 0 && existing[0].updatedAt) {
+      const updatedAt = new Date(existing[0].updatedAt);
       const isExpired = (now.getTime() - updatedAt.getTime()) > timeoutMs;
 
       if (!isExpired && existing[0].value === 'locked') {
@@ -270,15 +75,20 @@ export async function tryAcquireLock(
       }
     }
 
-    // Acquire or renew lock
-    await sql`
-      INSERT INTO system_status (name, value, updated_at)
-      VALUES (${lockName}, 'locked', NOW())
-      ON CONFLICT (name)
-      DO UPDATE SET 
-        value = 'locked',
-        updated_at = NOW();
-    `;
+    await db
+      .insert(systemStatus)
+      .values({
+        name: lockName,
+        value: 'locked',
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: systemStatus.name,
+        set: {
+          value: 'locked',
+          updatedAt: now,
+        },
+      });
     return true;
   } catch (error) {
     console.error(`Failed to acquire lock for ${jobName}:`, error);
@@ -289,11 +99,10 @@ export async function tryAcquireLock(
 export async function releaseLock(jobName: string): Promise<void> {
   const lockName = `lock:${jobName}`;
   try {
-    await sql`
-      UPDATE system_status 
-      SET value = 'released', updated_at = NOW() 
-      WHERE name = ${lockName}
-    `;
+    await db
+      .update(systemStatus)
+      .set({ value: 'released', updatedAt: new Date() })
+      .where(eq(systemStatus.name, lockName));
   } catch (error) {
     console.error(`Failed to release lock for ${jobName}:`, error);
   }
@@ -314,29 +123,28 @@ export async function getScrapedData<T>(
   fields?: string[],
 ): Promise<T | null> {
   try {
-    const results = await sql`
-      SELECT 
-        CASE 
-          WHEN ${fields || null} IS NOT NULL AND array_length(${fields || null}::text[], 1) > 0 THEN (
-            SELECT jsonb_object_agg(k, v)
-            FROM jsonb_each(data) as e(k, v)
-            WHERE k = ANY(${fields || null}::text[])
-          )
-          ELSE data
-        END as data
-      FROM scraped_data 
-      WHERE type = ${type} AND external_id = ${externalId}
-      LIMIT 1;
-    `;
+    const results = await db
+      .select({ data: scrapedData.data })
+      .from(scrapedData)
+      .where(and(eq(scrapedData.type, type), eq(scrapedData.externalId, externalId)))
+      .limit(1);
 
     if (results.length === 0) return null;
-    return results[0].data as T;
-  } catch (error) {
-    // If the table doesn't exist, ensure schema and try again
-    if (error instanceof Error && error.message.includes('does not exist')) {
-      await ensureSchema();
-      return getScrapedData(type, externalId, fields);
+    const rawData = results[0].data as Record<string, unknown>;
+
+    if (fields && fields.length > 0 && typeof rawData === 'object' && rawData !== null) {
+      const filtered: Record<string, unknown> = {};
+      fields.forEach((f) => {
+        if (f in rawData) {
+          filtered[f] = rawData[f];
+        }
+      });
+      return filtered as T;
     }
+
+    return rawData as T;
+  } catch (error) {
+    console.error(`Failed to get scraped data for ${type}:${externalId}`, error);
     throw error;
   }
 }
@@ -349,31 +157,30 @@ export async function getScrapedDataBatch<T>(
   if (externalIds.length === 0) return new Map();
 
   try {
-    const results = await sql`
-      SELECT 
-        external_id,
-        CASE 
-          WHEN ${fields || null} IS NOT NULL AND array_length(${fields || null}::text[], 1) > 0 THEN (
-            SELECT jsonb_object_agg(k, v)
-            FROM jsonb_each(data) as e(k, v)
-            WHERE k = ANY(${fields || null}::text[])
-          )
-          ELSE data
-        END as data
-      FROM scraped_data 
-      WHERE type = ${type} AND external_id = ANY(${externalIds});
-    `;
+    const results = await db
+      .select({ externalId: scrapedData.externalId, data: scrapedData.data })
+      .from(scrapedData)
+      .where(and(eq(scrapedData.type, type), inArray(scrapedData.externalId, externalIds)));
 
     const map = new Map<number, T>();
     results.forEach((row) => {
-      map.set(Number(row.external_id), row.data as T);
+      if (row.externalId === null) return;
+      const rawData = row.data as Record<string, unknown>;
+      if (fields && fields.length > 0 && typeof rawData === 'object' && rawData !== null) {
+        const filtered: Record<string, unknown> = {};
+        fields.forEach((f) => {
+          if (f in rawData) {
+            filtered[f] = rawData[f];
+          }
+        });
+        map.set(Number(row.externalId), filtered as T);
+      } else {
+        map.set(Number(row.externalId), rawData as T);
+      }
     });
     return map;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('does not exist')) {
-      await ensureSchema();
-      return getScrapedDataBatch(type, externalIds, fields);
-    }
+    console.error(`Failed to get scraped data batch for ${type}`, error);
     throw error;
   }
 }

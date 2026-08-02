@@ -1,9 +1,6 @@
 /* eslint-disable no-console */
 import * as dotenv from 'dotenv';
 
-import sql from '../lib/db';
-import { hashPassword } from '../lib/auth';
-
 dotenv.config({ path: '.env.local' });
 
 async function main() {
@@ -18,17 +15,29 @@ async function main() {
   console.log(`Creating/Updating admin user: ${email}`);
 
   try {
+    const { db } = await import('../lib/db');
+    const { users } = await import('../lib/db/schema');
+    const { hashPassword } = await import('../lib/auth');
+
     const hashedPassword = await hashPassword(password);
 
-    await sql`
-      INSERT INTO users (name, email, password_hash, role, is_approved)
-      VALUES ('Admin', ${email}, ${hashedPassword}, 'admin', TRUE)
-      ON CONFLICT (email) 
-      DO UPDATE SET 
-        password_hash = EXCLUDED.password_hash,
-        role = 'admin',
-        is_approved = TRUE
-    `;
+    await db
+      .insert(users)
+      .values({
+        name: 'Admin',
+        email,
+        passwordHash: hashedPassword,
+        role: 'admin',
+        isApproved: true,
+      })
+      .onConflictDoUpdate({
+        target: users.email,
+        set: {
+          passwordHash: hashedPassword,
+          role: 'admin',
+          isApproved: true,
+        },
+      });
 
     console.log('Admin user created/updated successfully.');
     process.exit(0);
