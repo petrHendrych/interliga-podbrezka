@@ -1,13 +1,12 @@
 /* eslint-disable no-console */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-continue */
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import {
   matches,
   users,
   matchPlayerResults,
-  trainerPayments,
   scrapedData,
 } from './db/schema';
 import { getAllTeamIds, getSeasonAndLeagueConfig } from './season-config';
@@ -72,12 +71,7 @@ export interface PlayerResultSnapshot {
   };
 }
 
-/**
- * Payloads captured during a scrape run, keyed exactly like `scraped_data.external_id`.
- * Passing these to `syncData` avoids reading the same jsonb blobs straight back out
- * of Neon, which was by far the biggest consumer of the free tier's transfer allowance.
- * They stay untyped so both paths hit the same casts below.
- */
+/** Keyed like `scraped_data.external_id`; untyped so both paths share the casts below. */
 export interface ScrapePayloads {
   matchDetails: Map<number, unknown>;
   matchLists: Map<number, unknown>;
@@ -93,73 +87,111 @@ function toSnapshotRows(payload: Map<number, unknown>): SnapshotRow[] {
   return Array.from(payload, ([externalId, data]) => ({ externalId, data }));
 }
 
-export async function recalculateFaultlessStreaks() {
-  const results = await db
-    .select({
-      matchId: matchPlayerResults.matchId,
-      userId: matchPlayerResults.userId,
-      faults: matchPlayerResults.faults,
-      isWorstPlayer: matchPlayerResults.isWorstPlayer,
-      isUnder600: matchPlayerResults.isUnder600,
-      specialFaultsCount: matchPlayerResults.specialFaultsCount,
-      calculatedFine: matchPlayerResults.calculatedFine,
-      date: matches.date,
-    })
-    .from(matchPlayerResults)
-    .innerJoin(matches, eq(matchPlayerResults.matchId, matches.externalId))
-    .orderBy(
-      matchPlayerResults.userId,
-      sql`COALESCE(${matches.date}, '1970-01-01'::timestamp) ASC`,
-      matchPlayerResults.matchId,
-    );
+/**
+ * Single source of truth for every derived money field (see AGENTS.md).
+ * Sync upserts write raw scores only; admin actions call this afterwards.
+ */
+export async function recalculateDerivedFinancials() {
+  // `grp` increments on each fault, so a run of faultless games shares one group and
+  // its row number is the streak length. Streaks span all seasons, so no filtering.
+  await db.execute(sql`
+    WITH worst AS (
+      SELECT match_id, MIN(total) FILTER (WHERE total > 0) AS min_total
+      FROM match_player_results
+      GROUP BY match_id
+    ),
+    ordered AS (
+      SELECT mpr.match_id, mpr.user_id, mpr.total, mpr.faults, m.date,
+             COALESCE(mpr.special_faults_count, 0) AS sfc,
+             w.min_total,
+             SUM(CASE WHEN COALESCE(mpr.faults, 0) <> 0 THEN 1 ELSE 0 END) OVER (
+               PARTITION BY mpr.user_id
+               ORDER BY COALESCE(m.date, '1970-01-01'), mpr.match_id
+               ROWS UNBOUNDED PRECEDING
+             ) AS grp
+      FROM match_player_results mpr
+      JOIN matches m ON m.external_id = mpr.match_id
+      JOIN worst w ON w.match_id = mpr.match_id
+    ),
+    streaks AS (
+      SELECT *,
+        CASE WHEN COALESCE(faults, 0) = 0 THEN
+          ROW_NUMBER() OVER (
+            PARTITION BY user_id, grp ORDER BY COALESCE(date, '1970-01-01'), match_id
+          ) - CASE WHEN grp = 0 THEN 0 ELSE 1 END
+        ELSE 0 END AS streak
+      FROM ordered
+    )
+    UPDATE match_player_results mpr
+    SET is_worst_player   = (s.total = s.min_total AND s.total > 0),
+        is_under_600      = (s.total < 600 AND s.total > 0),
+        faultless_streak  = s.streak,
+        bonus_received    = CASE WHEN s.total > 700 THEN 40 ELSE 0 END,
+        calculated_fine   = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
+                          + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
+                          + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
+                          + s.sfc * 5
+                          + CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
+    FROM streaks s
+    WHERE mpr.match_id = s.match_id AND mpr.user_id = s.user_id
+  `);
 
-  const playerResultsMap = new Map<string, typeof results>();
-  for (const row of results) {
-    if (!row.userId) continue;
-    const userId = String(row.userId);
-    if (!playerResultsMap.has(userId)) {
-      playerResultsMap.set(userId, []);
-    }
-    playerResultsMap.get(userId)!.push(row);
-  }
+  await db.execute(sql`
+    WITH agg AS (
+      SELECT m.external_id AS match_id, m.team_total_score,
+             COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
+             SUM(mpr.faults) AS team_faults,
+             COUNT(*) FILTER (WHERE mpr.total > 700) AS elite
+      FROM matches m
+      JOIN match_player_results mpr ON mpr.match_id = m.external_id
+      GROUP BY 1, 2
+    ),
+    spec AS (
+      SELECT match_id, 'score_bonus' AS condition_type,
+             CASE WHEN team_total_score > 3900 THEN 15
+                  WHEN team_total_score > 3800 THEN 10 END AS amount
+      FROM agg
+      UNION ALL
+      SELECT match_id, 'zero_faults',
+             CASE WHEN team_faults = 0 AND active >= 6 THEN 10 END
+      FROM agg
+      UNION ALL
+      SELECT match_id, 'elite_player',
+             CASE WHEN elite > 0 THEN elite * 10 END
+      FROM agg
+    )
+    INSERT INTO trainer_payments (match_id, user_id, condition_type, amount)
+    SELECT s.match_id, t.id, s.condition_type, s.amount
+    FROM spec s
+    CROSS JOIN (SELECT id FROM users WHERE role = 'trainer' AND is_approved) t
+    WHERE s.amount IS NOT NULL
+    ON CONFLICT (match_id, user_id, condition_type)
+      DO UPDATE SET amount = EXCLUDED.amount
+  `);
 
-  const updates: Array<{ matchId: number; userId: string; fine: number }> = [];
-
-  for (const [userId, userRows] of playerResultsMap.entries()) {
-    let streak = 0;
-    for (const r of userRows) {
-      const faults = Number(r.faults || 0);
-      if (faults === 0) {
-        streak += 1;
-      } else {
-        streak = 0;
-      }
-
-      const streakFine = streak >= 5 ? 10 : 0;
-      const sequentialFine = (faults * (faults + 1)) / 2;
-      const worstFine = r.isWorstPlayer ? 1 : 0;
-      const under600Fine = r.isUnder600 ? 1 : 0;
-      const specialFine = Number(r.specialFaultsCount || 0) * 5;
-
-      const totalFine = sequentialFine + worstFine + under600Fine + specialFine + streakFine;
-
-      const currentFine = Number(r.calculatedFine || 0);
-      if (r.matchId && currentFine !== totalFine) {
-        updates.push({ matchId: r.matchId, userId, fine: totalFine });
-      }
-    }
-  }
-
-  if (updates.length > 0) {
-    const jsonUpdates = JSON.stringify(updates);
-    await db.execute(sql`
-      UPDATE match_player_results AS m
-      SET calculated_fine = v.fine
-      FROM jsonb_to_recordset(${jsonUpdates}::jsonb)
-        AS v(match_id bigint, user_id uuid, fine numeric)
-      WHERE m.match_id = v.match_id AND m.user_id = v.user_id;
-    `);
-  }
+  // Paid rows are spared so a recalculation cannot erase money that changed hands.
+  await db.execute(sql`
+    DELETE FROM trainer_payments tp
+    WHERE NOT tp.is_paid AND NOT EXISTS (
+      WITH agg AS (
+        SELECT m.external_id AS match_id, m.team_total_score,
+               COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
+               SUM(mpr.faults) AS team_faults,
+               COUNT(*) FILTER (WHERE mpr.total > 700) AS elite
+        FROM matches m
+        JOIN match_player_results mpr ON mpr.match_id = m.external_id
+        GROUP BY 1, 2
+      )
+      SELECT 1 FROM agg
+      WHERE agg.match_id = tp.match_id
+        AND CASE tp.condition_type
+              WHEN 'score_bonus'  THEN agg.team_total_score > 3800
+              WHEN 'zero_faults'  THEN agg.team_faults = 0 AND agg.active >= 6
+              WHEN 'elite_player' THEN agg.elite > 0
+              ELSE true
+            END
+    )
+  `);
 }
 
 export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknown>) {
@@ -207,9 +239,6 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
     total: number;
     avg: string;
     faults: number;
-    isUnder600: boolean;
-    calculatedFine: string;
-    bonusReceived: string;
     teamId: number;
   }>();
 
@@ -249,61 +278,37 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
           const leagueId = config?.leagueId || null;
           const leagueName = config?.leagueName || match.league?.name || null;
 
-          const podbrezovaATeamIds = getAllTeamIds();
-          const mainPlayerIds = [170512, 169214, 169215, 170511, 19728, 20299];
-
-          const playerTeam = (match.homeTeam?.id === playerTeamId)
-            ? match.homeTeam
-            : match.awayTeam;
-          const playerTeamName = playerTeam?.name || playerTeam?.club?.name || '';
-          const isPodbrezovaMatch = playerTeamName.includes('Podbrezová');
-
-          if (isPodbrezovaMatch && matchId) {
-            const isMainPlayer = mainPlayerIds.includes(externalPlayerId);
-            const isATeamMatch = podbrezovaATeamIds.includes(playerTeamId);
-
-            if (isMainPlayer || isATeamMatch) {
-              if (!matchesMap.has(matchId)) {
-                matchesMap.set(matchId, {
-                  externalId: matchId,
-                  date,
-                  opponent,
-                  isHome,
-                  location,
-                  leagueName,
-                  seasonId,
-                  leagueId,
-                  updatedAt: new Date(),
-                });
-              }
-
-              const full = Number(item.full || 0);
-              const clean = Number(item.clean || 0);
-              const total = Number(item.total || 0);
-              const faults = Number(item.faults || 0);
-              const avg = Number(
-                item.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0),
-              );
-
-              const isUnder600 = total < 600 && total > 0;
-              const bonusReceived = total > 700 ? 40 : 0;
-              const calculatedFine = ((faults * (faults + 1)) / 2) + (isUnder600 ? 1 : 0);
-
-              const key = `${matchId}_${userId}`;
-              playerResultsToUpsertMap.set(key, {
-                matchId,
-                userId,
-                full,
-                clean,
-                total,
-                avg: String(avg),
-                faults,
-                isUnder600,
-                calculatedFine: String(calculatedFine),
-                bonusReceived: String(bonusReceived),
-                teamId: playerTeamId,
+          // Team id is the only reliable signal. Matching on club name instead also
+          // caught B-team and youth appearances, which do not belong in the pot.
+          if (matchId && getAllTeamIds().includes(playerTeamId)) {
+            if (!matchesMap.has(matchId)) {
+              matchesMap.set(matchId, {
+                externalId: matchId,
+                date,
+                opponent,
+                isHome,
+                location,
+                leagueName,
+                seasonId,
+                leagueId,
+                updatedAt: new Date(),
               });
             }
+
+            const total = Number(item.total || 0);
+
+            playerResultsToUpsertMap.set(`${matchId}_${userId}`, {
+              matchId,
+              userId,
+              full: Number(item.full || 0),
+              clean: Number(item.clean || 0),
+              total,
+              avg: String(Number(
+                item.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0),
+              )),
+              faults: Number(item.faults || 0),
+              teamId: playerTeamId,
+            });
           }
         }
       }
@@ -345,12 +350,6 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
           total: sql`EXCLUDED.total`,
           avg: sql`EXCLUDED.avg`,
           faults: sql`EXCLUDED.faults`,
-          isUnder600: sql`EXCLUDED.is_under_600`,
-          calculatedFine: sql`((EXCLUDED.faults * (EXCLUDED.faults + 1)) / 2) + 
-            (CASE WHEN match_player_results.is_worst_player THEN 1 ELSE 0 END) + 
-            (CASE WHEN EXCLUDED.is_under_600 THEN 1 ELSE 0 END) +
-            (COALESCE(match_player_results.special_faults_count, 0) * 5)`,
-          bonusReceived: sql`EXCLUDED.bonus_received`,
           teamId: sql`EXCLUDED.team_id`,
         },
       });
@@ -534,23 +533,7 @@ export async function syncData(payloads?: ScrapePayloads) {
       total: number;
       avg: string;
       faults: number;
-      isWorstPlayer: boolean;
-      isUnder600: boolean;
-      calculatedFine: string;
-      bonusReceived: string;
     }> = [];
-
-    const trainerPaymentsToUpsert: Array<{
-      matchId: number;
-      userId: string;
-      conditionType: string;
-      amount: string;
-    }> = [];
-
-    const trainers = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.role, 'trainer'), eq(users.isApproved, true)));
 
     for (const { matchId, data } of matchDataList) {
       const homeClubId = data.homeTeam?.club?.id;
@@ -630,22 +613,7 @@ export async function syncData(payloads?: ScrapePayloads) {
         }
       }
 
-      let minTotal = Infinity;
-      const activePlayers = playerResultsList.filter((p) => p.total > 0);
-      if (activePlayers.length > 0) {
-        minTotal = Math.min(...activePlayers.map((p) => p.total));
-      }
-
       for (const pr of playerResultsList) {
-        const isWorstPlayer = pr.total === minTotal && pr.total > 0;
-        const isUnder600 = pr.total < 600 && pr.total > 0;
-
-        let calculatedFine = (pr.faults * (pr.faults + 1)) / 2;
-        if (isWorstPlayer) calculatedFine += 1;
-        if (isUnder600) calculatedFine += 1;
-
-        const bonusReceived = pr.total > 700 ? 30 : 0;
-
         prRowsToUpsert.push({
           matchId,
           userId: pr.userId,
@@ -654,47 +622,7 @@ export async function syncData(payloads?: ScrapePayloads) {
           total: pr.total,
           avg: String(pr.avg),
           faults: pr.faults,
-          isWorstPlayer,
-          isUnder600,
-          calculatedFine: String(calculatedFine),
-          bonusReceived: String(bonusReceived),
         });
-      }
-
-      for (const trainer of trainers) {
-        let scoreBonusAmount = 0;
-        if (teamTotalScore !== null && teamTotalScore > 3900) scoreBonusAmount = 15;
-        else if (teamTotalScore !== null && teamTotalScore > 3800) scoreBonusAmount = 10;
-
-        if (scoreBonusAmount > 0) {
-          trainerPaymentsToUpsert.push({
-            matchId,
-            userId: trainer.id,
-            conditionType: 'score_bonus',
-            amount: String(scoreBonusAmount),
-          });
-        }
-
-        const teamTotalFaults = playerResultsList.reduce((acc, p) => acc + p.faults, 0);
-        const activePlayersCount = playerResultsList.filter((p) => p.total > 0).length;
-        if (teamTotalFaults === 0 && activePlayersCount >= 6) {
-          trainerPaymentsToUpsert.push({
-            matchId,
-            userId: trainer.id,
-            conditionType: 'zero_faults',
-            amount: '10',
-          });
-        }
-
-        const elitePlayersCount = playerResultsList.filter((p) => p.total > 700).length;
-        if (elitePlayersCount > 0) {
-          trainerPaymentsToUpsert.push({
-            matchId,
-            userId: trainer.id,
-            conditionType: 'elite_player',
-            amount: String(elitePlayersCount * 10),
-          });
-        }
       }
     }
 
@@ -736,35 +664,15 @@ export async function syncData(payloads?: ScrapePayloads) {
             total: sql`EXCLUDED.total`,
             avg: sql`EXCLUDED.avg`,
             faults: sql`EXCLUDED.faults`,
-            isWorstPlayer: sql`EXCLUDED.is_worst_player`,
-            isUnder600: sql`EXCLUDED.is_under_600`,
-            calculatedFine: sql`((EXCLUDED.faults * (EXCLUDED.faults + 1)) / 2) + 
-              (CASE WHEN EXCLUDED.is_worst_player THEN 1 ELSE 0 END) + 
-              (CASE WHEN EXCLUDED.is_under_600 THEN 1 ELSE 0 END) +
-              (COALESCE(match_player_results.special_faults_count, 0) * 5)`,
-            bonusReceived: sql`EXCLUDED.bonus_received`,
           },
         });
     }
 
-    // Execute bulk trainer payments upsert in 1 query
-    if (trainerPaymentsToUpsert.length > 0) {
-      await db
-        .insert(trainerPayments)
-        .values(trainerPaymentsToUpsert)
-        .onConflictDoUpdate({
-          target: [trainerPayments.matchId, trainerPayments.userId, trainerPayments.conditionType],
-          set: { amount: sql`EXCLUDED.amount` },
-        });
-    }
-
-    // 3. Sync player_results snapshots in bulk
     console.log('Syncing player results snapshots...');
     await syncAllPlayerResultsSnapshots(payloads?.playerResults);
 
-    // 4. Recalculate faultless streaks in 1 query
-    console.log('Recalculating faultless streaks...');
-    await recalculateFaultlessStreaks();
+    console.log('Recalculating fines, bonuses and trainer payments...');
+    await recalculateDerivedFinancials();
 
     console.log('Data sync completed successfully.');
   } catch (error) {

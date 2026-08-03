@@ -37,8 +37,7 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
     const teamIds = getAllTeamIds();
     const matchIdsSet = new Set<number>();
 
-    // Everything we scrape is kept in memory and handed to `syncData` directly, so
-    // the sync never has to read these blobs back out of Neon.
+    // Handed to `syncData` directly so it never re-reads these blobs from Neon.
     const payloads: ScrapePayloads = {
       matchDetails: new Map(),
       matchLists: new Map(),
@@ -49,9 +48,7 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
     for (const teamId of teamIds) {
       console.log(`Fetching match list for team ${teamId}...`);
       try {
-        // The endpoint ignores the team id and returns the whole league database
-        // (~23k matches, ~2 MB). Keep only the matches one of our teams plays in,
-        // otherwise we store and re-read megabytes of other clubs' fixtures.
+        // The endpoint ignores the team id and returns the whole league (~23k matches).
         const matchList = (await getMatchList(teamId)).filter(
           (m) => teamIds.includes(Number(m.homeId)) || teamIds.includes(Number(m.awayId)),
         );

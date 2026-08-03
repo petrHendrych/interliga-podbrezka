@@ -36,8 +36,7 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
           data: payload as Record<string, unknown>,
           updatedAt: new Date(),
         },
-        // Skip the rewrite when the payload is unchanged, which is the common case
-        // for finished seasons that get re-scraped every week.
+        // Finished seasons get re-scraped weekly but never change.
         setWhere: drizzleSql`${scrapedData.data} IS DISTINCT FROM EXCLUDED.data`,
       });
   } catch (error) {
@@ -103,17 +102,14 @@ export async function releaseLock(jobName: string): Promise<void> {
   }
 }
 
-/**
- * Reads a `scraped_data` blob. When `fields` is given the projection happens in
- * Postgres, so only those keys cross the wire rather than the whole document.
- */
+/** With `fields`, projects in Postgres so only those keys cross the wire. */
 export async function getScrapedData<T>(
   type: string,
   externalId: number,
   fields?: string[],
 ): Promise<T | null> {
   const projection = fields && fields.length > 0
-    // Keys are parameterised, so callers cannot inject SQL through `fields`.
+    // Keys are parameterised; `fields` cannot inject SQL.
     ? drizzleSql`jsonb_build_object(${drizzleSql.join(
       fields.map((f) => drizzleSql`${f}::text, ${scrapedData.data}->${f}`),
       drizzleSql`, `,
@@ -395,6 +391,7 @@ export async function getPlayerMatchResultsByExternalId(
       COALESCE(mpr.full_faults_count, 0) as full_faults_count,
       COALESCE(mpr.second_to_last_faults_count, 0) as second_to_last_faults_count,
       COALESCE(mpr.special_faults_count, 0) as special_faults_count,
+      COALESCE(mpr.faultless_streak, 0) as faultless_streak,
       m.date,
       m.opponent,
       m.is_home,
@@ -407,26 +404,6 @@ export async function getPlayerMatchResultsByExternalId(
       ${leagueCondition}
     ORDER BY m.date DESC
   `;
-
-  // Calculate faultless streak chronologically
-  const chronologicalRows = [...rows].sort((a, b) => {
-    const timeA = a.date ? new Date(a.date as string | Date).getTime() : 0;
-    const timeB = b.date ? new Date(b.date as string | Date).getTime() : 0;
-    if (timeA !== timeB) return timeA - timeB;
-    return Number(a.match_id) - Number(b.match_id);
-  });
-
-  const streakMap = new Map<number, number>();
-  let currentStreak = 0;
-  chronologicalRows.forEach((r) => {
-    const faults = Number(r.faults || 0);
-    if (faults === 0) {
-      currentStreak += 1;
-    } else {
-      currentStreak = 0;
-    }
-    streakMap.set(Number(r.match_id), currentStreak);
-  });
 
   return rows.map((r) => {
     const matchId = Number(r.match_id);
@@ -446,7 +423,7 @@ export async function getPlayerMatchResultsByExternalId(
       fullFaultsCount: Number(r.full_faults_count || 0),
       secondToLastFaultsCount: Number(r.second_to_last_faults_count || 0),
       specialFaultsCount: Number(r.special_faults_count || 0),
-      faultlessStreak: streakMap.get(matchId) || 0,
+      faultlessStreak: Number(r.faultless_streak || 0),
       date: r.date ? new Date(r.date as string | Date).toISOString() : null,
       opponent: (r.opponent as string) || null,
       isHome: r.is_home === null ? null : Boolean(r.is_home),
@@ -468,8 +445,7 @@ export async function getMatchesByTeamId(
   seasonId: number,
   leagueId?: number,
 ): Promise<MatchListItem[]> {
-  // Matches carrying no league id are kept so a partially synced row is still shown,
-  // mirroring the filter this replaced in `fetchHomeDataInternal`.
+  // Rows with no league id are kept, as the JS filter this replaced did.
   const leagueFilter = leagueId
     ? sql`AND (league_id IS NULL OR league_id = ${leagueId})`
     : sql``;

@@ -130,11 +130,10 @@ async function fetchHomeDataInternal(
   const targetLeague = leagueKey !== 'all' ? getLeagueConfig(seasonId, leagueKey) : undefined;
 
   const effectiveTeamId = leagueKey !== 'all'
-    ? (targetLeague?.teamId || teamId)
+    ? (targetLeague?.teamIds[0] || teamId)
     : (getTeamIdsForSeason(seasonId)[0] || teamId);
 
-  // These four queries are independent; over neon-http each is its own HTTPS
-  // round trip, so issue them together rather than one after another.
+  // Independent, and each is its own HTTPS round trip over neon-http.
   const [bankBalance, matchList, playerBalances, trainersData] = await Promise.all([
     getTeamBankBalance(seasonId),
     getMatchesByTeamId(effectiveTeamId, seasonId, targetLeague?.leagueId),

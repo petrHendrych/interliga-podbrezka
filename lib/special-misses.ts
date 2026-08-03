@@ -1,11 +1,7 @@
-import {
-  desc,
-  eq,
-  and,
-  sql,
-} from 'drizzle-orm';
+import { desc, eq, and } from 'drizzle-orm';
 import { db } from './db';
 import { matches, matchPlayerResults, users } from './db/schema';
+import { recalculateDerivedFinancials } from './sync';
 
 export interface PlayedMatch {
   external_id: number;
@@ -116,20 +112,16 @@ export async function updatePlayerSpecialMisses(
   fullFaults: number,
   secondToLastFaults: number,
 ): Promise<void> {
-  const totalSpecialFaults = fullFaults + secondToLastFaults;
-
   await db
     .update(matchPlayerResults)
     .set({
       fullFaultsCount: fullFaults,
       secondToLastFaultsCount: secondToLastFaults,
-      specialFaultsCount: totalSpecialFaults,
-      calculatedFine: sql`((COALESCE(${matchPlayerResults.faults}, 0) * (COALESCE(${matchPlayerResults.faults}, 0) + 1)) / 2) + 
-        (CASE WHEN ${matchPlayerResults.isWorstPlayer} THEN 1 ELSE 0 END) + 
-        (CASE WHEN ${matchPlayerResults.isUnder600} THEN 1 ELSE 0 END) +
-        (${totalSpecialFaults} * 5)`,
+      specialFaultsCount: fullFaults + secondToLastFaults,
     })
     .where(and(eq(matchPlayerResults.matchId, matchId), eq(matchPlayerResults.userId, userId)));
+
+  await recalculateDerivedFinancials();
 }
 
 export async function updatePlayerPaymentStatus(

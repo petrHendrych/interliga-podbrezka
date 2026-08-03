@@ -1,6 +1,7 @@
 export interface LeagueConfig {
   leagueId: number;
-  teamId: number;
+  // The cup re-registers the squad under a new id for the final rounds.
+  teamIds: number[];
   key: 'interliga' | 'pohar';
   name: string;
 }
@@ -18,7 +19,7 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
     leagues: [
       {
         leagueId: 368,
-        teamId: 5008,
+        teamIds: [5008],
         key: 'interliga',
         name: 'Interliga',
       },
@@ -30,13 +31,13 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
     leagues: [
       {
         leagueId: 354,
-        teamId: 4844,
+        teamIds: [4844],
         key: 'interliga',
         name: 'Interliga',
       },
       {
         leagueId: 364,
-        teamId: 4948,
+        teamIds: [4948, 4988],
         key: 'pohar',
         name: 'Slovenský pohár',
       },
@@ -64,7 +65,7 @@ export function getAllTeamIds(): number[] {
   const teamIds = new Set<number>();
   SEASONS_CONFIG.forEach((season) => {
     season.leagues.forEach((league) => {
-      teamIds.add(league.teamId);
+      league.teamIds.forEach((id) => teamIds.add(id));
     });
   });
   return Array.from(teamIds);
@@ -73,7 +74,7 @@ export function getAllTeamIds(): number[] {
 export function getTeamIdsForSeason(seasonId: number): number[] {
   const season = getSeasonConfig(seasonId);
   if (!season) return [];
-  return season.leagues.map((l) => l.teamId);
+  return season.leagues.flatMap((l) => l.teamIds);
 }
 
 export function getSeasonAndLeagueConfig(
@@ -86,12 +87,12 @@ export function getSeasonAndLeagueConfig(
       seasonId: season.id,
       leagueId: league.leagueId,
       leagueName: league.name,
-      teamId: league.teamId,
+      teamIds: league.teamIds,
     }))
   ));
 
   const matchById = allLeagues.find((l) => (
-    (teamId && l.teamId === teamId)
+    (teamId && l.teamIds.includes(teamId))
     || (leagueId && l.leagueId === leagueId)
   ));
 

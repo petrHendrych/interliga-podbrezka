@@ -43,8 +43,7 @@ export const matches = pgTable('matches', {
 });
 
 export const matchPlayerResults = pgTable('match_player_results', {
-  // Both are part of the composite primary key, so Postgres already enforces
-  // NOT NULL. Declaring it keeps `drizzle-kit push` from trying to relax them.
+  // In the composite PK, so already NOT NULL; declaring it keeps `db:push` stable.
   matchId: bigint('match_id', { mode: 'number' }).notNull().references(() => matches.externalId),
   userId: uuid('user_id').notNull().references(() => users.id),
   full: integer('full'),
@@ -57,6 +56,8 @@ export const matchPlayerResults = pgTable('match_player_results', {
   secondToLastFaultsCount: integer('second_to_last_faults_count').default(0),
   isWorstPlayer: boolean('is_worst_player').default(false),
   isUnder600: boolean('is_under_600').default(false),
+  // Counted across all seasons; 5+ triggers the success gathering.
+  faultlessStreak: integer('faultless_streak').default(0),
   calculatedFine: numeric('calculated_fine').default('0'),
   bonusReceived: numeric('bonus_received').default('0'),
   isPaid: boolean('is_paid').default(false),
@@ -77,13 +78,6 @@ export const trainerPayments = pgTable('trainer_payments', {
 }, (table) => [
   uniqueIndex('idx_trainer_payments_match_user_condition').on(table.matchId, table.userId, table.conditionType),
 ]);
-
-export const faultlessStreaks = pgTable('faultless_streaks', {
-  userId: uuid('user_id').references(() => users.id).primaryKey(),
-  currentStreak: integer('current_streak').default(0),
-  lastUpdatedMatchId: bigint('last_updated_match_id', { mode: 'number' }).references(() => matches.externalId),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
 
 export const scrapedData = pgTable('scraped_data', {
   id: serial('id').primaryKey(),
@@ -117,8 +111,6 @@ export type MatchPlayerResult = InferSelectModel<typeof matchPlayerResults>;
 export type NewMatchPlayerResult = InferInsertModel<typeof matchPlayerResults>;
 export type TrainerPayment = InferSelectModel<typeof trainerPayments>;
 export type NewTrainerPayment = InferInsertModel<typeof trainerPayments>;
-export type FaultlessStreak = InferSelectModel<typeof faultlessStreaks>;
-export type NewFaultlessStreak = InferInsertModel<typeof faultlessStreaks>;
 export type ScrapedData = InferSelectModel<typeof scrapedData>;
 export type NewScrapedData = InferInsertModel<typeof scrapedData>;
 export type SystemStatus = InferSelectModel<typeof systemStatus>;
