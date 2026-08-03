@@ -6,9 +6,11 @@ import {
   getPlayerBalances,
   getTeamBankBalance,
   getMatchesByTeamId,
+  type TeamBankBalance,
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
+  TEAM_SCORE_LIMIT,
   getLeagueConfig,
   getTeamIdsForSeason,
   isCurrentSeason,
@@ -39,12 +41,37 @@ export interface TrainerWithStats {
   stats: TrainerStats;
 }
 
+export interface TopDonator {
+  name: string;
+  amount: number;
+}
+
+const INTERLIGA_LEAGUE_IDS = [354, 368];
+
+function isInterliga(match: MatchListItem): boolean {
+  return (match.leagueId !== undefined && INTERLIGA_LEAGUE_IDS.includes(match.leagueId))
+    || (match.leagueName?.toLowerCase().includes('interliga') ?? false);
+}
+
+/** Played Interliga home matches under the limit, or null when the rule cannot apply. */
+function countBelowLimit(matches: MatchListItem[]): number | null {
+  const played = matches.filter((m): m is MatchListItem & { teamTotalScore: number } => (
+    isInterliga(m) && Boolean(m.isHome)
+    && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
+  ));
+  if (played.length === 0) return null;
+
+  return played.filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT).length;
+}
+
 export interface FetchDataResult {
   upcomingMatches: MatchListItem[];
   hasFinishedMatches: boolean;
   players: PlayerWithStats[];
   trainers: TrainerWithStats[];
-  bankBalance: { actual: number; total: number } | null;
+  bankBalance: TeamBankBalance | null;
+  topDonator: TopDonator | null;
+  belowLimit: number | null;
   nextHomeMatch: MatchListItem | null;
 }
 
@@ -135,7 +162,7 @@ async function fetchHomeDataInternal(
 
   // Independent, and each is its own HTTPS round trip over neon-http.
   const [bankBalance, matchList, playerBalances, trainersData] = await Promise.all([
-    getTeamBankBalance(seasonId),
+    getTeamBankBalance(seasonId, leagueKey),
     getMatchesByTeamId(effectiveTeamId, seasonId, targetLeague?.leagueId),
     getPlayerBalances(seasonId, leagueKey),
     leagueKey === 'pohar' ? [] : getTrainersWithStats(seasonId, leagueKey),
@@ -144,6 +171,7 @@ async function fetchHomeDataInternal(
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
   let hasFinishedMatches = false;
+  let belowLimit: number | null = null;
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList; // Already filtered by season and includes team info
@@ -183,6 +211,7 @@ async function fetchHomeDataInternal(
     }
 
     hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
+    belowLimit = countBelowLimit(teamMatches);
   }
 
   const eligibleBalances = playerBalances.filter(
@@ -211,6 +240,19 @@ async function fetchHomeDataInternal(
   // Sort players by AVG descending
   playersWithStats.sort((a, b) => b.stats.avg - a.stats.avg);
 
+  const [biggestFined] = [...eligibleBalances]
+    .filter((b) => b.totalDue > 0)
+    .sort((a, b) => b.totalDue - a.totalDue);
+
+  const topDonator: TopDonator | null = biggestFined
+    ? {
+      name: biggestFined.firstName
+        ? `${biggestFined.firstName} ${biggestFined.lastName}`
+        : biggestFined.name,
+      amount: biggestFined.totalDue,
+    }
+    : null;
+
   const trainers: TrainerWithStats[] = trainersData.map((t) => ({
     id: t.id,
     name: t.name,
@@ -228,6 +270,8 @@ async function fetchHomeDataInternal(
     players: playersWithStats,
     trainers,
     bankBalance,
+    topDonator,
+    belowLimit,
     nextHomeMatch,
   };
 }

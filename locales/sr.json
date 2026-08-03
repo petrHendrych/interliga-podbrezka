@@ -26,8 +26,10 @@
     "filterFinale": "Finale",
     "bank": {
       "title": "Timski bank",
-      "actualBalance": "Stvarni novac",
-      "grandTotal": "Ukupan iznos (uključujući neplaćene)",
+      "grandTotal": "Ukupan iznos (neplaćeno)",
+      "paidOut": "Ukupno isplaćeno",
+      "topDonator": "Najveći donator",
+      "belowLimit": "Ispod limita (3750)",
       "nextPickup": "Sledeće podizanje novca: {date}"
     }
   },
@@ -85,6 +87,7 @@
       "faults": "{count} grešaka",
       "worstPlayer": "najslabiji igrač",
       "under600": "ispod 600",
+      "teamUnder3750": "tim ispod 3750",
       "fullFaults": "{count}x greška u pune",
       "secondToLastFaults": "{count}x pretposlednji hitac",
       "specialFaults": "{count}x specijalna greška",

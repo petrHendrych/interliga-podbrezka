@@ -26,8 +26,10 @@
     "filterFinale": "Finále",
     "bank": {
       "title": "Týmová banka",
-      "actualBalance": "Aktuální hotovost",
-      "grandTotal": "Celková suma (včetně nezaplacených)",
+      "grandTotal": "Celková suma (nezaplaceno)",
+      "paidOut": "Celkem vyplaceno",
+      "topDonator": "Největší dárce",
+      "belowLimit": "Pod limit (3750)",
       "nextPickup": "Nejbližší výběr peněz: {date}"
     }
   },
@@ -85,6 +87,7 @@
       "faults": "{count} chyb",
       "worstPlayer": "nejhorší hráč",
       "under600": "pod 600",
+      "teamUnder3750": "tým pod 3750",
       "fullFaults": "{count}x chyba do plných",
       "secondToLastFaults": "{count}x předposlední hod",
       "specialFaults": "{count}x speciální chyba",

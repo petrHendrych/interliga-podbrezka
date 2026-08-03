@@ -34,6 +34,7 @@ Rules for calculating gatherings (fines) and bonuses for each role.
 **Gatherings (to be paid to the bank):**
 - **Score < 600**: 1€ per game.
 - **Worst in Team**: 1€ per game (lowest total score among players with total > 0).
+- **Team under 3750 (Interliga home matches only)**: 10€ per player who played (total > 0), when the team total is below 3750. Exactly 3750 is fine — only under 3750 is penalised. Does not apply away or in the Slovak Cup.
 - **Faults (Sequential Fine)**: Sum of numeric order of faults. Formula: `(n * (n + 1)) / 2`.
   - 1 fault = 1€
   - 2 faults = 1€ + 2€ = 3€

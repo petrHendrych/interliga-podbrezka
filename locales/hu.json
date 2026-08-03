@@ -26,8 +26,10 @@
     "filterFinale": "Döntő",
     "bank": {
       "title": "Csapat bank",
-      "actualBalance": "Jelenlegi készpénz",
-      "grandTotal": "Mindösszesen (beleértve a kifizetetleneket is)",
+      "grandTotal": "Teljes összeg (kifizetetlen)",
+      "paidOut": "Összesen kifizetve",
+      "topDonator": "Legnagyobb adományozó",
+      "belowLimit": "Limit alatt (3750)",
       "nextPickup": "Következő pénzfelvétel: {date}"
     }
   },
@@ -85,6 +87,7 @@
       "faults": "{count} hiba",
       "worstPlayer": "leggyengébb játékos",
       "under600": "600 alatt",
+      "teamUnder3750": "csapat 3750 alatt",
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",

@@ -56,6 +56,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
         faults: dict.playerDetail.fineReasons.faults,
         worstPlayer: dict.playerDetail.fineReasons.worstPlayer,
         under600: dict.playerDetail.fineReasons.under600,
+        teamUnder3750: dict.playerDetail.fineReasons.teamUnder3750,
         fullFaults: dict.playerDetail.fineReasons.fullFaults,
         secondToLastFaults: dict.playerDetail.fineReasons.secondToLastFaults,
         specialFaults: dict.playerDetail.fineReasons.specialFaults,
@@ -192,6 +193,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                             faults={result.faults}
                             isWorstPlayer={result.isWorstPlayer}
                             isUnder600={result.isUnder600}
+                            isTeamUnder3750={result.isTeamUnder3750}
                             fullFaultsCount={result.fullFaultsCount}
                             secondToLastFaultsCount={result.secondToLastFaultsCount}
                             specialFaultsCount={result.specialFaultsCount}
