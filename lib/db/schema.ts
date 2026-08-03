@@ -72,7 +72,9 @@ export const trainerPayments = pgTable('trainer_payments', {
   amount: numeric('amount').notNull(),
   isPaid: boolean('is_paid').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => [
+  uniqueIndex('idx_trainer_payments_match_user_condition').on(table.matchId, table.userId, table.conditionType),
+]);
 
 export const faultlessStreaks = pgTable('faultless_streaks', {
   userId: uuid('user_id').references(() => users.id).primaryKey(),
