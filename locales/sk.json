@@ -28,7 +28,7 @@
       "title": "Tímová banka",
       "grandTotal": "Celková suma (nezaplatené)",
       "paidOut": "Celkom vyplatené",
-      "topDebtor": "Najviac dlhuje",
+      "topDonator": "Najväčší darca",
       "teamForm": "Forma tímu",
       "teamFormValue": "priemer {avg} · najlepší {best}",
       "nextPickup": "Najbližší výber peňazí: {date}"

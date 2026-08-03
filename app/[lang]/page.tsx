@@ -61,7 +61,7 @@ export default async function Home({
   const players = data?.players || [];
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
-  const topDebtor = data?.topDebtor || null;
+  const topDonator = data?.topDonator || null;
   const teamForm = data?.teamForm || null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
@@ -152,16 +152,16 @@ export default async function Home({
               </div>
             </div>
 
-            {(topDebtor || teamForm) && (
+            {(topDonator || teamForm) && (
               <div className="mt-5 pt-5 border-t border-border/60 grid grid-cols-2 gap-4">
-                {topDebtor && (
+                {topDonator && (
                   <div>
                     <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-0.5">
-                      {dict.home.bank.topDebtor}
+                      {dict.home.bank.topDonator}
                     </p>
-                    <p className="text-sm font-semibold truncate">{topDebtor.name}</p>
+                    <p className="text-sm font-semibold truncate">{topDonator.name}</p>
                     <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                      {topDebtor.amount.toFixed(2)}
+                      {topDonator.amount.toFixed(2)}
                       {' '}
                       €
                     </p>

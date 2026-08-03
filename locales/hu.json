@@ -28,7 +28,7 @@
       "title": "Csapat bank",
       "grandTotal": "Teljes összeg (kifizetetlen)",
       "paidOut": "Összesen kifizetve",
-      "topDebtor": "Legtöbbel tartozik",
+      "topDonator": "Legnagyobb adományozó",
       "teamForm": "Csapat forma",
       "teamFormValue": "átlag {avg} · legjobb {best}",
       "nextPickup": "Következő pénzfelvétel: {date}"

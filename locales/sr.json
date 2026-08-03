@@ -28,7 +28,7 @@
       "title": "Timski bank",
       "grandTotal": "Ukupan iznos (neplaćeno)",
       "paidOut": "Ukupno isplaćeno",
-      "topDebtor": "Najviše duguje",
+      "topDonator": "Najveći donator",
       "teamForm": "Forma tima",
       "teamFormValue": "prosek {avg} · najbolji {best}",
       "nextPickup": "Sledeće podizanje novca: {date}"

@@ -13,6 +13,9 @@ export interface MatchListItem {
   startDate: string;
   round: number;
   teamTotalScore?: number | null;
+  isHome?: boolean;
+  leagueId?: number;
+  leagueName?: string;
   [key: string]: unknown;
 }
 
