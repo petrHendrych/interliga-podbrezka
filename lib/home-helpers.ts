@@ -1,11 +1,6 @@
 import { unstable_cache } from 'next/cache';
-import {
-  MatchListItem,
-  TeamResult,
-  MatchDetail,
-  PlayerDetail,
-  TEAM_ID,
-} from '@/lib/api';
+import { MatchListItem, PlayerDetail, TEAM_ID } from '@/lib/api';
+import { SYNCED_DATA_REVALIDATE_SECONDS } from '@/lib/cache';
 import {
   getTrainersWithStats,
   getPlayerBalances,
@@ -46,10 +41,7 @@ export interface TrainerWithStats {
 
 export interface FetchDataResult {
   upcomingMatches: MatchListItem[];
-  upcomingMatch: MatchListItem | null;
-  teamResults: TeamResult[];
-  latestMatch: TeamResult | null;
-  matchDetail: MatchDetail | null;
+  hasFinishedMatches: boolean;
   players: PlayerWithStats[];
   trainers: TrainerWithStats[];
   bankBalance: { actual: number; total: number } | null;
@@ -135,21 +127,24 @@ async function fetchHomeDataInternal(
   seasonId: number = DEFAULT_SEASON_ID,
   leagueKey: string = 'all',
 ): Promise<FetchDataResult> {
-  const bankBalance = await getTeamBankBalance(seasonId);
+  const targetLeague = leagueKey !== 'all' ? getLeagueConfig(seasonId, leagueKey) : undefined;
 
   const effectiveTeamId = leagueKey !== 'all'
-    ? (getLeagueConfig(seasonId, leagueKey)?.teamId || teamId)
+    ? (targetLeague?.teamId || teamId)
     : (getTeamIdsForSeason(seasonId)[0] || teamId);
 
-  // 1. Fetch match list from database
-  const rawMatchList = await getMatchesByTeamId(effectiveTeamId, seasonId);
-  const targetLeague = leagueKey !== 'all' ? getLeagueConfig(seasonId, leagueKey) : undefined;
-  const matchList = targetLeague
-    ? rawMatchList.filter((m) => !m.leagueId || m.leagueId === targetLeague.leagueId)
-    : rawMatchList;
+  // These four queries are independent; over neon-http each is its own HTTPS
+  // round trip, so issue them together rather than one after another.
+  const [bankBalance, matchList, playerBalances, trainersData] = await Promise.all([
+    getTeamBankBalance(seasonId),
+    getMatchesByTeamId(effectiveTeamId, seasonId, targetLeague?.leagueId),
+    getPlayerBalances(seasonId, leagueKey),
+    leagueKey === 'pohar' ? [] : getTrainersWithStats(seasonId, leagueKey),
+  ]);
+
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
-  const teamResults: TeamResult[] = [];
+  let hasFinishedMatches = false;
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList; // Already filtered by season and includes team info
@@ -188,29 +183,9 @@ async function fetchHomeDataInternal(
       }
     }
 
-    // Fill teamResults for compatibility (latest matches first)
-    const finishedMatches = [...teamMatches]
-      .filter((m) => m.teamTotalScore !== null)
-      .reverse();
-
-    finishedMatches.forEach((m) => {
-      teamResults.push({
-        id: m.id,
-        matchId: m.id,
-        teamId: effectiveTeamId,
-        date: m.startDate,
-        opponent: m.opponent,
-        isHome: m.isHome,
-        teamScore: m.teamTotalScore,
-        opponentScore: m.opponentTotalScore,
-      } as TeamResult);
-    });
+    hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
   }
 
-  const upcomingMatch = upcomingMatches[0] || null;
-
-  // 3. Fetch player details and season results for all players with balance and played matches
-  const playerBalances = await getPlayerBalances(seasonId, leagueKey);
   const eligibleBalances = playerBalances.filter(
     (b) => b.externalPlayerId !== null && b.matchesCount > 0,
   );
@@ -234,15 +209,9 @@ async function fetchHomeDataInternal(
     return player;
   });
 
-  const validPlayers = playersWithStats.filter(
-    (p): p is PlayerWithStats => p !== null,
-  );
-
   // Sort players by AVG descending
-  validPlayers.sort((a, b) => b.stats.avg - a.stats.avg);
+  playersWithStats.sort((a, b) => b.stats.avg - a.stats.avg);
 
-  // 7. Fetch trainer data (omit for Slovak Cup UI)
-  const trainersData = leagueKey === 'pohar' ? [] : await getTrainersWithStats(seasonId, leagueKey);
   const trainers: TrainerWithStats[] = trainersData.map((t) => ({
     id: t.id,
     name: t.name,
@@ -256,11 +225,8 @@ async function fetchHomeDataInternal(
 
   return {
     upcomingMatches,
-    upcomingMatch,
-    teamResults,
-    latestMatch: teamResults[0] || null,
-    matchDetail: null,
-    players: validPlayers,
+    hasFinishedMatches,
+    players: playersWithStats,
     trainers,
     bankBalance,
     nextHomeMatch,
@@ -275,7 +241,7 @@ export const fetchHomeData = unstable_cache(
   ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
   ['home-data'],
   {
-    revalidate: 60,
-    tags: ['home-data', 'matches', 'player-balances'],
+    revalidate: SYNCED_DATA_REVALIDATE_SECONDS,
+    tags: ['home-data'],
   },
 );

@@ -19,7 +19,7 @@ export async function approveUser(userId: string) {
       .update(users)
       .set({ isApproved: true })
       .where(eq(users.id, userId));
-    revalidatePath('/admin/users');
+    revalidatePath('/[lang]/admin/users', 'page');
   } catch (error) {
     console.error('Failed to approve user:', error);
     throw new Error('Failed to approve user');
@@ -40,7 +40,7 @@ export async function deleteUser(userId: string) {
     await db
       .delete(users)
       .where(eq(users.id, userId));
-    revalidatePath('/admin/users');
+    revalidatePath('/[lang]/admin/users', 'page');
   } catch (error) {
     console.error('Failed to delete user:', error);
     throw new Error('Failed to delete user');

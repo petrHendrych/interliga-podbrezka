@@ -34,8 +34,8 @@ export interface MatchPlayerResult {
   is_bonus_paid: boolean;
 }
 
-export async function getPlayedMatches(): Promise<PlayedMatch[]> {
-  const result = await db
+async function selectMatches(limit?: number): Promise<PlayedMatch[]> {
+  const query = db
     .select({
       externalId: matches.externalId,
       date: matches.date,
@@ -48,6 +48,8 @@ export async function getPlayedMatches(): Promise<PlayedMatch[]> {
     .from(matches)
     .orderBy(desc(matches.date));
 
+  const result = limit ? await query.limit(limit) : await query;
+
   return result.map((m) => ({
     external_id: m.externalId,
     date: m.date ? new Date(m.date).toISOString() : null,
@@ -59,9 +61,13 @@ export async function getPlayedMatches(): Promise<PlayedMatch[]> {
   }));
 }
 
+export async function getPlayedMatches(): Promise<PlayedMatch[]> {
+  return selectMatches();
+}
+
 export async function getLastPlayedMatch(): Promise<PlayedMatch | null> {
-  const matchItems = await getPlayedMatches();
-  return matchItems.length > 0 ? matchItems[0] : null;
+  const matchItems = await selectMatches(1);
+  return matchItems[0] ?? null;
 }
 
 export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResult[]> {

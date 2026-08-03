@@ -65,7 +65,7 @@ export default async function Home({
 
   const hasNoData = !data
     || (upcomingMatches.length === 0
-      && !data.latestMatch
+      && !data.hasFinishedMatches
       && players.length === 0);
 
   return (

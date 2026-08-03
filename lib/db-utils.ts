@@ -1,19 +1,11 @@
 /* eslint-disable no-console */
 import { unstable_cache } from 'next/cache';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, sql as drizzleSql } from 'drizzle-orm';
 import { db, sql } from './db';
-import { scrapedSnapshots, scrapedData, systemStatus } from './db/schema';
+import { scrapedData, systemStatus } from './db/schema';
 import { DEFAULT_SEASON_ID } from './season-config';
+import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
-
-export async function purgeScrapedSnapshots() {
-  try {
-    await db.delete(scrapedSnapshots);
-    console.log('Successfully purged scraped_snapshots table.');
-  } catch (error) {
-    console.error('Failed to purge scraped_snapshots table:', error);
-  }
-}
 
 /**
  * @deprecated Database schema is managed via Drizzle Kit schema migrations (pnpm db:push).
@@ -44,6 +36,9 @@ export async function upsertScrapedData(type: string, externalId: number, data: 
           data: payload as Record<string, unknown>,
           updatedAt: new Date(),
         },
+        // Skip the rewrite when the payload is unchanged, which is the common case
+        // for finished seasons that get re-scraped every week.
+        setWhere: drizzleSql`${scrapedData.data} IS DISTINCT FROM EXCLUDED.data`,
       });
   } catch (error) {
     console.error(`Failed to upsert ${type} for ID ${externalId}:`, error);
@@ -109,81 +104,46 @@ export async function releaseLock(jobName: string): Promise<void> {
 }
 
 /**
- * @deprecated Snapshot history is deprecated to reduce DB transfer.
- * Only single latest scrape in `scraped_data` is stored.
+ * Reads a `scraped_data` blob. When `fields` is given the projection happens in
+ * Postgres, so only those keys cross the wire rather than the whole document.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function saveSnapshot(type: string, externalId: number, data: unknown) {
-  /* Deprecated no-op */
-}
-
 export async function getScrapedData<T>(
   type: string,
   externalId: number,
   fields?: string[],
 ): Promise<T | null> {
+  const projection = fields && fields.length > 0
+    // Keys are parameterised, so callers cannot inject SQL through `fields`.
+    ? drizzleSql`jsonb_build_object(${drizzleSql.join(
+      fields.map((f) => drizzleSql`${f}::text, ${scrapedData.data}->${f}`),
+      drizzleSql`, `,
+    )})`
+    : scrapedData.data;
+
   try {
     const results = await db
-      .select({ data: scrapedData.data })
+      .select({ data: projection })
       .from(scrapedData)
       .where(and(eq(scrapedData.type, type), eq(scrapedData.externalId, externalId)))
       .limit(1);
 
     if (results.length === 0) return null;
-    const rawData = results[0].data as Record<string, unknown>;
-
-    if (fields && fields.length > 0 && typeof rawData === 'object' && rawData !== null) {
-      const filtered: Record<string, unknown> = {};
-      fields.forEach((f) => {
-        if (f in rawData) {
-          filtered[f] = rawData[f];
-        }
-      });
-      return filtered as T;
-    }
-
-    return rawData as T;
+    return results[0].data as T;
   } catch (error) {
     console.error(`Failed to get scraped data for ${type}:${externalId}`, error);
     throw error;
   }
 }
 
-export async function getScrapedDataBatch<T>(
-  type: string,
-  externalIds: number[],
-  fields?: string[],
-): Promise<Map<number, T>> {
-  if (externalIds.length === 0) return new Map();
-
-  try {
-    const results = await db
-      .select({ externalId: scrapedData.externalId, data: scrapedData.data })
-      .from(scrapedData)
-      .where(and(eq(scrapedData.type, type), inArray(scrapedData.externalId, externalIds)));
-
-    const map = new Map<number, T>();
-    results.forEach((row) => {
-      if (row.externalId === null) return;
-      const rawData = row.data as Record<string, unknown>;
-      if (fields && fields.length > 0 && typeof rawData === 'object' && rawData !== null) {
-        const filtered: Record<string, unknown> = {};
-        fields.forEach((f) => {
-          if (f in rawData) {
-            filtered[f] = rawData[f];
-          }
-        });
-        map.set(Number(row.externalId), filtered as T);
-      } else {
-        map.set(Number(row.externalId), rawData as T);
-      }
-    });
-    return map;
-  } catch (error) {
-    console.error(`Failed to get scraped data batch for ${type}`, error);
-    throw error;
-  }
-}
+export const getCachedPlayerName = unstable_cache(
+  async (externalPlayerId: number) => getScrapedData<{ firstName?: string; lastName?: string }>(
+    'player_detail',
+    externalPlayerId,
+    ['firstName', 'lastName'],
+  ),
+  ['player-detail'],
+  { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-detail'] },
+);
 
 export interface DBTrainerStats {
   id: string;
@@ -292,8 +252,8 @@ export async function getPlayerBalances(
       u.external_player_id,
       u.name,
       u.id::text as user_id,
-      sd.data->>'firstName' as first_name,
-      sd.data->>'lastName' as last_name,
+      pd.first_name,
+      pd.last_name,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_paid,
@@ -317,13 +277,18 @@ export async function getPlayerBalances(
         ELSE 0 
       END::numeric as avg_score
     FROM users u
-    LEFT JOIN scraped_data sd ON sd.type = 'player_detail' AND sd.external_id = u.external_player_id
+    LEFT JOIN LATERAL (
+      SELECT sd.data->>'firstName' AS first_name, sd.data->>'lastName' AS last_name
+      FROM scraped_data sd
+      WHERE sd.type = 'player_detail' AND sd.external_id = u.external_player_id
+      LIMIT 1
+    ) pd ON true
     LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
-    LEFT JOIN matches m ON mpr.match_id = m.external_id 
+    LEFT JOIN matches m ON mpr.match_id = m.external_id
       AND (m.season_id = ${targetSeasonId})
       ${leagueCondition}
     WHERE u.role = 'player' AND u.is_approved = true
-    GROUP BY u.external_player_id, u.name, u.id, sd.data
+    GROUP BY u.external_player_id, u.name, u.id, pd.first_name, pd.last_name
     ORDER BY u.name ASC
   `;
 
@@ -396,7 +361,7 @@ export const getCachedPlayerBalance = unstable_cache(
     getPlayerBalanceByExternalId(playerId, seasonId, leagueKey)
   ),
   ['player-balance'],
-  { revalidate: 60, tags: ['player-balance'] },
+  { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-balance'] },
 );
 
 export async function getPlayerMatchResultsByExternalId(
@@ -495,15 +460,22 @@ export const getCachedPlayerMatchResults = unstable_cache(
     getPlayerMatchResultsByExternalId(playerId, seasonId, leagueKey)
   ),
   ['player-match-results'],
-  { revalidate: 60, tags: ['player-match-results'] },
+  { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-match-results'] },
 );
 
 export async function getMatchesByTeamId(
   teamId: number,
   seasonId: number,
+  leagueId?: number,
 ): Promise<MatchListItem[]> {
+  // Matches carrying no league id are kept so a partially synced row is still shown,
+  // mirroring the filter this replaced in `fetchHomeDataInternal`.
+  const leagueFilter = leagueId
+    ? sql`AND (league_id IS NULL OR league_id = ${leagueId})`
+    : sql``;
+
   const rows = await sql`
-    SELECT 
+    SELECT
       external_id as id,
       date as "startDate",
       opponent,
@@ -516,6 +488,7 @@ export async function getMatchesByTeamId(
       league_id
     FROM matches
     WHERE season_id = ${seasonId}
+    ${leagueFilter}
     ORDER BY date ASC
   `;
 

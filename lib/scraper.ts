@@ -15,7 +15,7 @@ import {
   tryAcquireLock,
   releaseLock,
 } from './db-utils';
-import { syncData } from './sync';
+import { syncData, type ScrapePayloads } from './sync';
 import { getAllTeamIds, SEASONS_CONFIG } from './season-config';
 
 /**
@@ -37,11 +37,26 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
     const teamIds = getAllTeamIds();
     const matchIdsSet = new Set<number>();
 
+    // Everything we scrape is kept in memory and handed to `syncData` directly, so
+    // the sync never has to read these blobs back out of Neon.
+    const payloads: ScrapePayloads = {
+      matchDetails: new Map(),
+      matchLists: new Map(),
+      playerResults: new Map(),
+    };
+
     // 1 & 2. Fetch match list and team results for all team IDs across configured seasons
     for (const teamId of teamIds) {
       console.log(`Fetching match list for team ${teamId}...`);
       try {
-        const matchList = await getMatchList(teamId);
+        // The endpoint ignores the team id and returns the whole league database
+        // (~23k matches, ~2 MB). Keep only the matches one of our teams plays in,
+        // otherwise we store and re-read megabytes of other clubs' fixtures.
+        const matchList = (await getMatchList(teamId)).filter(
+          (m) => teamIds.includes(Number(m.homeId)) || teamIds.includes(Number(m.awayId)),
+        );
+        console.log(`Kept ${matchList.length} matches for team ${teamId}.`);
+        payloads.matchLists.set(teamId, matchList);
         await upsertScrapedData('match_list', teamId, matchList);
       } catch (error) {
         console.error(`Failed to fetch match list for team ${teamId}:`, error);
@@ -75,6 +90,7 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
         try {
           console.log(`Fetching match detail for ${matchId}...`);
           const matchDetail = await getMatchDetail(matchId);
+          payloads.matchDetails.set(matchId, matchDetail);
           await upsertScrapedData('match_detail', matchId, matchDetail);
 
           // Extract players from Podbrezová lineup in this match
@@ -128,6 +144,7 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
             }
           }
 
+          payloads.playerResults.set(playerId, allPlayerResults);
           await upsertScrapedData('player_results', playerId, allPlayerResults);
         } catch (error) {
           console.error(`Failed to scrape player ${playerId}:`, error);
@@ -140,7 +157,7 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
     }
 
     console.log(`Scraping job (${source}) completed successfully. Triggering data sync...`);
-    await syncData();
+    await syncData(payloads);
     console.log(`All jobs (${source}) completed.`);
   } catch (error) {
     console.error(`Scraping job (${source}) failed:`, error);

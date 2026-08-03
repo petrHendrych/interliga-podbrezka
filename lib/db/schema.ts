@@ -43,8 +43,10 @@ export const matches = pgTable('matches', {
 });
 
 export const matchPlayerResults = pgTable('match_player_results', {
-  matchId: bigint('match_id', { mode: 'number' }).references(() => matches.externalId),
-  userId: uuid('user_id').references(() => users.id),
+  // Both are part of the composite primary key, so Postgres already enforces
+  // NOT NULL. Declaring it keeps `drizzle-kit push` from trying to relax them.
+  matchId: bigint('match_id', { mode: 'number' }).notNull().references(() => matches.externalId),
+  userId: uuid('user_id').notNull().references(() => users.id),
   full: integer('full'),
   clean: integer('clean'),
   total: integer('total'),
@@ -93,14 +95,6 @@ export const scrapedData = pgTable('scraped_data', {
   uniqueIndex('idx_scraped_data_unique_type_id').on(table.type, table.externalId),
 ]);
 
-export const scrapedSnapshots = pgTable('scraped_snapshots', {
-  id: serial('id').primaryKey(),
-  type: text('type').notNull(),
-  externalId: bigint('external_id', { mode: 'number' }).notNull(),
-  data: jsonb('data').notNull(),
-  scrapedAt: timestamp('scraped_at', { withTimezone: true }).defaultNow(),
-});
-
 export const systemStatus = pgTable('system_status', {
   name: text('name').primaryKey(),
   value: text('value'),
@@ -127,8 +121,6 @@ export type FaultlessStreak = InferSelectModel<typeof faultlessStreaks>;
 export type NewFaultlessStreak = InferInsertModel<typeof faultlessStreaks>;
 export type ScrapedData = InferSelectModel<typeof scrapedData>;
 export type NewScrapedData = InferInsertModel<typeof scrapedData>;
-export type ScrapedSnapshot = InferSelectModel<typeof scrapedSnapshots>;
-export type NewScrapedSnapshot = InferInsertModel<typeof scrapedSnapshots>;
 export type SystemStatus = InferSelectModel<typeof systemStatus>;
 export type NewSystemStatus = InferInsertModel<typeof systemStatus>;
 export type PasswordResetToken = InferSelectModel<typeof passwordResetTokens>;

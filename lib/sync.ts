@@ -1,12 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-continue */
-import {
-  eq,
-  and,
-  inArray,
-  sql,
-} from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from './db';
 import {
   matches,
@@ -49,6 +44,53 @@ export interface SyncMatchData {
       average?: number;
     }[];
   };
+}
+
+interface SnapshotTeam {
+  id?: number;
+  name?: string;
+  clubId?: number;
+  club?: { id?: number; name?: string };
+}
+
+export interface PlayerResultSnapshot {
+  full?: number;
+  clean?: number;
+  total?: number;
+  faults?: number;
+  average?: number;
+  teamId?: number;
+  player?: { firstName?: string; lastName?: string; name?: string };
+  match?: {
+    id?: number;
+    startDate?: string;
+    created?: string;
+    hall?: { name?: string };
+    league?: { name?: string; seasonId?: number };
+    homeTeam?: SnapshotTeam;
+    awayTeam?: SnapshotTeam;
+  };
+}
+
+/**
+ * Payloads captured during a scrape run, keyed exactly like `scraped_data.external_id`.
+ * Passing these to `syncData` avoids reading the same jsonb blobs straight back out
+ * of Neon, which was by far the biggest consumer of the free tier's transfer allowance.
+ * They stay untyped so both paths hit the same casts below.
+ */
+export interface ScrapePayloads {
+  matchDetails: Map<number, unknown>;
+  matchLists: Map<number, unknown>;
+  playerResults: Map<number, unknown>;
+}
+
+interface SnapshotRow {
+  externalId: number | null;
+  data: unknown;
+}
+
+function toSnapshotRows(payload: Map<number, unknown>): SnapshotRow[] {
+  return Array.from(payload, ([externalId, data]) => ({ externalId, data }));
 }
 
 export async function recalculateFaultlessStreaks() {
@@ -120,14 +162,16 @@ export async function recalculateFaultlessStreaks() {
   }
 }
 
-export async function syncAllPlayerResultsSnapshots() {
-  const playerSnapshots = await db
-    .select({
-      externalId: scrapedData.externalId,
-      data: scrapedData.data,
-    })
-    .from(scrapedData)
-    .where(eq(scrapedData.type, 'player_results'));
+export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknown>) {
+  const playerSnapshots: SnapshotRow[] = payload
+    ? toSnapshotRows(payload)
+    : await db
+      .select({
+        externalId: scrapedData.externalId,
+        data: scrapedData.data,
+      })
+      .from(scrapedData)
+      .where(eq(scrapedData.type, 'player_results'));
 
   if (playerSnapshots.length === 0) return;
 
@@ -172,34 +216,7 @@ export async function syncAllPlayerResultsSnapshots() {
   for (const snapshot of playerSnapshots) {
     if (snapshot.externalId === null) continue;
     const externalPlayerId = Number(snapshot.externalId);
-    const playerResults = snapshot.data as unknown as Array<{
-      full?: number;
-      clean?: number;
-      total?: number;
-      faults?: number;
-      average?: number;
-      teamId?: number;
-      player?: { firstName?: string; lastName?: string; name?: string };
-      match?: {
-        id?: number;
-        startDate?: string;
-        created?: string;
-        hall?: { name?: string };
-        league?: { name?: string; seasonId?: number };
-        homeTeam?: {
-          id?: number;
-          name?: string;
-          clubId?: number;
-          club?: { id?: number; name?: string };
-        };
-        awayTeam?: {
-          id?: number;
-          name?: string;
-          clubId?: number;
-          club?: { id?: number; name?: string };
-        };
-      };
-    }>;
+    const playerResults = snapshot.data as PlayerResultSnapshot[];
 
     if (externalPlayerId && Array.isArray(playerResults)) {
       const userId = userMap.get(externalPlayerId);
@@ -340,17 +357,19 @@ export async function syncAllPlayerResultsSnapshots() {
   }
 }
 
-export async function syncData() {
-  console.log('Starting data sync from scraped_data...');
+export async function syncData(payloads?: ScrapePayloads) {
+  console.log(`Starting data sync from ${payloads ? 'scrape payloads' : 'scraped_data'}...`);
 
   try {
-    const matchSnapshots = await db
-      .select({
-        externalId: scrapedData.externalId,
-        data: scrapedData.data,
-      })
-      .from(scrapedData)
-      .where(eq(scrapedData.type, 'match_detail'));
+    const matchSnapshots: SnapshotRow[] = payloads
+      ? toSnapshotRows(payloads.matchDetails)
+      : await db
+        .select({
+          externalId: scrapedData.externalId,
+          data: scrapedData.data,
+        })
+        .from(scrapedData)
+        .where(eq(scrapedData.type, 'match_detail'));
 
     console.log(`Found ${matchSnapshots.length} matches in scraped_data to sync.`);
 
@@ -386,32 +405,19 @@ export async function syncData() {
       }
     }
 
-    // Provision missing users in 1 query
+    // Provision missing users in 1 query. `onConflictDoNothing` makes this safe
+    // without first reading which of them already exist.
     const allExtPlayerIds = Array.from(playerMapByExtId.keys());
     if (allExtPlayerIds.length > 0) {
-      const existingUserRows = await db
-        .select({ id: users.id, externalPlayerId: users.externalPlayerId })
-        .from(users)
-        .where(inArray(users.externalPlayerId, allExtPlayerIds));
-
-      const existingUserExtIds = new Set(
-        existingUserRows
-          .map((u) => u.externalPlayerId)
-          .filter((id): id is number => id !== null),
-      );
-
-      const usersToInsert = allExtPlayerIds
-        .filter((extId) => !existingUserExtIds.has(extId))
-        .map((extId) => ({
+      await db
+        .insert(users)
+        .values(allExtPlayerIds.map((extId) => ({
           name: playerMapByExtId.get(extId) || `Player ${extId}`,
           externalPlayerId: extId,
           role: 'player',
           isApproved: true,
-        }));
-
-      if (usersToInsert.length > 0) {
-        await db.insert(users).values(usersToInsert).onConflictDoNothing();
-      }
+        })))
+        .onConflictDoNothing();
     }
 
     // Refresh user ID mapping
@@ -444,13 +450,15 @@ export async function syncData() {
     }>();
 
     // 2a. First, collect matches from match_list in scraped_data (upcoming matches included)
-    const matchListSnapshots = await db
-      .select({
-        externalId: scrapedData.externalId,
-        data: scrapedData.data,
-      })
-      .from(scrapedData)
-      .where(eq(scrapedData.type, 'match_list'));
+    const matchListSnapshots: SnapshotRow[] = payloads
+      ? toSnapshotRows(payloads.matchLists)
+      : await db
+        .select({
+          externalId: scrapedData.externalId,
+          data: scrapedData.data,
+        })
+        .from(scrapedData)
+        .where(eq(scrapedData.type, 'match_list'));
 
     const allPodbrezovaTeamIds = getAllTeamIds();
 
@@ -467,13 +475,11 @@ export async function syncData() {
           const homeName = m.homeName || '';
           const awayName = m.awayName || '';
 
-          const isHome = (homeTeamId && allPodbrezovaTeamIds.includes(homeTeamId))
-            || (teamId && homeTeamId === teamId)
-            || homeName.includes('Podbrezová') || homeName.includes('Podbrezova');
-
-          const isAway = (awayTeamId && allPodbrezovaTeamIds.includes(awayTeamId))
-            || (teamId && awayTeamId === teamId)
-            || awayName.includes('Podbrezová') || awayName.includes('Podbrezova');
+          // Match on team id only. Name matching also hits every other Podbrezová
+          // club team (B, C, juniors, women), which pulled ~1250 foreign fixtures
+          // into `matches` and mislabelled them as our Slovenský pohár season.
+          const isHome = homeTeamId != null && allPodbrezovaTeamIds.includes(homeTeamId);
+          const isAway = awayTeamId != null && allPodbrezovaTeamIds.includes(awayTeamId);
 
           if (isHome || isAway) {
             const matchedTeamId = teamId || (isHome ? homeTeamId : awayTeamId);
@@ -754,7 +760,7 @@ export async function syncData() {
 
     // 3. Sync player_results snapshots in bulk
     console.log('Syncing player results snapshots...');
-    await syncAllPlayerResultsSnapshots();
+    await syncAllPlayerResultsSnapshots(payloads?.playerResults);
 
     // 4. Recalculate faultless streaks in 1 query
     console.log('Recalculating faultless streaks...');
