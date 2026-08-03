@@ -12,7 +12,7 @@ import {
   formatDateOnly,
   FetchDataResult,
 } from '@/lib/home-helpers';
-import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
+import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,38 +56,24 @@ export default async function Home({
     );
   }
 
-  if (
-    !data
-    || (data.upcomingMatches.length === 0
-      && !data.latestMatch
-      && data.players.length === 0)
-  ) {
-    return (
-      <div className="p-4 md:p-8 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">{dict.home.pageTitle}</h1>
-        <p>
-          {dict.home.noResults}
-          {' '}
-          {TEAM_ID}
-        </p>
-      </div>
-    );
-  }
+  const isCurrent = isCurrentSeason(selectedSeasonId);
+  const upcomingMatches = isCurrent ? (data?.upcomingMatches || []) : [];
+  const players = data?.players || [];
+  const trainers = data?.trainers || [];
+  const bankBalance = data?.bankBalance || null;
+  const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
-  const {
-    upcomingMatches,
-    players,
-    trainers,
-    bankBalance,
-    nextHomeMatch,
-  } = data;
+  const hasNoData = !data
+    || (upcomingMatches.length === 0
+      && !data.hasFinishedMatches
+      && players.length === 0);
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
       {upcomingMatches.length > 0 && (
         <div className="flex flex-col gap-6 mb-8">
           {upcomingMatches.map((match) => {
-            const isHome = match.homeId === TEAM_ID;
+            const { isHome } = match;
             const opponentName = isHome ? match.awayName : match.homeName;
 
             return (
@@ -184,150 +170,160 @@ export default async function Home({
         }}
       />
 
-      {(players.length > 0 || trainers.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {trainers.map((trainer) => (
-            <div
-              key={trainer.id}
-              className="md:col-span-2"
-            >
-              <Card className="relative overflow-hidden border-amber-500/50 bg-amber-50/5 dark:bg-amber-950/5 h-full">
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                    <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-amber-200 dark:border-amber-900">
-                      <AvatarImage
-                        src="/players/3009.JPG"
-                        alt={trainer.name}
-                        className="rounded-2xl"
-                      />
-                      <AvatarFallback className="rounded-2xl text-lg font-semibold">
-                        {trainer.name.split(' ').map((n) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 w-full text-center sm:text-left">
-                      <h2 className="font-bold text-lg sm:text-xl leading-snug">
-                        {trainer.name}
-                      </h2>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.count3800}
-                          </span>
-                          <span className="text-base font-bold">
-                            {trainer.stats.count3800}
-                          </span>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.count3900}
-                          </span>
-                          <span className="text-base font-bold">
-                            {trainer.stats.count3900}
-                          </span>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.zeroMisses}
-                          </span>
-                          <span className="text-base font-semibold">
-                            {trainer.stats.zeroMisses}
-                          </span>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.totalPaid}
-                          </span>
-                          <span className="text-base font-semibold">
-                            {trainer.stats.totalPaid}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ))}
-          {players.map((player, index) => (
-            <Link
-              key={player.id}
-              href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
-              className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
-            >
-              <Card className="relative overflow-hidden hover:border-primary transition-colors h-full">
-                {index === 0 && (
-                  <Crown className="w-5 h-5 text-amber-500 fill-amber-400 rotate-12 absolute top-3.5 right-3.5 z-10" />
-                )}
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                    <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-muted">
-                      <AvatarImage
-                        src="/players/3009.JPG"
-                        alt={`${player.firstName} ${player.lastName}`}
-                        className="rounded-2xl"
-                      />
-                      <AvatarFallback className="rounded-2xl text-lg font-semibold">
-                        {player.firstName?.[0]}
-                        {player.lastName?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 w-full text-center sm:text-left">
-                      <h2 className="font-bold text-lg sm:text-xl leading-snug">
-                        {player.firstName}
-                        {' '}
-                        {player.lastName}
-                        {' '}
-                        <span className="text-muted-foreground font-normal text-base">
-                          (
-                          {player.stats.matchesCount}
-                          )
-                        </span>
-                      </h2>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.avg}
-                          </span>
-                          <span className="text-base font-bold text-primary">
-                            {player.stats.avg || '-'}
-                          </span>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.max}
-                          </span>
-                          <span className="text-base font-bold">
-                            {player.stats.max || '-'}
-                          </span>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.misses}
-                          </span>
-                          <span className="text-base font-semibold">
-                            {player.stats.misses}
-                          </span>
-                        </div>
-                        <div className="bg-muted/40 rounded-lg p-2 text-center">
-                          <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                            {dict.home.totalPaid}
-                          </span>
-                          <span className="text-base font-semibold">
-                            {player.stats.totalPaid}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+      {hasNoData ? (
+        <div className="mt-6 p-8 text-center border rounded-lg bg-card text-muted-foreground">
+          <p>
+            {dict.home.noResults}
+            {' '}
+            {TEAM_ID}
+          </p>
         </div>
+      ) : (
+        (players.length > 0 || trainers.length > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {trainers.map((trainer) => (
+              <div
+                key={trainer.id}
+                className="md:col-span-2"
+              >
+                <Card className="relative overflow-hidden border-amber-500/50 bg-amber-50/5 dark:bg-amber-950/5 h-full">
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                      <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-amber-200 dark:border-amber-900">
+                        <AvatarImage
+                          src="/players/3009.JPG"
+                          alt={trainer.name}
+                          className="rounded-2xl"
+                        />
+                        <AvatarFallback className="rounded-2xl text-lg font-semibold">
+                          {trainer.name.split(' ').map((n) => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 w-full text-center sm:text-left">
+                        <h2 className="font-bold text-lg sm:text-xl leading-snug">
+                          {trainer.name}
+                        </h2>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.count3800}
+                            </span>
+                            <span className="text-base font-bold">
+                              {trainer.stats.count3800}
+                            </span>
+                          </div>
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.count3900}
+                            </span>
+                            <span className="text-base font-bold">
+                              {trainer.stats.count3900}
+                            </span>
+                          </div>
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.zeroMisses}
+                            </span>
+                            <span className="text-base font-semibold">
+                              {trainer.stats.zeroMisses}
+                            </span>
+                          </div>
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.totalPaid}
+                            </span>
+                            <span className="text-base font-semibold">
+                              {trainer.stats.totalPaid}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ))}
+            {players.map((player, index) => (
+              <Link
+                key={player.id}
+                href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
+                className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
+              >
+                <Card className="relative overflow-hidden hover:border-primary transition-colors h-full">
+                  {index === 0 && (
+                    <Crown className="w-5 h-5 text-amber-500 fill-amber-400 rotate-12 absolute top-3.5 right-3.5 z-10" />
+                  )}
+                  <CardContent className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                      <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-muted">
+                        <AvatarImage
+                          src="/players/3009.JPG"
+                          alt={`${player.firstName} ${player.lastName}`}
+                          className="rounded-2xl"
+                        />
+                        <AvatarFallback className="rounded-2xl text-lg font-semibold">
+                          {player.firstName?.[0]}
+                          {player.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 w-full text-center sm:text-left">
+                        <h2 className="font-bold text-lg sm:text-xl leading-snug">
+                          {player.firstName}
+                          {' '}
+                          {player.lastName}
+                          {' '}
+                          <span className="text-muted-foreground font-normal text-base">
+                            (
+                            {player.stats.matchesCount}
+                            )
+                          </span>
+                        </h2>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.avg}
+                            </span>
+                            <span className="text-base font-bold text-primary">
+                              {player.stats.avg || '-'}
+                            </span>
+                          </div>
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.max}
+                            </span>
+                            <span className="text-base font-bold">
+                              {player.stats.max || '-'}
+                            </span>
+                          </div>
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.misses}
+                            </span>
+                            <span className="text-base font-semibold">
+                              {player.stats.misses}
+                            </span>
+                          </div>
+                          <div className="bg-muted/40 rounded-lg p-2 text-center">
+                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
+                              {dict.home.totalPaid}
+                            </span>
+                            <span className="text-base font-semibold">
+                              {player.stats.totalPaid}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

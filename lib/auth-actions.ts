@@ -2,11 +2,11 @@
 
 /* eslint-disable no-console */
 import { redirect } from 'next/navigation';
-// import crypto from 'crypto';
-import sql from './db';
+import { eq } from 'drizzle-orm';
+import { db } from './db';
+import { users } from './db/schema';
 import { hashPassword, verifyPassword } from './auth';
 import { setSession, clearSession } from './session';
-// import { sendPasswordResetEmail } from './email';
 
 type ActionState = {
   error?: string;
@@ -25,10 +25,13 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
   const hashedPassword = await hashPassword(password);
 
   try {
-    await sql`
-      INSERT INTO users (name, email, password_hash, role, is_approved)
-      VALUES (${name}, ${email}, ${hashedPassword}, 'player', FALSE)
-    `;
+    await db.insert(users).values({
+      name,
+      email,
+      passwordHash: hashedPassword,
+      role: 'player',
+      isApproved: false,
+    });
   } catch (error: unknown) {
     const dbError = error as { code?: string };
     if (dbError.code === '23505') {
@@ -51,34 +54,41 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
 
   let user;
   try {
-    const results = await sql`
-      SELECT id, name, email, password_hash, role, is_approved
-      FROM users
-      WHERE email = ${email}
-    `;
+    const results = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        passwordHash: users.passwordHash,
+        role: users.role,
+        isApproved: users.isApproved,
+      })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
     [user] = results;
   } catch (error) {
     console.error('Sign in DB error:', error);
     return { error: 'dbError' };
   }
 
-  if (!user) {
+  if (!user || !user.passwordHash) {
     return { error: 'invalidCredentials' };
   }
 
-  const isValid = await verifyPassword(password, user.password_hash);
+  const isValid = await verifyPassword(password, user.passwordHash);
   if (!isValid) {
     return { error: 'invalidCredentials' };
   }
 
-  if (!user.is_approved) {
+  if (!user.isApproved) {
     return { error: 'notApproved' };
   }
 
   await setSession({
-    id: user.id as string,
-    role: user.role as string,
-    name: user.name as string,
+    id: user.id,
+    role: user.role,
+    name: user.name,
   });
 
   redirect('/');

@@ -1,6 +1,7 @@
 export interface LeagueConfig {
   leagueId: number;
-  teamId: number;
+  // The cup re-registers the squad under a new id for the final rounds.
+  teamIds: number[];
   key: 'interliga' | 'pohar';
   name: string;
 }
@@ -18,7 +19,7 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
     leagues: [
       {
         leagueId: 368,
-        teamId: 5008,
+        teamIds: [5008],
         key: 'interliga',
         name: 'Interliga',
       },
@@ -30,13 +31,13 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
     leagues: [
       {
         leagueId: 354,
-        teamId: 4844,
+        teamIds: [4844],
         key: 'interliga',
         name: 'Interliga',
       },
       {
         leagueId: 364,
-        teamId: 4948,
+        teamIds: [4948, 4988],
         key: 'pohar',
         name: 'Slovenský pohár',
       },
@@ -45,6 +46,10 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
 ];
 
 export const DEFAULT_SEASON_ID = 13;
+
+export function isCurrentSeason(seasonId: number): boolean {
+  return seasonId === DEFAULT_SEASON_ID;
+}
 
 export function getSeasonConfig(seasonId: number): SeasonConfig | undefined {
   return SEASONS_CONFIG.find((s) => s.id === seasonId);
@@ -60,7 +65,7 @@ export function getAllTeamIds(): number[] {
   const teamIds = new Set<number>();
   SEASONS_CONFIG.forEach((season) => {
     season.leagues.forEach((league) => {
-      teamIds.add(league.teamId);
+      league.teamIds.forEach((id) => teamIds.add(id));
     });
   });
   return Array.from(teamIds);
@@ -69,5 +74,48 @@ export function getAllTeamIds(): number[] {
 export function getTeamIdsForSeason(seasonId: number): number[] {
   const season = getSeasonConfig(seasonId);
   if (!season) return [];
-  return season.leagues.map((l) => l.teamId);
+  return season.leagues.flatMap((l) => l.teamIds);
+}
+
+export function getSeasonAndLeagueConfig(
+  teamId?: number,
+  leagueId?: number,
+  leagueName?: string,
+): { seasonId: number; leagueId: number; leagueName: string } | null {
+  const allLeagues = SEASONS_CONFIG.flatMap((season) => (
+    season.leagues.map((league) => ({
+      seasonId: season.id,
+      leagueId: league.leagueId,
+      leagueName: league.name,
+      teamIds: league.teamIds,
+    }))
+  ));
+
+  const matchById = allLeagues.find((l) => (
+    (teamId && l.teamIds.includes(teamId))
+    || (leagueId && l.leagueId === leagueId)
+  ));
+
+  if (matchById) {
+    return {
+      seasonId: matchById.seasonId,
+      leagueId: matchById.leagueId,
+      leagueName: matchById.leagueName,
+    };
+  }
+
+  if (leagueName) {
+    const matchByName = allLeagues.find(
+      (l) => l.leagueName.toLowerCase() === leagueName.toLowerCase(),
+    );
+    if (matchByName) {
+      return {
+        seasonId: matchByName.seasonId,
+        leagueId: matchByName.leagueId,
+        leagueName: matchByName.leagueName,
+      };
+    }
+  }
+
+  return null;
 }

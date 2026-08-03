@@ -1,6 +1,5 @@
-import { PlayerDetail } from '@/lib/api';
 import {
-  getScrapedData,
+  getCachedPlayerName,
   getCachedPlayerBalance,
   getCachedPlayerMatchResults,
 } from '@/lib/db-utils';
@@ -37,7 +36,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
   try {
     // Fetch data from database instead of directly from API
     const [player, balance, matchFines] = await Promise.all([
-      getScrapedData<PlayerDetail>('player_detail', playerId, ['firstName', 'lastName']),
+      getCachedPlayerName(playerId),
       getCachedPlayerBalance(playerId, selectedSeasonId, selectedLeagueKey),
       getCachedPlayerMatchResults(playerId, selectedSeasonId, selectedLeagueKey),
     ]);

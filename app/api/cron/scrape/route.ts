@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { NextResponse } from 'next/server';
 import { runScrapingJob } from '@/lib/scraper';
+import { revalidateSyncedData } from '@/lib/cache';
 
 /**
  * API Route to trigger the scraping job via Vercel Cron.
@@ -39,6 +40,9 @@ export async function GET(request: Request) {
   try {
     // Run the scraping job
     await runScrapingJob('cron');
+
+    // Cached reads live for a week, so the sync has to drop them explicitly.
+    revalidateSyncedData();
 
     return NextResponse.json({
       success: true,

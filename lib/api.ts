@@ -97,21 +97,8 @@ export async function getTeamResults(teamId: number) {
 export async function getMatchDetail(matchId: number) {
   return fetchLeagueApi<MatchDetail>('/match/detail', {
     id: matchId,
-    fields: [
-      'league',
-      'details',
-      'teams',
-      'teams.club',
-      'results',
-      'results.lanes',
-      'referee',
-      'substitutions',
-      'sprint',
-      'hall',
-      'hall.parent',
-      'cards',
-      'cards.player',
-    ],
+    // Only what `syncData` reads; `lineUp` is returned regardless of this list.
+    fields: ['league', 'details', 'teams', 'teams.club', 'results', 'hall'],
   });
 }
 
