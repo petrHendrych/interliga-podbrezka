@@ -61,6 +61,8 @@ export default async function Home({
   const players = data?.players || [];
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
+  const topDebtor = data?.topDebtor || null;
+  const teamForm = data?.teamForm || null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
   const hasNoData = !data
@@ -121,22 +123,65 @@ export default async function Home({
           <CardContent className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.actualBalance}</p>
-                <p className={`text-3xl font-bold ${bankBalance.actual < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {bankBalance.actual.toFixed(2)}
-                  {' '}
-                  €
-                </p>
-              </div>
-              <div>
                 <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.grandTotal}</p>
                 <p className={`text-3xl font-bold ${bankBalance.total < 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {bankBalance.total.toFixed(2)}
                   {' '}
                   €
+                  <span className="ml-1.5 text-base font-semibold text-red-600 dark:text-red-400">
+                    (
+                    {bankBalance.unpaid.toFixed(2)}
+                    {' '}
+                    €)
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.paidOut}</p>
+                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {bankBalance.bonusesAwarded.toFixed(2)}
+                  {' '}
+                  €
+                  <span className="ml-1.5 text-base font-semibold text-muted-foreground">
+                    (
+                    {bankBalance.bonusesPaid.toFixed(2)}
+                    {' '}
+                    €)
+                  </span>
                 </p>
               </div>
             </div>
+
+            {(topDebtor || teamForm) && (
+              <div className="mt-5 pt-5 border-t border-border/60 grid grid-cols-2 gap-4">
+                {topDebtor && (
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-0.5">
+                      {dict.home.bank.topDebtor}
+                    </p>
+                    <p className="text-sm font-semibold truncate">{topDebtor.name}</p>
+                    <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                      {topDebtor.amount.toFixed(2)}
+                      {' '}
+                      €
+                    </p>
+                  </div>
+                )}
+                {teamForm && (
+                  <div>
+                    <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-0.5">
+                      {dict.home.bank.teamForm}
+                    </p>
+                    <p className="text-sm font-semibold">
+                      {interpolate(dict.home.bank.teamFormValue, {
+                        avg: teamForm.average,
+                        best: teamForm.best,
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {nextHomeMatch && (
               <div className="mt-6 flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">

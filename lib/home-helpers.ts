@@ -6,6 +6,7 @@ import {
   getPlayerBalances,
   getTeamBankBalance,
   getMatchesByTeamId,
+  type TeamBankBalance,
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
@@ -39,12 +40,24 @@ export interface TrainerWithStats {
   stats: TrainerStats;
 }
 
+export interface TopDebtor {
+  name: string;
+  amount: number;
+}
+
+export interface TeamForm {
+  average: number;
+  best: number;
+}
+
 export interface FetchDataResult {
   upcomingMatches: MatchListItem[];
   hasFinishedMatches: boolean;
   players: PlayerWithStats[];
   trainers: TrainerWithStats[];
-  bankBalance: { actual: number; total: number } | null;
+  bankBalance: TeamBankBalance | null;
+  topDebtor: TopDebtor | null;
+  teamForm: TeamForm | null;
   nextHomeMatch: MatchListItem | null;
 }
 
@@ -144,6 +157,7 @@ async function fetchHomeDataInternal(
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
   let hasFinishedMatches = false;
+  let teamForm: TeamForm | null = null;
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList; // Already filtered by season and includes team info
@@ -183,6 +197,17 @@ async function fetchHomeDataInternal(
     }
 
     hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
+
+    const playedTotals = teamMatches
+      .map((m) => m.teamTotalScore)
+      .filter((score): score is number => typeof score === 'number' && score > 0);
+
+    if (playedTotals.length > 0) {
+      teamForm = {
+        average: Math.round(playedTotals.reduce((a, b) => a + b, 0) / playedTotals.length),
+        best: Math.max(...playedTotals),
+      };
+    }
   }
 
   const eligibleBalances = playerBalances.filter(
@@ -211,6 +236,19 @@ async function fetchHomeDataInternal(
   // Sort players by AVG descending
   playersWithStats.sort((a, b) => b.stats.avg - a.stats.avg);
 
+  const [worstBalance] = [...eligibleBalances]
+    .filter((b) => b.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+
+  const topDebtor: TopDebtor | null = worstBalance
+    ? {
+      name: worstBalance.firstName
+        ? `${worstBalance.firstName} ${worstBalance.lastName}`
+        : worstBalance.name,
+      amount: worstBalance.balance,
+    }
+    : null;
+
   const trainers: TrainerWithStats[] = trainersData.map((t) => ({
     id: t.id,
     name: t.name,
@@ -228,6 +266,8 @@ async function fetchHomeDataInternal(
     players: playersWithStats,
     trainers,
     bankBalance,
+    topDebtor,
+    teamForm,
     nextHomeMatch,
   };
 }

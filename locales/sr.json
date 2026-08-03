@@ -26,8 +26,11 @@
     "filterFinale": "Finale",
     "bank": {
       "title": "Timski bank",
-      "actualBalance": "Stvarni novac",
-      "grandTotal": "Ukupan iznos (uključujući neplaćene)",
+      "grandTotal": "Ukupan iznos (neplaćeno)",
+      "paidOut": "Ukupno isplaćeno",
+      "topDebtor": "Najviše duguje",
+      "teamForm": "Forma tima",
+      "teamFormValue": "prosek {avg} · najbolji {best}",
       "nextPickup": "Sledeće podizanje novca: {date}"
     }
   },

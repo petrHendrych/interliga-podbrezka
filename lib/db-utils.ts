@@ -480,10 +480,18 @@ export async function getMatchesByTeamId(
   });
 }
 
+export interface TeamBankBalance {
+  total: number;
+  /** Portion of `total` not yet settled. */
+  unpaid: number;
+  bonusesAwarded: number;
+  bonusesPaid: number;
+}
+
 export async function getTeamBankBalance(
   seasonId?: number,
   leagueKey?: string,
-): Promise<{ actual: number; total: number }> {
+): Promise<TeamBankBalance> {
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
   const result = await sql`
@@ -507,14 +515,20 @@ export async function getTeamBankBalance(
       WHERE (m.season_id = ${targetSeasonId})
       ${leagueCondition(leagueKey)}
     )
-    SELECT 
-      (COALESCE(p.paid_fines, 0) + COALESCE(t.paid_payments, 0) - COALESCE(p.paid_bonuses, 0))::numeric as actual,
-      (COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0) - COALESCE(p.all_bonuses, 0))::numeric as total
+    SELECT
+      (COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0) - COALESCE(p.all_bonuses, 0))::numeric as total,
+      (COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0) - COALESCE(p.all_bonuses, 0)
+        - (COALESCE(p.paid_fines, 0) + COALESCE(t.paid_payments, 0)
+           - COALESCE(p.paid_bonuses, 0)))::numeric as unpaid,
+      COALESCE(p.all_bonuses, 0)::numeric as bonuses_awarded,
+      COALESCE(p.paid_bonuses, 0)::numeric as bonuses_paid
     FROM player_totals p, trainer_totals t
   `;
 
   return {
-    actual: Number(result[0].actual || 0),
     total: Number(result[0].total || 0),
+    unpaid: Number(result[0].unpaid || 0),
+    bonusesAwarded: Number(result[0].bonuses_awarded || 0),
+    bonusesPaid: Number(result[0].bonuses_paid || 0),
   };
 }

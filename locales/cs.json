@@ -26,8 +26,11 @@
     "filterFinale": "Finále",
     "bank": {
       "title": "Týmová banka",
-      "actualBalance": "Aktuální hotovost",
-      "grandTotal": "Celková suma (včetně nezaplacených)",
+      "grandTotal": "Celková suma (nezaplaceno)",
+      "paidOut": "Celkem vyplaceno",
+      "topDebtor": "Nejvíce dluží",
+      "teamForm": "Forma týmu",
+      "teamFormValue": "průměr {avg} · nejlepší {best}",
       "nextPickup": "Nejbližší výběr peněz: {date}"
     }
   },
