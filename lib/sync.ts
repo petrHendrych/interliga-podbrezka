@@ -104,6 +104,13 @@ export async function recalculateDerivedFinancials() {
       SELECT mpr.match_id, mpr.user_id, mpr.total, mpr.faults, m.date,
              COALESCE(mpr.special_faults_count, 0) AS sfc,
              w.min_total,
+             COALESCE(
+               m.is_home
+               AND m.team_total_score < 3750
+               AND (m.league_id IN (354, 368) OR m.league_name ILIKE '%interliga%')
+               AND mpr.total > 0,
+               false
+             ) AS team_under_3750,
              SUM(CASE WHEN COALESCE(mpr.faults, 0) <> 0 THEN 1 ELSE 0 END) OVER (
                PARTITION BY mpr.user_id
                ORDER BY COALESCE(m.date, '1970-01-01'), mpr.match_id
@@ -123,15 +130,17 @@ export async function recalculateDerivedFinancials() {
       FROM ordered
     )
     UPDATE match_player_results mpr
-    SET is_worst_player   = (s.total = s.min_total AND s.total > 0),
-        is_under_600      = (s.total < 600 AND s.total > 0),
-        faultless_streak  = s.streak,
-        bonus_received    = CASE WHEN s.total > 700 THEN 40 ELSE 0 END,
-        calculated_fine   = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
-                          + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
-                          + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
-                          + s.sfc * 5
-                          + CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
+    SET is_worst_player     = (s.total = s.min_total AND s.total > 0),
+        is_under_600        = (s.total < 600 AND s.total > 0),
+        is_team_under_3750  = s.team_under_3750,
+        faultless_streak    = s.streak,
+        bonus_received      = CASE WHEN s.total > 700 THEN 40 ELSE 0 END,
+        calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
+                            + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
+                            + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
+                            + s.sfc * 5
+                            + CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
+                            + CASE WHEN s.team_under_3750 THEN 10 ELSE 0 END
     FROM streaks s
     WHERE mpr.match_id = s.match_id AND mpr.user_id = s.user_id
   `);

@@ -85,6 +85,7 @@
       "faults": "{count} grešaka",
       "worstPlayer": "najslabiji igrač",
       "under600": "ispod 600",
+      "teamUnder3750": "tim ispod 3750",
       "fullFaults": "{count}x greška u pune",
       "secondToLastFaults": "{count}x pretposlednji hitac",
       "specialFaults": "{count}x specijalna greška",

@@ -85,6 +85,7 @@
       "faults": "{count} hiba",
       "worstPlayer": "leggyengébb játékos",
       "under600": "600 alatt",
+      "teamUnder3750": "csapat 3750 alatt",
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",

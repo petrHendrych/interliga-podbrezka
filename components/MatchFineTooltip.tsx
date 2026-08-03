@@ -12,6 +12,7 @@ export interface FineLabels {
     faults: string;
     worstPlayer: string;
     under600: string;
+    teamUnder3750: string;
     fullFaults: string;
     secondToLastFaults: string;
     specialFaults: string;
@@ -25,6 +26,7 @@ export interface MatchFineTooltipProps {
   faults: number;
   isWorstPlayer: boolean;
   isUnder600: boolean;
+  isTeamUnder3750: boolean;
   fullFaultsCount: number;
   secondToLastFaultsCount: number;
   specialFaultsCount: number;
@@ -38,6 +40,7 @@ export function MatchFineTooltip({
   faults,
   isWorstPlayer,
   isUnder600,
+  isTeamUnder3750,
   fullFaultsCount,
   secondToLastFaultsCount,
   specialFaultsCount,
@@ -47,17 +50,6 @@ export function MatchFineTooltip({
   if (calculatedFine <= 0) {
     return <span className="text-muted-foreground font-normal">0 €</span>;
   }
-
-  const sequentialFine = (faults * (faults + 1)) / 2;
-  const worstFine = isWorstPlayer ? 1 : 0;
-  const under600Fine = isUnder600 ? 1 : 0;
-  const totalSpecialCount = Math.max(
-    fullFaultsCount + secondToLastFaultsCount,
-    specialFaultsCount,
-  );
-  const specialFine = totalSpecialCount * 5;
-  const expectedBaseFine = sequentialFine + worstFine + under600Fine + specialFine;
-  const streakFine = Math.max(0, calculatedFine - expectedBaseFine);
 
   const reasonsList: string[] = [];
 
@@ -88,10 +80,11 @@ export function MatchFineTooltip({
   if (isUnder600) {
     reasonsList.push(labels.reasons.under600);
   }
-  if (streakFine > 0 || (faultlessStreak !== undefined && faultlessStreak >= 5)) {
-    const streakNum = faultlessStreak || 5;
-    const streakReasonText = interpolate(labels.reasons.streak, { count: streakNum });
-    reasonsList.push(streakReasonText);
+  if (isTeamUnder3750) {
+    reasonsList.push(labels.reasons.teamUnder3750);
+  }
+  if (faultlessStreak !== undefined && faultlessStreak >= 5) {
+    reasonsList.push(interpolate(labels.reasons.streak, { count: faultlessStreak }));
   }
 
   const colorClasses = isPaid
