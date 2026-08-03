@@ -29,7 +29,7 @@
       "grandTotal": "Ukupan iznos (neplaćeno)",
       "paidOut": "Ukupno isplaćeno",
       "topDonator": "Najveći donator",
-      "belowLimit": "Ispod limita",
+      "belowLimit": "Ispod limita (3750)",
       "nextPickup": "Sledeće podizanje novca: {date}"
     }
   },

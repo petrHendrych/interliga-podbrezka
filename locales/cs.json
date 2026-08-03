@@ -29,7 +29,7 @@
       "grandTotal": "Celková suma (nezaplaceno)",
       "paidOut": "Celkem vyplaceno",
       "topDonator": "Největší dárce",
-      "belowLimit": "Pod limit",
+      "belowLimit": "Pod limit (3750)",
       "nextPickup": "Nejbližší výběr peněz: {date}"
     }
   },

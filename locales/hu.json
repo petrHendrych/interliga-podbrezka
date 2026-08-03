@@ -29,7 +29,7 @@
       "grandTotal": "Teljes összeg (kifizetetlen)",
       "paidOut": "Összesen kifizetve",
       "topDonator": "Legnagyobb adományozó",
-      "belowLimit": "Limit alatt",
+      "belowLimit": "Limit alatt (3750)",
       "nextPickup": "Következő pénzfelvétel: {date}"
     }
   },
