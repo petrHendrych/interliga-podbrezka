@@ -141,6 +141,17 @@ export const getCachedPlayerName = unstable_cache(
   { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-detail'] },
 );
 
+/** Narrows to one league; expects the `matches` table aliased as `m`. */
+function leagueCondition(leagueKey?: string) {
+  if (leagueKey === 'interliga') {
+    return sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
+  }
+  if (leagueKey === 'pohar') {
+    return sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+  }
+  return sql``;
+}
+
 export interface DBTrainerStats {
   id: string;
   name: string;
@@ -156,13 +167,6 @@ export async function getTrainersWithStats(
 ): Promise<DBTrainerStats[]> {
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
-  let leagueCondition = sql``;
-  if (leagueKey === 'interliga') {
-    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
-  } else if (leagueKey === 'pohar') {
-    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
-  }
-
   const trainers = (await sql`
     SELECT 
       u.id::text, 
@@ -175,7 +179,7 @@ export async function getTrainersWithStats(
     LEFT JOIN trainer_payments tp ON u.id = tp.user_id
     LEFT JOIN matches m ON tp.match_id = m.external_id 
       AND (m.season_id = ${targetSeasonId})
-      ${leagueCondition}
+      ${leagueCondition(leagueKey)}
     WHERE u.role = 'trainer' AND u.is_approved = true
     GROUP BY u.id, u.name
     ORDER BY u.name ASC
@@ -236,13 +240,6 @@ export async function getPlayerBalances(
 ): Promise<PlayerSeasonBalance[]> {
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
-  let leagueCondition = sql``;
-  if (leagueKey === 'interliga') {
-    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
-  } else if (leagueKey === 'pohar') {
-    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
-  }
-
   const rows = await sql`
     SELECT 
       u.external_player_id,
@@ -282,7 +279,7 @@ export async function getPlayerBalances(
     LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
     LEFT JOIN matches m ON mpr.match_id = m.external_id
       AND (m.season_id = ${targetSeasonId})
-      ${leagueCondition}
+      ${leagueCondition(leagueKey)}
     WHERE u.role = 'player' AND u.is_approved = true
     GROUP BY u.external_player_id, u.name, u.id, pd.first_name, pd.last_name
     ORDER BY u.name ASC
@@ -312,13 +309,6 @@ export async function getPlayerBalanceByExternalId(
 ): Promise<PlayerBalance> {
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
-  let leagueCondition = sql``;
-  if (leagueKey === 'interliga') {
-    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
-  } else if (leagueKey === 'pohar') {
-    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
-  }
-
   const rows = await sql`
     SELECT 
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
@@ -330,7 +320,7 @@ export async function getPlayerBalanceByExternalId(
     LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
     LEFT JOIN matches m ON mpr.match_id = m.external_id 
       AND (m.season_id = ${targetSeasonId})
-      ${leagueCondition}
+      ${leagueCondition(leagueKey)}
     WHERE u.external_player_id = ${externalPlayerId}
     GROUP BY u.external_player_id
   `;
@@ -367,13 +357,6 @@ export async function getPlayerMatchResultsByExternalId(
 ): Promise<PlayerMatchResult[]> {
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
-  let leagueCondition = sql``;
-  if (leagueKey === 'interliga') {
-    leagueCondition = sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
-  } else if (leagueKey === 'pohar') {
-    leagueCondition = sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
-  }
-
   const rows = await sql`
     SELECT 
       mpr.match_id,
@@ -401,7 +384,7 @@ export async function getPlayerMatchResultsByExternalId(
     JOIN matches m ON mpr.match_id = m.external_id
     WHERE u.external_player_id = ${externalPlayerId}
       AND (m.season_id = ${targetSeasonId})
-      ${leagueCondition}
+      ${leagueCondition(leagueKey)}
     ORDER BY m.date DESC
   `;
 
@@ -496,12 +479,13 @@ export async function getMatchesByTeamId(
 
 export async function getTeamBankBalance(
   seasonId?: number,
+  leagueKey?: string,
 ): Promise<{ actual: number; total: number }> {
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
   const result = await sql`
     WITH player_totals AS (
-      SELECT 
+      SELECT
         SUM(CASE WHEN mpr.is_paid THEN mpr.calculated_fine ELSE 0 END) as paid_fines,
         SUM(mpr.calculated_fine) as all_fines,
         SUM(CASE WHEN mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END) as paid_bonuses,
@@ -509,6 +493,7 @@ export async function getTeamBankBalance(
       FROM match_player_results mpr
       JOIN matches m ON mpr.match_id = m.external_id
       WHERE (m.season_id = ${targetSeasonId})
+      ${leagueCondition(leagueKey)}
     ),
     trainer_totals AS (
       SELECT
@@ -517,6 +502,7 @@ export async function getTeamBankBalance(
       FROM trainer_payments tp
       JOIN matches m ON tp.match_id = m.external_id
       WHERE (m.season_id = ${targetSeasonId})
+      ${leagueCondition(leagueKey)}
     )
     SELECT 
       (COALESCE(p.paid_fines, 0) + COALESCE(t.paid_payments, 0) - COALESCE(p.paid_bonuses, 0))::numeric as actual,
