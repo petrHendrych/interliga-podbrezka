@@ -9,7 +9,7 @@ import {
   matchPlayerResults,
   scrapedData,
 } from './db/schema';
-import { getAllTeamIds, getSeasonAndLeagueConfig } from './season-config';
+import { getAllTeamIds, getSeasonAndLeagueConfig, TEAM_SCORE_LIMIT } from './season-config';
 import { MatchListItem } from './api';
 
 export interface SyncMatchData {
@@ -106,7 +106,7 @@ export async function recalculateDerivedFinancials() {
              w.min_total,
              COALESCE(
                m.is_home
-               AND m.team_total_score < 3750
+               AND m.team_total_score < ${TEAM_SCORE_LIMIT}
                AND (m.league_id IN (354, 368) OR m.league_name ILIKE '%interliga%')
                AND mpr.total > 0,
                false

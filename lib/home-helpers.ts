@@ -10,6 +10,7 @@ import {
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
+  TEAM_SCORE_LIMIT,
   getLeagueConfig,
   getTeamIdsForSeason,
   isCurrentSeason,
@@ -45,11 +46,6 @@ export interface TopDonator {
   amount: number;
 }
 
-export interface TeamForm {
-  average: number;
-  best: number;
-}
-
 const INTERLIGA_LEAGUE_IDS = [354, 368];
 
 function isInterliga(match: MatchListItem): boolean {
@@ -57,30 +53,15 @@ function isInterliga(match: MatchListItem): boolean {
     || (match.leagueName?.toLowerCase().includes('interliga') ?? false);
 }
 
-/**
- * Interliga only, since cup matches field four players and their totals are not
- * comparable. Weighted like the player average: all home games collapse into a
- * single sample, each away game counts on its own.
- */
-function getTeamForm(matches: MatchListItem[]): TeamForm | null {
+/** Played Interliga home matches under the limit, or null when the rule cannot apply. */
+function countBelowLimit(matches: MatchListItem[]): number | null {
   const played = matches.filter((m): m is MatchListItem & { teamTotalScore: number } => (
-    isInterliga(m) && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
+    isInterliga(m) && Boolean(m.isHome)
+    && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
   ));
   if (played.length === 0) return null;
 
-  const home = played.filter((m) => m.isHome).map((m) => m.teamTotalScore);
-  const away = played.filter((m) => !m.isHome).map((m) => m.teamTotalScore);
-
-  const homeAverage = home.length > 0
-    ? home.reduce((sum, score) => sum + score, 0) / home.length
-    : 0;
-  const samples = (home.length > 0 ? 1 : 0) + away.length;
-  const awayTotal = away.reduce((sum, score) => sum + score, 0);
-
-  return {
-    average: Math.round((homeAverage + awayTotal) / samples),
-    best: Math.max(...played.map((m) => m.teamTotalScore)),
-  };
+  return played.filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT).length;
 }
 
 export interface FetchDataResult {
@@ -90,7 +71,7 @@ export interface FetchDataResult {
   trainers: TrainerWithStats[];
   bankBalance: TeamBankBalance | null;
   topDonator: TopDonator | null;
-  teamForm: TeamForm | null;
+  belowLimit: number | null;
   nextHomeMatch: MatchListItem | null;
 }
 
@@ -190,7 +171,7 @@ async function fetchHomeDataInternal(
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
   let hasFinishedMatches = false;
-  let teamForm: TeamForm | null = null;
+  let belowLimit: number | null = null;
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList; // Already filtered by season and includes team info
@@ -230,7 +211,7 @@ async function fetchHomeDataInternal(
     }
 
     hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
-    teamForm = getTeamForm(teamMatches);
+    belowLimit = countBelowLimit(teamMatches);
   }
 
   const eligibleBalances = playerBalances.filter(
@@ -290,7 +271,7 @@ async function fetchHomeDataInternal(
     trainers,
     bankBalance,
     topDonator,
-    teamForm,
+    belowLimit,
     nextHomeMatch,
   };
 }

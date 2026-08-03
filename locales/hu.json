@@ -29,8 +29,7 @@
       "grandTotal": "Teljes összeg (kifizetetlen)",
       "paidOut": "Összesen kifizetve",
       "topDonator": "Legnagyobb adományozó",
-      "teamForm": "Csapat forma",
-      "teamFormValue": "átlag {avg} · legjobb {best}",
+      "belowLimit": "Limit alatt",
       "nextPickup": "Következő pénzfelvétel: {date}"
     }
   },

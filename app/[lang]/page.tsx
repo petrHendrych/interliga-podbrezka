@@ -62,7 +62,7 @@ export default async function Home({
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
   const topDonator = data?.topDonator || null;
-  const teamForm = data?.teamForm || null;
+  const belowLimit = data?.belowLimit ?? null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
   const hasNoData = !data
@@ -152,7 +152,7 @@ export default async function Home({
               </div>
             </div>
 
-            {(topDonator || teamForm) && (
+            {(topDonator || belowLimit !== null) && (
               <div className="mt-5 pt-5 border-t border-border/60 grid grid-cols-2 gap-4">
                 {topDonator && (
                   <div>
@@ -167,16 +167,13 @@ export default async function Home({
                     </p>
                   </div>
                 )}
-                {teamForm && (
+                {belowLimit !== null && (
                   <div>
                     <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-0.5">
-                      {dict.home.bank.teamForm}
+                      {dict.home.bank.belowLimit}
                     </p>
-                    <p className="text-sm font-semibold">
-                      {interpolate(dict.home.bank.teamFormValue, {
-                        avg: teamForm.average,
-                        best: teamForm.best,
-                      })}
+                    <p className={`text-lg font-bold ${belowLimit > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {belowLimit}
                     </p>
                   </div>
                 )}

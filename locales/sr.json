@@ -29,8 +29,7 @@
       "grandTotal": "Ukupan iznos (neplaćeno)",
       "paidOut": "Ukupno isplaćeno",
       "topDonator": "Najveći donator",
-      "teamForm": "Forma tima",
-      "teamFormValue": "prosek {avg} · najbolji {best}",
+      "belowLimit": "Ispod limita",
       "nextPickup": "Sledeće podizanje novca: {date}"
     }
   },

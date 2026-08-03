@@ -47,6 +47,9 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
 
 export const DEFAULT_SEASON_ID = 13;
 
+/** Interliga home matches under this team total fine every player who played. */
+export const TEAM_SCORE_LIMIT = 3750;
+
 export function isCurrentSeason(seasonId: number): boolean {
   return seasonId === DEFAULT_SEASON_ID;
 }

@@ -29,8 +29,7 @@
       "grandTotal": "Celková suma (nezaplaceno)",
       "paidOut": "Celkem vyplaceno",
       "topDonator": "Největší dárce",
-      "teamForm": "Forma týmu",
-      "teamFormValue": "průměr {avg} · nejlepší {best}",
+      "belowLimit": "Pod limit",
       "nextPickup": "Nejbližší výběr peněz: {date}"
     }
   },
