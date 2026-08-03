@@ -103,6 +103,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
         <Separator className="my-8" />
 
         <SeasonLeagueFilter
+          className="mb-6 rounded-xl border border-border/80 bg-card p-3 shadow-sm"
           seasons={SEASONS_CONFIG}
           selectedSeasonId={selectedSeasonId}
           selectedLeagueKey={selectedLeagueKey}

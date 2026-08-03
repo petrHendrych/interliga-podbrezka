@@ -26,7 +26,8 @@
     "filterFinale": "Finale",
     "bank": {
       "title": "Timski bank",
-      "grandTotal": "Ukupan iznos (neplaćeno)",
+      "grandTotal": "Ukupan iznos",
+      "unpaid": "Neplaćeno",
       "paidOut": "Ukupno isplaćeno",
       "topDonator": "Najveći donator",
       "belowLimit": "Ispod limita (3750)",

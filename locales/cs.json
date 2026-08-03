@@ -26,7 +26,8 @@
     "filterFinale": "Finále",
     "bank": {
       "title": "Týmová banka",
-      "grandTotal": "Celková suma (nezaplaceno)",
+      "grandTotal": "Celková suma",
+      "unpaid": "Nezaplaceno",
       "paidOut": "Celkem vyplaceno",
       "topDonator": "Největší dárce",
       "belowLimit": "Pod limit (3750)",

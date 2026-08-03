@@ -4,6 +4,7 @@ import {
   Bus,
   Crown,
   AlertTriangle,
+  Wallet,
 } from 'lucide-react';
 import { TEAM_ID } from '@/lib/api';
 import {
@@ -15,10 +16,19 @@ import {
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
+
+const STAT_TILE = 'rounded-lg bg-surface-2 p-2 text-center flex flex-col justify-center';
+const STAT_LABEL = 'block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground';
+const STAT_GRID = 'grid flex-1 min-w-0 grid-cols-2 sm:grid-cols-4 gap-2';
+const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5';
+const PERSON_BODY = 'mt-3 flex items-center gap-3 sm:gap-4';
+const AVATAR = 'w-20 h-20 rounded-2xl after:rounded-2xl shrink-0';
+/** One value per row, so a long name can never push the amount out of the card. */
+const BANK_ROW = 'flex items-baseline justify-between gap-3 border-b border-foreground/10 py-3';
+const BANK_LABEL = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+const BANK_VALUE = 'shrink-0 text-base font-bold tabular-nums';
 
 export default async function Home({
   params,
@@ -46,7 +56,7 @@ export default async function Home({
 
   if (errorMsg) {
     return (
-      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto w-full">
         <h1 className="text-2xl font-bold mb-4 text-red-600">{dict.home.errorTitle}</h1>
         <div className="bg-red-950 border border-red-900 p-4 rounded-lg">
           <p className="text-red-300">{errorMsg}</p>
@@ -71,9 +81,88 @@ export default async function Home({
       && players.length === 0);
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
+      {bankBalance && (
+        <section className="rounded-2xl bg-surface p-5 sm:p-7">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Wallet className="w-4 h-4" />
+            <h1 className="text-xs font-semibold uppercase tracking-[0.15em]">
+              {dict.home.bank.title}
+            </h1>
+          </div>
+
+          <p className={`mt-3 text-4xl sm:text-6xl font-bold tabular-nums tracking-tight leading-none ${bankBalance.total < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            {bankBalance.total.toFixed(2)}
+            {' '}
+            €
+          </p>
+
+          <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-10 border-t border-foreground/10">
+            <div className={BANK_ROW}>
+              <dt className={BANK_LABEL}>{dict.home.bank.unpaid}</dt>
+              <dd className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
+                {bankBalance.unpaid.toFixed(2)}
+                {' '}
+                €
+              </dd>
+            </div>
+
+            <div className={BANK_ROW}>
+              <dt className={BANK_LABEL}>{dict.home.bank.paidOut}</dt>
+              <dd className={BANK_VALUE}>
+                {bankBalance.bonusesAwarded.toFixed(2)}
+                {' '}
+                €
+                <span className="ml-1.5 text-xs font-medium text-muted-foreground">
+                  (
+                  {bankBalance.bonusesPaid.toFixed(2)}
+                  {' '}
+                  €)
+                </span>
+              </dd>
+            </div>
+
+            {topDonator && (
+              <div className={BANK_ROW}>
+                <dt className={BANK_LABEL}>{dict.home.bank.topDonator}</dt>
+                <dd className="flex min-w-0 items-baseline justify-end gap-2">
+                  <span className="truncate text-sm font-semibold">{topDonator.name}</span>
+                  <span className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
+                    {topDonator.amount.toFixed(2)}
+                    {' '}
+                    €
+                  </span>
+                </dd>
+              </div>
+            )}
+
+            {belowLimit !== null && (
+              <div className={BANK_ROW}>
+                <dt className={BANK_LABEL}>{dict.home.bank.belowLimit}</dt>
+                <dd className={`${BANK_VALUE} ${belowLimit > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {belowLimit}
+                  x
+                </dd>
+              </div>
+            )}
+          </dl>
+
+          {nextHomeMatch && (
+            <div className="mt-5 flex items-start gap-2.5 rounded-lg bg-amber-500/10 p-3 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <p className="text-sm font-medium">
+                {interpolate(
+                  dict.home.bank.nextPickup,
+                  { date: formatDateOnly(nextHomeMatch.startDate, lang) },
+                )}
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
       {upcomingMatches.length > 0 && (
-        <div className="flex flex-col gap-6 mb-8">
+        <div className="mt-4 flex flex-col gap-3">
           {upcomingMatches.map((match) => {
             const { isHome } = match;
             const opponentName = isHome ? match.awayName : match.homeName;
@@ -81,36 +170,28 @@ export default async function Home({
             return (
               <div
                 key={match.id}
-                className="border-[3px] border-amber-500 rounded-xl relative bg-card text-card-foreground p-6 shadow-sm"
+                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-amber-500"
               >
-                <div className="absolute -top-3.5 left-6 bg-background px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500 rounded-md z-10">
-                  {interpolate(dict.home.roundFormat, { round: match.round })}
+                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  {isHome ? <HomeIcon className="w-4 h-4" /> : <Bus className="w-4 h-4" />}
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                        {dict.home.upcomingMatch}
-                      </span>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {isHome ? dict.home.homeMatch : dict.home.awayMatch}
-                      </span>
-                    </div>
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                      {interpolate(dict.home.roundFormat, { round: match.round })}
+                    </span>
+                    <span className="text-sm font-bold truncate">
                       {dict.home.vs}
                       {' '}
                       {opponentName}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {formatMatchDate(match.startDate, lang)}
-                    </p>
+                    </span>
                   </div>
-
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
-                    {isHome ? <HomeIcon className="w-6 h-6" /> : <Bus className="w-6 h-6" />}
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatMatchDate(match.startDate, lang)}
+                    {' · '}
+                    {isHome ? dict.home.homeMatch : dict.home.awayMatch}
+                  </p>
                 </div>
               </div>
             );
@@ -118,255 +199,152 @@ export default async function Home({
         </div>
       )}
 
-      {bankBalance && (
-        <Card className="mb-8 border-primary/20 bg-primary/5">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.grandTotal}</p>
-                <p className={`text-3xl font-bold ${bankBalance.total < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {bankBalance.total.toFixed(2)}
-                  {' '}
-                  €
-                  <span className="ml-1.5 text-base font-semibold text-red-600 dark:text-red-400">
-                    (
-                    {bankBalance.unpaid.toFixed(2)}
-                    {' '}
-                    €)
-                  </span>
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">{dict.home.bank.paidOut}</p>
-                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {bankBalance.bonusesAwarded.toFixed(2)}
-                  {' '}
-                  €
-                  <span className="ml-1.5 text-base font-semibold text-muted-foreground">
-                    (
-                    {bankBalance.bonusesPaid.toFixed(2)}
-                    {' '}
-                    €)
-                  </span>
-                </p>
-              </div>
-            </div>
+      {/* Pinned under the header so switching season/league never moves the control. */}
+      <div className="sticky top-16 z-30 -mx-4 md:-mx-8 mt-8 mb-8 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur-md md:px-8">
+        <SeasonLeagueFilter
+          seasons={SEASONS_CONFIG}
+          selectedSeasonId={selectedSeasonId}
+          selectedLeagueKey={selectedLeagueKey}
+          labels={{
+            seasonLabel: dict.home.season || 'Sezóna',
+            allLeagues: dict.home.filterAll || 'Všetky',
+            interliga: dict.home.filterInterliga || 'Interliga',
+            pohar: dict.home.filterPohar || 'Slovenský pohár',
+          }}
+        />
+      </div>
 
-            {(topDonator || belowLimit !== null) && (
-              <div className="mt-5 pt-5 border-t border-border/60 grid grid-cols-2 gap-4">
-                {topDonator && (
-                  <div>
-                    <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-0.5">
-                      {dict.home.bank.topDonator}
-                    </p>
-                    <p className="text-sm font-semibold truncate">{topDonator.name}</p>
-                    <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                      {topDonator.amount.toFixed(2)}
-                      {' '}
-                      €
-                    </p>
-                  </div>
-                )}
-                {belowLimit !== null && (
-                  <div>
-                    <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-0.5">
-                      {dict.home.bank.belowLimit}
-                    </p>
-                    <p className={`text-lg font-bold ${belowLimit > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                      {belowLimit}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+      {/* Keeps the page taller than the viewport so the scrollbar never toggles. */}
+      <div className="min-h-[60vh] pb-4">
+        {hasNoData ? (
+          <div className="rounded-xl bg-surface p-8 text-center text-muted-foreground">
+            <p>
+              {dict.home.noResults}
+              {' '}
+              {TEAM_ID}
+            </p>
+          </div>
+        ) : (
+          (players.length > 0 || trainers.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-8">
+              {trainers.map((trainer) => (
+                <div
+                  key={trainer.id}
+                  className={`md:col-span-2 ${PERSON_CARD} ring-1 ring-inset ring-amber-500/25`}
+                >
+                  <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
+                    {trainer.name}
+                  </h2>
 
-            {nextHomeMatch && (
-              <div className="mt-6 flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-                <p className="text-sm font-medium">
-                  {interpolate(
-                    dict.home.bank.nextPickup,
-                    { date: formatDateOnly(nextHomeMatch.startDate, lang) },
-                  )}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  <div className={PERSON_BODY}>
+                    <Avatar className={AVATAR}>
+                      <AvatarImage
+                        src="/players/3009.JPG"
+                        alt={trainer.name}
+                        className="rounded-2xl"
+                      />
+                      <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
+                        {trainer.name.split(' ').map((n) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
 
-      {(upcomingMatches.length > 0 || bankBalance)
-        && (players.length > 0 || trainers.length > 0) && (
-        <Separator className="my-8" />
-      )}
-
-      <SeasonLeagueFilter
-        seasons={SEASONS_CONFIG}
-        selectedSeasonId={selectedSeasonId}
-        selectedLeagueKey={selectedLeagueKey}
-        labels={{
-          seasonLabel: dict.home.season || 'Sezóna',
-          allLeagues: dict.home.filterAll || 'Všetky',
-          interliga: dict.home.filterInterliga || 'Interliga',
-          pohar: dict.home.filterPohar || 'Slovenský pohár',
-        }}
-      />
-
-      {hasNoData ? (
-        <div className="mt-6 p-8 text-center border rounded-lg bg-card text-muted-foreground">
-          <p>
-            {dict.home.noResults}
-            {' '}
-            {TEAM_ID}
-          </p>
-        </div>
-      ) : (
-        (players.length > 0 || trainers.length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {trainers.map((trainer) => (
-              <div
-                key={trainer.id}
-                className="md:col-span-2"
-              >
-                <Card className="relative overflow-hidden border-amber-500/50 bg-amber-50/5 dark:bg-amber-950/5 h-full">
-                  <CardContent className="p-4 sm:p-5">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                      <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-amber-200 dark:border-amber-900">
-                        <AvatarImage
-                          src="/players/3009.JPG"
-                          alt={trainer.name}
-                          className="rounded-2xl"
-                        />
-                        <AvatarFallback className="rounded-2xl text-lg font-semibold">
-                          {trainer.name.split(' ').map((n) => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 w-full text-center sm:text-left">
-                        <h2 className="font-bold text-lg sm:text-xl leading-snug">
-                          {trainer.name}
-                        </h2>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.count3800}
-                            </span>
-                            <span className="text-base font-bold">
-                              {trainer.stats.count3800}
-                            </span>
-                          </div>
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.count3900}
-                            </span>
-                            <span className="text-base font-bold">
-                              {trainer.stats.count3900}
-                            </span>
-                          </div>
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.zeroMisses}
-                            </span>
-                            <span className="text-base font-semibold">
-                              {trainer.stats.zeroMisses}
-                            </span>
-                          </div>
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.totalPaid}
-                            </span>
-                            <span className="text-base font-semibold">
-                              {trainer.stats.totalPaid}
-                            </span>
-                          </div>
-                        </div>
+                    <div className={STAT_GRID}>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.count3800}</span>
+                        <span className="text-base font-bold tabular-nums">
+                          {trainer.stats.count3800}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.count3900}</span>
+                        <span className="text-base font-bold tabular-nums">
+                          {trainer.stats.count3900}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
+                        <span className="text-base font-semibold tabular-nums">
+                          {trainer.stats.zeroMisses}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
+                        <span className="text-base font-semibold tabular-nums">
+                          {trainer.stats.totalPaid}
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-            {players.map((player, index) => (
-              <Link
-                key={player.id}
-                href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
-                className="block transition-transform hover:scale-[1.01] active:scale-[0.99]"
-              >
-                <Card className="relative overflow-hidden hover:border-primary transition-colors h-full">
+                  </div>
+                </div>
+              ))}
+              {players.map((player, index) => (
+                <Link
+                  key={player.id}
+                  href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
+                  className={`relative block ${PERSON_CARD} ring-1 ring-inset ring-transparent transition-[box-shadow,transform] hover:ring-foreground/15 active:scale-[0.99]`}
+                >
                   {index === 0 && (
                     <Crown className="w-5 h-5 text-amber-500 fill-amber-400 rotate-12 absolute top-3.5 right-3.5 z-10" />
                   )}
-                  <CardContent className="p-4 sm:p-5">
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                      <Avatar className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0 border-2 border-muted">
-                        <AvatarImage
-                          src="/players/3009.JPG"
-                          alt={`${player.firstName} ${player.lastName}`}
-                          className="rounded-2xl"
-                        />
-                        <AvatarFallback className="rounded-2xl text-lg font-semibold">
-                          {player.firstName?.[0]}
-                          {player.lastName?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                  <div className={`flex items-baseline gap-1.5 min-w-0 ${index === 0 ? 'pr-7' : ''}`}>
+                    <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
+                      {player.firstName}
+                      {' '}
+                      {player.lastName}
+                    </h2>
+                    <span className="shrink-0 text-sm font-normal text-muted-foreground tabular-nums">
+                      (
+                      {player.stats.matchesCount}
+                      )
+                    </span>
+                  </div>
 
-                      <div className="flex-1 w-full text-center sm:text-left">
-                        <h2 className="font-bold text-lg sm:text-xl leading-snug">
-                          {player.firstName}
-                          {' '}
-                          {player.lastName}
-                          {' '}
-                          <span className="text-muted-foreground font-normal text-base">
-                            (
-                            {player.stats.matchesCount}
-                            )
-                          </span>
-                        </h2>
+                  <div className={PERSON_BODY}>
+                    <Avatar className={AVATAR}>
+                      <AvatarImage
+                        src="/players/3009.JPG"
+                        alt={`${player.firstName} ${player.lastName}`}
+                        className="rounded-2xl"
+                      />
+                      <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
+                        {player.firstName?.[0]}
+                        {player.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/60">
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.avg}
-                            </span>
-                            <span className="text-base font-bold text-primary">
-                              {player.stats.avg || '-'}
-                            </span>
-                          </div>
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.max}
-                            </span>
-                            <span className="text-base font-bold">
-                              {player.stats.max || '-'}
-                            </span>
-                          </div>
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.misses}
-                            </span>
-                            <span className="text-base font-semibold">
-                              {player.stats.misses}
-                            </span>
-                          </div>
-                          <div className="bg-muted/40 rounded-lg p-2 text-center">
-                            <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
-                              {dict.home.totalPaid}
-                            </span>
-                            <span className="text-base font-semibold">
-                              {player.stats.totalPaid}
-                            </span>
-                          </div>
-                        </div>
+                    <div className={STAT_GRID}>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.avg}</span>
+                        <span className="text-base font-bold tabular-nums text-primary">
+                          {player.stats.avg || '-'}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.max}</span>
+                        <span className="text-base font-bold tabular-nums">
+                          {player.stats.max || '-'}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.misses}</span>
+                        <span className="text-base font-semibold tabular-nums">
+                          {player.stats.misses}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
+                        <span className="text-base font-semibold tabular-nums">
+                          {player.stats.totalPaid}
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )
-      )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

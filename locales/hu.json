@@ -26,7 +26,8 @@
     "filterFinale": "Döntő",
     "bank": {
       "title": "Csapat bank",
-      "grandTotal": "Teljes összeg (kifizetetlen)",
+      "grandTotal": "Teljes összeg",
+      "unpaid": "Kifizetetlen",
       "paidOut": "Összesen kifizetve",
       "topDonator": "Legnagyobb adományozó",
       "belowLimit": "Limit alatt (3750)",

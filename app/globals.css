@@ -40,6 +40,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -55,6 +57,9 @@
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
+  /* Elevation scale for borderless surfaces: page -> surface -> surface-2. */
+  --surface: oklch(0.974 0.002 264.695);
+  --surface-2: oklch(0.941 0.004 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
@@ -91,6 +96,8 @@
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.147 0.043 265.755);
   --card-foreground: oklch(0.985 0 0);
+  --surface: oklch(0.187 0.036 265.755);
+  --surface-2: oklch(0.242 0.034 265.755);
   --popover: oklch(0.129 0.042 264.695);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
@@ -129,5 +136,7 @@
   }
   html {
     @apply font-sans;
+    /* Reserve the scrollbar track so short pages don't shift wider than tall ones. */
+    scrollbar-gutter: stable;
   }
 }
