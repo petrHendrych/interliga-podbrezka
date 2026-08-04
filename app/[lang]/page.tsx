@@ -280,7 +280,7 @@ export default async function Home({
       )}
 
       {/* Pinned under the header so switching season/league never moves the control. */}
-      <div className="sticky top-16 z-30 -mx-4 md:-mx-8 mt-8 mb-8 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur-md md:px-8">
+      <div className="sticky top-16 z-30 -mx-4 md:-mx-8 mt-8 mb-8 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60 md:px-8">
         <SeasonLeagueFilter
           seasons={SEASONS_CONFIG}
           selectedSeasonId={selectedSeasonId}
