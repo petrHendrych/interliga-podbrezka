@@ -22,16 +22,18 @@ const FADE_INWARD_FROM_RIGHT = 'bg-linear-to-l from-decor-dot/80 to-transparent 
 /**
  * The wordmark, flanked by two stepped rules at each end — a short one on the
  * baseline and a longer one below it — that overhang the text box and fade out
- * towards the letters.
+ * towards the letters. The rules only appear once the wordmark is centred
+ * (`md` and up); on mobile it sits against the left edge, where an inward
+ * overhang has no room to breathe.
  */
 export function BrandTitle({ className }: { className?: string }) {
   return (
     <span className={cn('relative font-bold uppercase', className)}>
       Interliga Podbrezová
-      <span aria-hidden className={cn(RULE, RULE_LOW, FADE_INWARD_FROM_LEFT, '-left-8')} />
-      <span aria-hidden className={cn(RULE, RULE_LOW, FADE_INWARD_FROM_RIGHT, '-right-8')} />
-      <span aria-hidden className={cn(RULE, RULE_HIGH, FADE_INWARD_FROM_LEFT, '-left-5')} />
-      <span aria-hidden className={cn(RULE, RULE_HIGH, FADE_INWARD_FROM_RIGHT, '-right-5')} />
+      <span aria-hidden className={cn(RULE, RULE_LOW, FADE_INWARD_FROM_LEFT, '-left-8 hidden md:block')} />
+      <span aria-hidden className={cn(RULE, RULE_LOW, FADE_INWARD_FROM_RIGHT, '-right-8 hidden md:block')} />
+      <span aria-hidden className={cn(RULE, RULE_HIGH, FADE_INWARD_FROM_LEFT, '-left-5 hidden md:block')} />
+      <span aria-hidden className={cn(RULE, RULE_HIGH, FADE_INWARD_FROM_RIGHT, '-right-5 hidden md:block')} />
     </span>
   );
 }
