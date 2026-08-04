@@ -49,14 +49,24 @@ function SelectContent({
   children,
   sideOffset = 4,
   align = 'start',
+  side = 'bottom',
   ...props
 }: SelectPrimitive.Popup.Props & {
   sideOffset?: number;
   align?: SelectPrimitive.Positioner.Props['align'];
+  side?: SelectPrimitive.Positioner.Props['side'];
 }) {
   return (
     <SelectPrimitive.Portal>
-      <SelectPrimitive.Positioner sideOffset={sideOffset} align={align} className="z-50">
+      <SelectPrimitive.Positioner
+        sideOffset={sideOffset}
+        align={align}
+        side={side}
+        // Base UI defaults to overlaying the trigger so the selected item sits on
+        // top of it; we want a plain dropdown below the field instead.
+        alignItemWithTrigger={false}
+        className="z-50"
+      >
         <SelectPrimitive.Popup
           className={cn(
             'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

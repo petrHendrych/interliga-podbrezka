@@ -9,8 +9,19 @@ import {
   matchPlayerResults,
   scrapedData,
 } from './db/schema';
-import { getAllTeamIds, getSeasonAndLeagueConfig, TEAM_SCORE_LIMIT } from './season-config';
+import {
+  getAllTeamIds,
+  getSeasonAndLeagueConfig,
+  INTERLIGA_LEAGUE_IDS,
+  TEAM_SCORE_LIMIT,
+  TOURNAMENT_LEAGUE_IDS,
+} from './season-config';
 import { MatchListItem } from './api';
+
+/** Renders a number list for an `IN (...)` clause. */
+function idList(ids: number[]) {
+  return sql.join(ids.map((id) => sql`${id}`), sql`, `);
+}
 
 export interface SyncMatchData {
   id?: number;
@@ -105,10 +116,19 @@ export async function recalculateDerivedFinancials() {
              COALESCE(mpr.special_faults_count, 0) AS sfc,
              w.min_total,
              COALESCE(
-               m.is_home
-               AND m.team_total_score < ${TEAM_SCORE_LIMIT}
-               AND (m.league_id IN (354, 368) OR m.league_name ILIKE '%interliga%')
-               AND mpr.total > 0,
+               m.team_total_score < ${TEAM_SCORE_LIMIT}
+               AND mpr.total > 0
+               AND (
+                 (
+                   m.is_home
+                   AND (
+                     m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)})
+                     OR m.league_name ILIKE '%interliga%'
+                   )
+                 )
+                 -- Tournaments are penalised home and away alike.
+                 OR m.league_id IN (${idList(TOURNAMENT_LEAGUE_IDS)})
+               ),
                false
              ) AS team_under_3750,
              SUM(CASE WHEN COALESCE(mpr.faults, 0) <> 0 THEN 1 ELSE 0 END) OVER (
