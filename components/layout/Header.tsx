@@ -3,6 +3,7 @@ import { ModeToggle } from '@/components/layout/ModeToggle';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 import { UserDropdown } from '@/components/layout/UserDropdown';
 import { MobileNav } from '@/components/layout/MobileNav';
+import { BrandTitle } from '@/components/layout/BrandTitle';
 import { getSession } from '@/lib/session';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -14,6 +15,7 @@ export async function Header({ lang }: { lang: Locale }) {
 
   const translations = {
     manageUsers: dict.common.manageUsers,
+    manualMatches: dict.common.manualMatches,
     syncData: dict.common.syncData,
     syncing: dict.common.syncing,
     syncConfirmTitle: dict.common.syncConfirmTitle,
@@ -31,9 +33,7 @@ export async function Header({ lang }: { lang: Locale }) {
         <div className="w-48" />
 
         <Link href={`/${lang}`} className="flex items-center">
-          <span className="font-bold text-lg sm:text-xl uppercase tracking-widest">
-            Interliga Podbrezová
-          </span>
+          <BrandTitle className="text-lg sm:text-xl tracking-widest" />
         </Link>
 
         <div className="flex items-center gap-2 w-48 justify-end">
@@ -53,6 +53,7 @@ export async function Header({ lang }: { lang: Locale }) {
               lang={lang}
               translations={{
                 manageUsers: dict.common.manageUsers,
+                manualMatches: dict.common.manualMatches,
                 syncData: dict.common.syncData,
                 syncing: dict.common.syncing,
                 syncConfirmTitle: dict.common.syncConfirmTitle,

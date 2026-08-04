@@ -10,8 +10,12 @@ import {
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
+  INTERLIGA_LEAGUE_IDS,
   TEAM_SCORE_LIMIT,
+  TOURNAMENT_FILTER_KEY,
+  TOURNAMENT_LEAGUE_IDS,
   getLeagueConfig,
+  getManualLeagues,
   getTeamIdsForSeason,
   isCurrentSeason,
 } from '@/lib/season-config';
@@ -48,17 +52,24 @@ export interface TopDonator {
   amount: number;
 }
 
-const INTERLIGA_LEAGUE_IDS = [354, 368];
-
 function isInterliga(match: MatchListItem): boolean {
   return (match.leagueId !== undefined && INTERLIGA_LEAGUE_IDS.includes(match.leagueId))
     || (match.leagueName?.toLowerCase().includes('interliga') ?? false);
 }
 
-/** Played Interliga home matches under the limit, or null when the rule cannot apply. */
+function isTournament(match: MatchListItem): boolean {
+  return match.leagueId !== undefined && TOURNAMENT_LEAGUE_IDS.includes(match.leagueId);
+}
+
+/** Mirrors the `team_under_3750` rule in `recalculateDerivedFinancials`. */
+function isUnderLimitEligible(match: MatchListItem): boolean {
+  return (isInterliga(match) && Boolean(match.isHome)) || isTournament(match);
+}
+
+/** Played matches the limit applies to, or null when the rule cannot apply. */
 function countBelowLimit(matches: MatchListItem[]): number | null {
   const played = matches.filter((m): m is MatchListItem & { teamTotalScore: number } => (
-    isInterliga(m) && Boolean(m.isHome)
+    isUnderLimitEligible(m)
     && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
   ));
   if (played.length === 0) return null;
@@ -156,16 +167,30 @@ async function fetchHomeDataInternal(
   seasonId: number = DEFAULT_SEASON_ID,
   leagueKey: string = 'all',
 ): Promise<FetchDataResult> {
-  const targetLeague = leagueKey !== 'all' ? getLeagueConfig(seasonId, leagueKey) : undefined;
+  const isTournamentFilter = leagueKey === TOURNAMENT_FILTER_KEY;
+  const targetLeague = leagueKey !== 'all' && !isTournamentFilter
+    ? getLeagueConfig(seasonId, leagueKey)
+    : undefined;
 
-  const effectiveTeamId = leagueKey !== 'all'
-    ? (targetLeague?.teamIds[0] || teamId)
-    : (getTeamIdsForSeason(seasonId)[0] || teamId);
+  // The tournament tab groups two leagues, so it filters on a list of ids.
+  let targetLeagueIds: number[] | undefined;
+  if (isTournamentFilter) {
+    targetLeagueIds = getManualLeagues(seasonId).map((l) => l.leagueId);
+  } else if (targetLeague) {
+    targetLeagueIds = [targetLeague.leagueId];
+  }
+
+  const effectiveTeamId = targetLeague?.teamIds[0]
+    || getTeamIdsForSeason(seasonId)[0]
+    || teamId;
 
   // Independent, and each is its own HTTPS round trip over neon-http.
   const [bankBalance, matchList, playerBalances, trainersData] = await Promise.all([
     getTeamBankBalance(seasonId, leagueKey),
-    getMatchesByTeamId(effectiveTeamId, seasonId, targetLeague?.leagueId),
+    getMatchesByTeamId(effectiveTeamId, seasonId, targetLeagueIds, {
+      // Fixtures with no league id are unplayed scraped ones, never tournaments.
+      includeUnassigned: !isTournamentFilter,
+    }),
     getPlayerBalances(seasonId, leagueKey),
     leagueKey === 'pohar' ? [] : getTrainersWithStats(seasonId, leagueKey),
   ]);

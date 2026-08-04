@@ -19,11 +19,63 @@ Before finishing any task, you must run linting and type checks. No TypeScript e
 Strictly avoid using the `any` type in the codebase.
 <!-- END:check-rules -->
 
+<!-- BEGIN:comment-rules -->
+# Comment Rules
+
+Keep comments to a minimum. Code should be self-explanatory through clear naming and structure.
+
+- Do NOT add comments that restate what the code already says.
+- Do NOT add section banners, step-by-step narration, or "// eslint-disable" style explanations unless required.
+- Only comment when it explains *why* something non-obvious is done (a workaround, a business rule, an external API quirk).
+- Never leave commented-out code behind.
+<!-- END:comment-rules -->
+
 <!-- BEGIN:decision-rules -->
 # Decision Making Rules
 
 Always ask questions instead of running your assumptions to confirm key decisions.
 <!-- END:decision-rules -->
+
+<!-- BEGIN:plan-rules -->
+# Plan Mode Rules
+
+When working in plan mode, the plan must be detailed and written to a file — never delivered only as a chat message.
+
+- **Location**: save every plan to `.junie/plans/<kebab-case-slug>.md`. The slug describes the task in a few words (e.g. `add-team-bank-section.md`, `speed-up-dashboard-filter.md`). Reuse the existing file when iterating on a plan that is already there.
+- **Write the file before presenting the plan** for approval, so the approved plan and the file always match. If the plan changes during discussion, update the file.
+- **Level of detail**: name concrete files, functions, columns, and components. Include code or SQL snippets for non-obvious changes. A step should be executable without re-deriving decisions.
+
+### Required structure
+
+```markdown
+# Requirements
+
+### Overview & Goals
+### Scope            (explicit In Scope / Out of Scope lists)
+### User Stories     (or Functional Requirements)
+
+# Technical Design
+
+### Current Implementation
+### Proposed Changes  (split into numbered `#### N. <Area> (\`path/to/file.ts\`)` subsections)
+### Architecture Diagram  (mermaid)
+### Key Decisions     (options considered and why one was chosen)
+### Edge Cases / Risks
+
+# Delivery Steps
+
+### Step 1: <imperative title>
+### Step 2: ...
+
+# Testing
+
+### Validation Approach
+```
+
+- **Delivery Steps** must be ordered, independently verifiable, and each state which files it touches. Mark a step done by prefixing its title with `✓` while executing the plan.
+- **Testing** must state how the change is validated (lint, type check, manual flows to click through, data to verify).
+- Every plan ends with the mandatory lint and type check from the Quality Check Rules as the final step.
+<!-- END:plan-rules -->
 
 <!-- BEGIN:money-rules -->
 # Money Calculation Rules

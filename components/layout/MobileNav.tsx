@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, Sun, Moon, Languages, Users, RefreshCw, LogOut, ChevronDown, Check,
+  Menu, X, Sun, Moon, Languages, Users, RefreshCw, ClipboardList, LogOut, ChevronDown, Check,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Locale } from '@/lib/i18n/config';
 import { LANGUAGES, changeLanguage } from '@/lib/i18n/languages';
 import { useSyncData } from '@/lib/hooks/useSyncData';
 import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
+import { BrandTitle } from '@/components/layout/BrandTitle';
 
 interface MobileNavProps {
   user?: {
@@ -24,6 +25,7 @@ interface MobileNavProps {
   lang: Locale;
   translations: {
     manageUsers: string;
+    manualMatches: string;
     syncData: string;
     syncing: string;
     syncConfirmTitle: string;
@@ -74,9 +76,7 @@ export function MobileNav({
     <div className="md:hidden relative w-full">
       <div className="flex h-16 items-center justify-between px-4">
         <Link href={`/${lang}`} className="flex items-center">
-          <span className="font-bold text-base sm:text-lg uppercase tracking-wider">
-            Interliga Podbrezová
-          </span>
+          <BrandTitle className="text-base sm:text-lg tracking-wider" />
         </Link>
 
         <Button
@@ -123,6 +123,14 @@ export function MobileNav({
                       <RefreshCw className={`size-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
                       <span>{isSyncing ? translations.syncing : translations.syncData}</span>
                     </button>
+
+                    <Link
+                      href={`/${lang}/admin/matches`}
+                      className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
+                    >
+                      <ClipboardList className="size-4 text-muted-foreground" />
+                      <span>{translations.manualMatches}</span>
+                    </Link>
                   </div>
                 )}
               </div>

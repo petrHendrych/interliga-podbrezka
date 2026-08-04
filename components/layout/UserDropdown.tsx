@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  ChevronDown, Users, RefreshCw, LogOut,
+  ChevronDown, Users, RefreshCw, ClipboardList, LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +27,7 @@ interface UserDropdownProps {
   lang: Locale;
   translations: {
     manageUsers: string;
+    manualMatches: string;
     syncData: string;
     syncing: string;
     syncConfirmTitle: string;
@@ -81,6 +82,15 @@ export function UserDropdown({
               >
                 <RefreshCw className={`size-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>{isSyncing ? translations.syncing : translations.syncData}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer py-2">
+                <Link
+                  href={`/${lang}/admin/matches`}
+                  className="flex items-center gap-2 w-full"
+                >
+                  <ClipboardList className="size-4 text-muted-foreground" />
+                  <span>{translations.manualMatches}</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>

@@ -3,7 +3,13 @@ import { unstable_cache } from 'next/cache';
 import { eq, and, sql as drizzleSql } from 'drizzle-orm';
 import { db, sql } from './db';
 import { scrapedData, systemStatus } from './db/schema';
-import { DEFAULT_SEASON_ID } from './season-config';
+import {
+  DEFAULT_SEASON_ID,
+  INTERLIGA_LEAGUE_IDS,
+  POHAR_LEAGUE_IDS,
+  TOURNAMENT_FILTER_KEY,
+  TOURNAMENT_LEAGUE_IDS,
+} from './season-config';
 import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
 
@@ -141,13 +147,22 @@ export const getCachedPlayerName = unstable_cache(
   { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-detail'] },
 );
 
+/** Ids come from `season-config`, so a raw list carries no injection risk. */
+function idList(ids: number[]) {
+  return sql.unsafe(ids.map(Number).join(', '));
+}
+
 /** Narrows to one league; expects the `matches` table aliased as `m`. */
 function leagueCondition(leagueKey?: string) {
   if (leagueKey === 'interliga') {
-    return sql`AND (m.league_id = 368 OR m.league_id = 354 OR m.league_name ILIKE '%interliga%')`;
+    return sql`AND (m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)}) OR m.league_name ILIKE '%interliga%')`;
   }
   if (leagueKey === 'pohar') {
-    return sql`AND (m.league_id = 364 OR m.league_id = 366 OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+    return sql`AND (m.league_id IN (${idList(POHAR_LEAGUE_IDS)}) OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+  }
+  // Manual competitions are always stamped by us, so no name fallback is needed.
+  if (leagueKey === TOURNAMENT_FILTER_KEY) {
+    return sql`AND m.league_id IN (${idList(TOURNAMENT_LEAGUE_IDS)})`;
   }
   return sql``;
 }
@@ -217,6 +232,7 @@ export interface PlayerMatchResult {
   opponent: string | null;
   isHome: boolean | null;
   leagueName: string | null;
+  leagueId: number | null;
 }
 
 export interface PlayerSeasonBalance {
@@ -380,7 +396,8 @@ export async function getPlayerMatchResultsByExternalId(
       m.date,
       m.opponent,
       m.is_home,
-      m.league_name
+      m.league_name,
+      m.league_id
     FROM match_player_results mpr
     JOIN users u ON mpr.user_id = u.id
     JOIN matches m ON mpr.match_id = m.external_id
@@ -414,6 +431,7 @@ export async function getPlayerMatchResultsByExternalId(
       opponent: (r.opponent as string) || null,
       isHome: r.is_home === null ? null : Boolean(r.is_home),
       leagueName: (r.league_name as string) || null,
+      leagueId: r.league_id != null ? Number(r.league_id) : null,
     };
   });
 }
@@ -429,12 +447,16 @@ export const getCachedPlayerMatchResults = unstable_cache(
 export async function getMatchesByTeamId(
   teamId: number,
   seasonId: number,
-  leagueId?: number,
+  leagueIds?: number[],
+  { includeUnassigned = true }: { includeUnassigned?: boolean } = {},
 ): Promise<MatchListItem[]> {
-  // Rows with no league id are kept, as the JS filter this replaced did.
-  const leagueFilter = leagueId
-    ? sql`AND (league_id IS NULL OR league_id = ${leagueId})`
-    : sql``;
+  let leagueFilter = sql``;
+  if (leagueIds && leagueIds.length > 0) {
+    // Rows with no league id are kept, as the JS filter this replaced did.
+    leagueFilter = includeUnassigned
+      ? sql`AND (league_id IS NULL OR league_id IN (${idList(leagueIds)}))`
+      : sql`AND league_id IN (${idList(leagueIds)})`;
+  }
 
   const rows = await sql`
     SELECT

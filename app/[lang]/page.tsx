@@ -17,6 +17,7 @@ import {
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip } from '@/components/ui/tooltip';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
@@ -30,6 +31,8 @@ const AVATAR = 'w-20 h-20 rounded-2xl after:rounded-2xl shrink-0';
 const BANK_ROW = 'flex items-baseline justify-between gap-3 border-b border-foreground/10 py-3';
 const BANK_LABEL = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 const BANK_VALUE = 'shrink-0 text-base font-bold tabular-nums';
+/** Touch devices get no hover, so a tappable value has to look tappable. */
+const HINT = 'cursor-pointer underline decoration-dotted decoration-from-font underline-offset-4';
 
 export default async function Home({
   params,
@@ -109,17 +112,20 @@ export default async function Home({
             </div>
 
             <div className={BANK_ROW}>
-              <dt className={BANK_LABEL}>{dict.home.bank.paidOut}</dt>
+              <dt className={BANK_LABEL}>{dict.home.bank.bonusesTotal}</dt>
               <dd className={BANK_VALUE}>
                 {bankBalance.bonusesAwarded.toFixed(2)}
                 {' '}
                 €
-                <span className="ml-1.5 text-xs font-medium text-muted-foreground">
-                  (
-                  {bankBalance.bonusesPaid.toFixed(2)}
-                  {' '}
-                  €)
-                </span>
+                {/* Awarded minus handed over, i.e. what the bank still owes. */}
+                <Tooltip content={dict.home.bank.bonusesToPay}>
+                  <span className={`ml-1.5 text-xs font-medium text-muted-foreground ${HINT}`}>
+                    (
+                    {(bankBalance.bonusesAwarded - bankBalance.bonusesPaid).toFixed(2)}
+                    {' '}
+                    €)
+                  </span>
+                </Tooltip>
               </dd>
             </div>
 
@@ -127,12 +133,13 @@ export default async function Home({
               <div className={BANK_ROW}>
                 <dt className={BANK_LABEL}>{dict.home.bank.topDonator}</dt>
                 <dd className="flex min-w-0 items-baseline justify-end gap-2">
-                  <span className="truncate text-sm font-semibold">{topDonator.name}</span>
-                  <span className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
-                    {topDonator.amount.toFixed(2)}
-                    {' '}
-                    €
-                  </span>
+                  <Tooltip content={topDonator.name}>
+                    <span className={`${BANK_VALUE} ${HINT}`}>
+                      {topDonator.amount.toFixed(2)}
+                      {' '}
+                      €
+                    </span>
+                  </Tooltip>
                 </dd>
               </div>
             )}
@@ -171,15 +178,15 @@ export default async function Home({
             return (
               <div
                 key={match.id}
-                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-amber-500 shadow-lift"
+                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-sky-500 shadow-lift"
               >
-                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
                   {isHome ? <HomeIcon className="w-4 h-4" /> : <Bus className="w-4 h-4" />}
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
                       {interpolate(dict.home.roundFormat, { round: match.round })}
                     </span>
                     <span className="text-sm font-bold truncate">
@@ -211,6 +218,7 @@ export default async function Home({
             allLeagues: dict.home.filterAll || 'Všetky',
             interliga: dict.home.filterInterliga || 'Interliga',
             pohar: dict.home.filterPohar || 'Slovenský pohár',
+            turnaje: dict.home.filterTurnaje || 'Turnaje',
           }}
         />
       </div>

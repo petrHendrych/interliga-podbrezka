@@ -4,6 +4,7 @@ import {
   getCachedPlayerMatchResults,
 } from '@/lib/db-utils';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
+import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { formatDateOnly } from '@/lib/home-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -112,6 +113,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
             allLeagues: dict.home.filterAll || 'Všetky',
             interliga: dict.home.filterInterliga || 'Interliga',
             pohar: dict.home.filterPohar || 'Slovenský pohár',
+            turnaje: dict.home.filterTurnaje || 'Turnaje',
           }}
         />
 
@@ -174,9 +176,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                           {result.date ? formatDateOnly(result.date, lang) : '-'}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
-                          {result.leagueName === 'Interliga'
-                            ? (dict.playerDetail.leagueInterliga as string)
-                            : (dict.playerDetail.leagueCup as string)}
+                          {leagueLabelForId(result.leagueId, result.leagueName, dict)}
                         </TableCell>
                         <TableCell>
                           {matchName}

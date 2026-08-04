@@ -3,7 +3,7 @@
 import { useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { SeasonConfig } from '@/lib/season-config';
+import { SeasonConfig, TOURNAMENT_FILTER_KEY } from '@/lib/season-config';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -22,6 +22,8 @@ interface SeasonLeagueFilterProps {
     allLeagues: string;
     interliga: string;
     pohar: string;
+    /** Groups every manual competition behind one tab. */
+    turnaje: string;
   };
   /** Chrome around the control row is owned by the page that places the filter. */
   className?: string;
@@ -62,6 +64,7 @@ export function SeasonLeagueFilter({
     { key: 'all', label: labels.allLeagues },
     { key: 'interliga', label: labels.interliga },
     { key: 'pohar', label: labels.pohar },
+    { key: TOURNAMENT_FILTER_KEY, label: labels.turnaje },
   ];
 
   const seasonItems = seasons.map((s) => ({
