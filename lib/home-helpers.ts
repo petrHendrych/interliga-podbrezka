@@ -94,7 +94,7 @@ function collectBelowLimit(
     .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
     .map((m) => ({
       id: m.id,
-      name: `${m.homeName} x ${m.awayName}`,
+      name: m.isHome ? m.awayName : m.homeName,
       score: m.teamTotalScore,
     }));
 }
@@ -337,7 +337,7 @@ export const fetchHomeData = unstable_cache(
   ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
   // The key hashes only the arguments, so a changed `FetchDataResult` shape would keep
   // serving payloads missing the new fields. Bump the version whenever that shape changes.
-  ['home-data', 'v2'],
+  ['home-data', 'v3'],
   {
     revalidate: SYNCED_DATA_REVALIDATE_SECONDS,
     tags: ['home-data'],
