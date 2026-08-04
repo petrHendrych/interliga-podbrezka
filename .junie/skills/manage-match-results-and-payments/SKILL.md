@@ -1,112 +1,106 @@
 ---
 name: manage-match-results-and-payments
-description: Handles manual marking of specific misses and tracking payment statuses (fines, bonuses, trainer payments) for played matches.
+description: Mark special misses (fault into full, missed 2nd-to-last throw) and settle money for a played match — player fines, player bonuses, trainer payments. Use when asked to manage match results, record misses, mark a fine or bonus paid, or check who still owes for a match.
 trigger: "user asks to manage match results, mark special misses, update payment status, or record fines/bonuses for a match"
 ---
 
-# Manage Match Results and Payments Skill
+# Manage Match Results and Payments
 
-This skill guides the agent in manually marking specific misses (fault into full, missing 2nd to last throw), and tracking payment statuses (fines, bonuses, trainer payments) for played matches and updating the database accordingly.
+All reads and writes go through one driver: `scripts/match-money.ts`. It has three
+subcommands — `list`, `sheet`, `apply` — and every one prints JSON to stdout and
+nothing else. There is no admin UI for these fields; this driver is the only write path.
 
-## Overview
-- **Special Fault Types**:
-  1. **Fault into playing full** (Miss in full) — fine: 5€ per occurrence.
-  2. **Missing 2nd to last throw** — fine: 5€ per occurrence.
-- **Payment Statuses**:
-  - **Player Fine**: Whether the fine for the match has been paid to the bank.
-  - **Player Bonus**: Whether the bonus for the match (e.g. for score > 700) has been paid out from the bank.
-  - **Trainer Payment**: Whether the trainer's payment for the match (e.g. for team performance) has been paid to the bank.
-- **Workflow**:
-  1. Prompt the user to select either the last played match or pick a match from a list of played matches.
-  2. Retrieve players and trainer payments for the selected match.
-  3. For each player:
-     - Ask about special misses (full and 2nd to last throw).
-     - Ask if the fine has been paid.
-     - Ask if the bonus has been paid (if applicable).
-  4. For each trainer payment:
-     - Ask if the payment has been paid.
-  5. Update the database using CLI scripts.
-  6. Show summary.
+Paths are relative to the repo root. The driver reads `.env.local` for
+`DATABASE_URL` and runs on the shell's default Node (verified on 18 and 22) — the
+`nvm use 22` this repo needs elsewhere is only for the Next build and lint.
 
----
+## The three commands
 
-## Instructions for Agent Execution
-
-### Step 1: Database Verification
-Ensure database schema is up to date.
-Run the schema script:
 ```bash
-npx tsx scripts/ensure-schema.ts
+# Played matches, newest first. Unplayed fixtures are already filtered out.
+npx tsx scripts/match-money.ts list --limit 4
+
+# Only played matches that still have unpaid fines, bonuses or trainer payments.
+npx tsx scripts/match-money.ts list --unpaid-only --limit 4
+
+# Everything about one match: match info, every player row, trainer payments, totals.
+npx tsx scripts/match-money.ts sheet --match-id 44568
+
+# Write. Payload on stdin. Omitted fields keep their current value.
+npx tsx scripts/match-money.ts apply --match-id 44568 <<'JSON'
+{
+  "players": [
+    { "userId": "849c7762-9e50-4797-9594-c5041818edaf", "fullFaults": 1, "isPaid": true }
+  ],
+  "trainerPayments": [ { "id": 8, "isPaid": true } ]
+}
+JSON
 ```
 
-### Step 2: Match Selection
-Ask the user via `ask_user`:
-- **Question**: "Which match do you want to manage results and payments for?"
-- **Options**:
-  1. **Last played match**
-  2. **Pick a specific match**
+`apply` accepts `--dry-run`, which echoes the payload plus the current sheet and
+writes nothing. `apply` returns `{ changes, recalculated, sheet }`: `changes` is a
+human-readable before/after list, `sheet` is the state after the write.
 
-#### Handling Selection:
-- **If "Last played match"**:
-  Execute the script to list matches and select the first match in the list (ordered by date descending):
-  ```bash
-  npx tsx scripts/update-special-misses.ts --list-matches
-  ```
-- **If "Pick a specific match"**:
-  Fetch played matches using:
-  ```bash
-  npx tsx scripts/update-special-misses.ts --list-matches
-  ```
-  Present the retrieved matches as interactive options using `ask_user`.
+## Workflow
 
----
+1. **Pick the match.** Run `list --limit 4` and offer the four newest played
+   matches through `AskUserQuestion`, labelled with date, opponent and score.
+   Older matches: the user gives the `external_id` directly.
+2. **Show the roster once.** Run `sheet --match-id <id>` and render a compact
+   markdown table: player, total, faults, special misses (full / 2nd-to-last),
+   fine €, bonus €, fine paid?, bonus paid?. Then list trainer payments and totals.
+3. **Ask for deltas, not a questionnaire.** One message: "reply with only what
+   changes, e.g. `Magala 1 full; Gorecký fine paid; trainer score_bonus paid`."
+   Do not iterate player by player.
+4. **Apply misses first, in one call.** If any special-miss count changed, send
+   that payload alone (no `isPaid` fields) and read the new fine amounts from the
+   returned `sheet` — see the ordering gotcha below.
+5. **Confirm the new amounts, then apply the payment flags** in a second call.
+   If nothing changed misses, steps 4 and 5 collapse into one call.
+6. **Summarize** from the returned `changes` array, plus the new totals.
 
-### Step 3: Iterate Over Players
-For the selected match, fetch player results:
-```bash
-npx tsx scripts/update-special-misses.ts --get-players --match-id <MATCH_ID>
-```
+## Money rules that decide the questions
 
-For EACH player in the match, sequentially ask:
+- Special misses are the only fields a human enters: **fault into playing full**
+  and **missing the 2nd-to-last throw**, 5€ each. Everything else — sequential
+  fault fines, worst-in-team, under-600, under-3750, the 5-game faultless streak,
+  the >700 bonus, and every trainer payment row — is derived and recalculated
+  automatically. Never ask the user for those numbers.
+- Trainer payment condition types in the database are `score_bonus`,
+  `zero_faults` and `elite_player`. `elite_player` is paid to the player directly,
+  so ask about it only if the user brings it up.
 
-#### Special Misses
-1. Ask: "Did **[Player Name]** have a miss (fault) into playing full in this match?"
-2. If "Yes", ask for count `N`.
-3. Ask: "Did **[Player Name]** have misses on the second to last throw in this match?"
-4. If "Yes", ask for count `M`.
-5. Update misses:
-   ```bash
-   npx tsx scripts/update-special-misses.ts --update-misses --match-id <MATCH_ID> --user-id <USER_ID> --full-faults <N> --second-to-last-faults <M>
-   ```
+## Gotchas
 
-#### Payment Status
-1. Ask: "Has **[Player Name]** paid the fine for this match (**[Fine Amount]€**)?"
-   - Options: "Yes" / "No"
-2. If the player has a bonus (> 0):
-   - Ask: "Has the bonus for **[Player Name]** (**[Bonus Amount]€**) been paid out?"
-     - Options: "Yes" / "No"
-3. Update payment status:
-   ```bash
-   npx tsx scripts/update-special-misses.ts --update-payment --match-id <MATCH_ID> --user-id <USER_ID> --is-paid <true|false> --is-bonus-paid <true|false>
-   ```
+- **Recalculation does not spare paid player rows.** The `UPDATE
+  match_player_results` in `recalculateDerivedFinancials()` (`lib/sync.ts:152`)
+  has no `is_paid` guard — only `trainer_payments` rows are protected. Marking a
+  miss after a fine was marked paid silently changes the amount owed on a settled
+  row. Verified: adding one full-fault to a player whose 1€ fine was already
+  marked paid left the row paid with `calculated_fine` now 6€. Hence: misses
+  first, confirm the new amount, then the paid flag.
+- **`apply` is a read-modify-write.** Fields you omit are preserved, so sending
+  `{"isPaid": true}` alone can no longer wipe `is_bonus_paid`. The old scripts
+  required both flags on every call and clobbered whichever you forgot.
+- **`list` returns played matches only.** The `matches` table also holds
+  scheduled fixtures — 22 of 53 rows at the time of writing, the newest dated
+  2027 — and they sort to the top. `getPlayedMatches()` filters on
+  `team_total_score IS NOT NULL`; do not reintroduce an unfiltered listing.
+- **`AskUserQuestion` caps at 4 options.** There are 31 played matches. Offer the
+  4 newest; anything older comes in as an explicit match id.
+- **One `apply` call = at most one recalculation**, and only when a miss count
+  actually changed (`recalculated` in the response says so). Splitting a match
+  across many calls re-runs a full cross-season recalculation each time.
+- **Bonus flags are guarded**: `isBonusPaid: true` on a player with
+  `bonus_received: 0` fails with an error instead of recording a phantom payout.
 
----
+## Troubleshooting
 
-### Step 4: Manage Trainer Payments
-Fetch trainer payments for the match:
-```bash
-npx tsx scripts/update-trainer-payments.ts --get-payments --match-id <MATCH_ID>
-```
-
-For EACH trainer payment (excluding 'elite_player' type as it's paid directly):
-1. Ask: "Has the trainer payment for **[Condition Type]** (**[Amount]€**) been paid?"
-   - Options: "Yes" / "No"
-2. Update payment status:
-   ```bash
-   npx tsx scripts/update-trainer-payments.ts --update-payment --payment-id <PAYMENT_ID> --is-paid <true|false>
-   ```
-
----
-
-### Step 5: Summary
-Show a summary of all updates performed.
+| Symptom | Cause / fix |
+|---|---|
+| `Error: No match with external id 999999.` | Wrong id. Ids come from `list` (`external_id`), not from a row index. |
+| `Error: User <uuid> has no result row in match <id>.` | The player did not play that match, or the uuid came from another match's sheet. |
+| `Error: Šimon Magala has no bonus in this match, so isBonusPaid cannot be true.` | Bonus is derived from a >700 total; there is nothing to pay out. |
+| `Error: apply expects the payload JSON on stdin` | `apply` was run without a heredoc or pipe. |
+| `Error: stdin is not valid JSON` | Heredoc was interpolated by the shell. Quote the delimiter: `<<'JSON'`. |
+| Connection / auth error from Neon | `.env.local` missing or `DATABASE_URL` stale; the driver loads it with `dotenv` and no fallback. |

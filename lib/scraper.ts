@@ -10,7 +10,6 @@ import {
   PlayerResult,
 } from './api';
 import {
-  ensureSchema,
   upsertScrapedData,
   tryAcquireLock,
   releaseLock,
@@ -31,9 +30,6 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
   }
 
   try {
-    // Ensure database table exists
-    await ensureSchema();
-
     const teamIds = getAllTeamIds();
     const matchIdsSet = new Set<number>();
 

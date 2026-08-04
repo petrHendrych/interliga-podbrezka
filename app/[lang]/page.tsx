@@ -247,15 +247,15 @@ export default async function Home({
             return (
               <div
                 key={match.id}
-                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-sky-500 shadow-lift"
+                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-foreground/25 dark:border-foreground/20 shadow-lift"
               >
-                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-surface-2 text-muted-foreground ring-1 ring-inset ring-border">
                   {isHome ? <HomeIcon className="w-4 h-4" /> : <Bus className="w-4 h-4" />}
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {interpolate(dict.home.roundFormat, { round: match.round })}
                     </span>
                     <span className="text-sm font-bold truncate">

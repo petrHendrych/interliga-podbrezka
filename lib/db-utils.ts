@@ -13,13 +13,6 @@ import {
 import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
 
-/**
- * @deprecated Database schema is managed via Drizzle Kit schema migrations (pnpm db:push).
- */
-export async function ensureSchema() {
-  // No-op: schema is managed declaratively via drizzle-kit
-}
-
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
   if (data === undefined) {
     console.error(`Attempted to upsert undefined data for ${type}:${externalId}`);
