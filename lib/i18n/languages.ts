@@ -18,8 +18,11 @@ export function changeLanguage(newLang: string, currentLang: string, pathname: s
   const segments = pathname.split('/');
   if (segments.length > 1) {
     segments[1] = newLang;
-    window.location.href = segments.join('/');
-  } else {
-    window.location.href = `/${newLang}`;
   }
+  const nextPathname = segments.length > 1 ? segments.join('/') : `/${newLang}`;
+
+  // usePathname() drops the query string, so active filters (?season=, ?league=)
+  // have to be re-attached from the live URL.
+  const { search, hash } = window.location;
+  window.location.href = `${nextPathname}${search}${hash}`;
 }
