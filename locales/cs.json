@@ -51,16 +51,52 @@
       "title": "Správa uživatelů",
       "description": "Schvalování nových registrací a správa přístupů",
       "pendingTitle": "Čekající na schválení",
+      "pendingDescription": "Nové registrace, které čekají na tvoje schválení.",
       "noPending": "Žádní čekající uživatelé.",
       "approve": "Schválit",
       "reject": "Zamítnout",
       "rejectTitle": "Zamítnout registraci?",
       "rejectDescription": "Opravdu chcete zamítnout tuto registraci? Uživatel bude odstraněn ze systému.",
-      "approvedTitle": "Schválení uživatelé",
-      "noApproved": "Žádní schválení uživatelé.",
+      "registeredTitle": "Registrované účty",
+      "registeredDescription": "Reální uživatelé s e-mailem a přihlášením do aplikace.",
+      "noRegistered": "Žádné registrované účty.",
+      "registeredAt": "Registrován {date}",
+      "notLinked": "Bez přiřazeného hráče",
+      "linkedTo": "Přiřazený hráč #{id}",
+      "matchesCount": "{count} zápasů",
+      "scrapedTitle": "Automatičtí hráči",
+      "scrapedDescription": "Vytvořeno synchronizací ze statistik. Slouží jen k zobrazení čísel — nedá se s nimi přihlásit.",
+      "noScraped": "Žádní automatičtí hráči.",
+      "autoBadge": "Automatický",
+      "autoHint": "Jen pro zobrazení",
+      "playerIdLabel": "ID hráče",
+      "matchesLabel": "Zápasy",
       "remove": "Odebrat",
       "removeTitle": "Odebrat uživatele?",
-      "removeDescription": "Opravdu chcete odebrat tohoto uživatele? Ztratí přístup do admin panelu."
+      "removeDescription": "Opravdu chcete odebrat tohoto uživatele? Ztratí přístup do admin panelu.",
+      "removeScrapedDescription": "Opravdu chceš odstranit tento automatický záznam? Pokud má odehrané zápasy, nejdřív ho přiřaď k registrovanému účtu.",
+      "roles": {
+        "admin": "Admin",
+        "trainer": "Trenér",
+        "player": "Hráč"
+      },
+      "link": {
+        "trigger": "Přiřadit hráče",
+        "title": "Přiřadit automatického hráče",
+        "description": "Zápasy hráče {player} ({matches}) se přesunou na účet {account} a automatický záznam se odstraní. Tuto akci nelze vrátit zpět.",
+        "placeholder": "Vyber hráče",
+        "suggested": "návrh",
+        "empty": "Žádní volní automatičtí hráči.",
+        "confirm": "Přiřadit"
+      },
+      "errors": {
+        "unauthorized": "Na tuto akci nemáš oprávnění.",
+        "notFound": "Uživatel nebyl nalezen.",
+        "self": "Sám sebe odstranit nemůžeš.",
+        "hasResults": "Uživatel má odehrané zápasy, proto ho nelze odstranit. Nejdřív ho přiřaď k registrovanému účtu.",
+        "invalidLink": "Tyto dva záznamy nelze propojit.",
+        "unknown": "Někde se stala chyba, zkus to znovu."
+      }
     }
   },
   "playerDetail": {

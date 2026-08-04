@@ -51,16 +51,52 @@
       "title": "Upravljanje korisnicima",
       "description": "Odobravanje novih registracija i upravljanje pristupima",
       "pendingTitle": "Čekaju na odobrenje",
+      "pendingDescription": "Nove registracije koje čekaju tvoje odobrenje.",
       "noPending": "Nema korisnika na čekanju.",
       "approve": "Odobri",
       "reject": "Odbij",
       "rejectTitle": "Odbiti registraciju?",
       "rejectDescription": "Da li zaista želite da odbijete ovu registraciju? Korisnik će biti uklonjen iz sistema.",
-      "approvedTitle": "Odobreni korisnici",
-      "noApproved": "Nema odobrenih korisnika.",
+      "registeredTitle": "Registrovani nalozi",
+      "registeredDescription": "Pravi korisnici sa imejlom i prijavom u aplikaciju.",
+      "noRegistered": "Nema registrovanih naloga.",
+      "registeredAt": "Registrovan {date}",
+      "notLinked": "Bez dodeljenog igrača",
+      "linkedTo": "Dodeljen igrač #{id}",
+      "matchesCount": "{count} mečeva",
+      "scrapedTitle": "Automatski igrači",
+      "scrapedDescription": "Napravljeni sinhronizacijom statistike. Služe samo za prikaz brojeva — sa njima nije moguća prijava.",
+      "noScraped": "Nema automatskih igrača.",
+      "autoBadge": "Automatski",
+      "autoHint": "Samo za prikaz",
+      "playerIdLabel": "ID igrača",
+      "matchesLabel": "Mečevi",
       "remove": "Ukloni",
       "removeTitle": "Ukloniti korisnika?",
-      "removeDescription": "Da li zaista želite da uklonite ovog korisnika? Izgubiće pristup admin panelu."
+      "removeDescription": "Da li zaista želite da uklonite ovog korisnika? Izgubiće pristup admin panelu.",
+      "removeScrapedDescription": "Da li zaista želiš da ukloniš ovaj automatski zapis? Ako ima odigranih mečeva, prvo ga dodeli registrovanom nalogu.",
+      "roles": {
+        "admin": "Admin",
+        "trainer": "Trener",
+        "player": "Igrač"
+      },
+      "link": {
+        "trigger": "Dodeli igrača",
+        "title": "Dodeli automatskog igrača",
+        "description": "Mečevi igrača {player} ({matches}) prelaze na nalog {account}, a automatski zapis se briše. Ova akcija se ne može poništiti.",
+        "placeholder": "Izaberi igrača",
+        "suggested": "predlog",
+        "empty": "Nema slobodnih automatskih igrača.",
+        "confirm": "Dodeli"
+      },
+      "errors": {
+        "unauthorized": "Nemaš dozvolu za ovu akciju.",
+        "notFound": "Korisnik nije pronađen.",
+        "self": "Ne možeš da obrišeš samog sebe.",
+        "hasResults": "Korisnik ima odigrane mečeve pa se ne može obrisati. Prvo ga dodeli registrovanom nalogu.",
+        "invalidLink": "Ova dva zapisa ne mogu da se povežu.",
+        "unknown": "Došlo je do greške, pokušaj ponovo."
+      }
     }
   },
   "playerDetail": {

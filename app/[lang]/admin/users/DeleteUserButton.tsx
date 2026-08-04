@@ -1,12 +1,10 @@
 'use client';
 
-import * as React from 'react';
-import { useTransition } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -15,62 +13,87 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteUser } from '@/lib/admin-actions';
+import { deleteUser, type AdminActionError } from '@/lib/admin-actions';
 
 interface DeleteUserButtonProps {
   userId: string;
   label: string;
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   title: string;
   description: string;
+  /** `false` keeps the trigger icon-only, for the denser scraped-player cards. */
+  showLabel?: boolean;
   translations: {
     cancel: string;
     delete: string;
+    errors: Record<AdminActionError, string>;
   };
 }
 
 export function DeleteUserButton({
   userId,
   label,
-  variant = 'destructive',
   title,
   description,
+  showLabel = true,
   translations,
 }: DeleteUserButtonProps) {
   const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<AdminActionError | null>(null);
 
+  // Stays open on failure so the reason is visible instead of silently swallowed.
   const handleDelete = () => {
+    setError(null);
     startTransition(async () => {
-      try {
-        await deleteUser(userId);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to delete user:', error);
+      const result = await deleteUser(userId);
+      if (result.success) {
+        setOpen(false);
+      } else {
+        setError(result.error);
       }
     });
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) setError(null);
+  };
+
   return (
-    <AlertDialog>
-      <AlertDialogTrigger render={<Button variant={variant} size="sm">{label}</Button>} />
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogTrigger
+        render={(
+          <Button
+            variant="destructive"
+            size={showLabel ? 'sm' : 'icon-sm'}
+            aria-label={showLabel ? undefined : label}
+          >
+            <Trash2 />
+            {showLabel ? label : null}
+          </Button>
+        )}
+      />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {error && (
+          <p className="rounded-lg bg-destructive/15 px-3 py-2 text-sm text-destructive">
+            {translations.errors[error]}
+          </p>
+        )}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>{translations.cancel}</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault();
-              handleDelete();
-            }}
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
             disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-white hover:bg-destructive/90"
           >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
             {translations.delete}
-          </AlertDialogAction>
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
