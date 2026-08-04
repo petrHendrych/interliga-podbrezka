@@ -6,7 +6,9 @@ import {
   getPlayerBalances,
   getTeamBankBalance,
   getMatchesByTeamId,
+  getUnpaidDebtors,
   type TeamBankBalance,
+  type UnpaidDebtor,
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
@@ -66,15 +68,27 @@ function isUnderLimitEligible(match: MatchListItem): boolean {
   return (isInterliga(match) && Boolean(match.isHome)) || isTournament(match);
 }
 
-/** Played matches the limit applies to, or null when the rule cannot apply. */
-function countBelowLimit(matches: MatchListItem[]): number | null {
+export interface BelowLimitMatch {
+  id: number;
+  name: string;
+  score: number;
+}
+
+/** Played matches under the limit, or null when the rule cannot apply. */
+function collectBelowLimit(matches: MatchListItem[]): BelowLimitMatch[] | null {
   const played = matches.filter((m): m is MatchListItem & { teamTotalScore: number } => (
     isUnderLimitEligible(m)
     && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
   ));
   if (played.length === 0) return null;
 
-  return played.filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT).length;
+  return played
+    .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
+    .map((m) => ({
+      id: m.id,
+      name: `${m.homeName} x ${m.awayName}`,
+      score: m.teamTotalScore,
+    }));
 }
 
 export interface FetchDataResult {
@@ -83,8 +97,9 @@ export interface FetchDataResult {
   players: PlayerWithStats[];
   trainers: TrainerWithStats[];
   bankBalance: TeamBankBalance | null;
+  unpaidDebtors: UnpaidDebtor[];
   topDonator: TopDonator | null;
-  belowLimit: number | null;
+  belowLimitMatches: BelowLimitMatch[] | null;
   nextHomeMatch: MatchListItem | null;
 }
 
@@ -185,7 +200,7 @@ async function fetchHomeDataInternal(
     || teamId;
 
   // Independent, and each is its own HTTPS round trip over neon-http.
-  const [bankBalance, matchList, playerBalances, trainersData] = await Promise.all([
+  const [bankBalance, matchList, playerBalances, trainersData, unpaidDebtors] = await Promise.all([
     getTeamBankBalance(seasonId, leagueKey),
     getMatchesByTeamId(effectiveTeamId, seasonId, targetLeagueIds, {
       // Fixtures with no league id are unplayed scraped ones, never tournaments.
@@ -193,12 +208,13 @@ async function fetchHomeDataInternal(
     }),
     getPlayerBalances(seasonId, leagueKey),
     leagueKey === 'pohar' ? [] : getTrainersWithStats(seasonId, leagueKey),
+    getUnpaidDebtors(seasonId, leagueKey),
   ]);
 
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
   let hasFinishedMatches = false;
-  let belowLimit: number | null = null;
+  let belowLimitMatches: BelowLimitMatch[] | null = null;
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList; // Already filtered by season and includes team info
@@ -238,7 +254,7 @@ async function fetchHomeDataInternal(
     }
 
     hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
-    belowLimit = countBelowLimit(teamMatches);
+    belowLimitMatches = collectBelowLimit(teamMatches);
   }
 
   const eligibleBalances = playerBalances.filter(
@@ -298,8 +314,9 @@ async function fetchHomeDataInternal(
     players: playersWithStats,
     trainers,
     bankBalance,
+    unpaidDebtors,
     topDonator,
-    belowLimit,
+    belowLimitMatches,
     nextHomeMatch,
   };
 }

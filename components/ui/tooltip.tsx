@@ -27,10 +27,12 @@ export function Tooltip({
           {children}
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
-          <TooltipPrimitive.Positioner side="top" sideOffset={6}>
+          {/* The blurred sticky filter bar makes its own stacking context, so the
+              positioner has to carry a z-index above the header, not just the popup. */}
+          <TooltipPrimitive.Positioner side="bottom" sideOffset={6} className="z-[60]">
             <TooltipPrimitive.Popup
               className={cn(
-                'z-50 max-w-xs rounded-lg border bg-popover p-3 text-popover-foreground text-xs shadow-lg outline-none animate-in fade-in-0 zoom-in-95',
+                'max-w-xs rounded-lg border bg-popover p-3 text-popover-foreground text-xs shadow-lg outline-none animate-in fade-in-0 zoom-in-95',
                 className,
               )}
             >

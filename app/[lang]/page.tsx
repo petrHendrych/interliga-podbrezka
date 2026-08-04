@@ -39,6 +39,8 @@ const BANK_LABEL = 'text-xs font-semibold uppercase tracking-wide text-muted-for
 const BANK_VALUE = 'shrink-0 text-base font-bold tabular-nums';
 /** Touch devices get no hover, so a tappable value has to look tappable. */
 const HINT = 'cursor-pointer underline decoration-dotted decoration-from-font underline-offset-4';
+const TOOLTIP_LIST = 'flex flex-col gap-1 min-w-40';
+const TOOLTIP_ROW = 'flex items-baseline justify-between gap-4';
 
 // totalPaid arrives pre-formatted ("12.5 €"), so read the sign back off it:
 // someone who is owed money must not be painted as though he owed it.
@@ -90,8 +92,9 @@ export default async function Home({
   const players = data?.players || [];
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
+  const unpaidDebtors = data?.unpaidDebtors || [];
   const topDonator = data?.topDonator || null;
-  const belowLimit = data?.belowLimit ?? null;
+  const belowLimitMatches = data?.belowLimitMatches ?? null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
   const hasNoData = !data
@@ -120,9 +123,36 @@ export default async function Home({
             <div className={BANK_ROW}>
               <dt className={BANK_LABEL}>{dict.home.bank.unpaid}</dt>
               <dd className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
-                {bankBalance.unpaid.toFixed(2)}
-                {' '}
-                €
+                {unpaidDebtors.length > 0 ? (
+                  <Tooltip
+                    content={(
+                      <ul className={TOOLTIP_LIST}>
+                        {unpaidDebtors.map((debtor) => (
+                          <li key={debtor.name} className={TOOLTIP_ROW}>
+                            <span className="truncate">{debtor.name}</span>
+                            <span className="shrink-0 font-semibold tabular-nums">
+                              {debtor.amount.toFixed(2)}
+                              {' '}
+                              €
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  >
+                    <span className={HINT}>
+                      {bankBalance.unpaid.toFixed(2)}
+                      {' '}
+                      €
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <>
+                    {bankBalance.unpaid.toFixed(2)}
+                    {' '}
+                    €
+                  </>
+                )}
               </dd>
             </div>
 
@@ -159,12 +189,36 @@ export default async function Home({
               </div>
             )}
 
-            {belowLimit !== null && (
+            {belowLimitMatches !== null && (
               <div className={BANK_ROW}>
                 <dt className={BANK_LABEL}>{dict.home.bank.belowLimit}</dt>
-                <dd className={`${BANK_VALUE} ${belowLimit > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {belowLimit}
-                  x
+                <dd className={`${BANK_VALUE} ${belowLimitMatches.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {belowLimitMatches.length > 0 ? (
+                    <Tooltip
+                      content={(
+                        <ul className={TOOLTIP_LIST}>
+                          {belowLimitMatches.map((match) => (
+                            <li key={match.id} className={TOOLTIP_ROW}>
+                              <span className="truncate">{match.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums">
+                                {match.score}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    >
+                      <span className={HINT}>
+                        {belowLimitMatches.length}
+                        x
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <>
+                      {belowLimitMatches.length}
+                      x
+                    </>
+                  )}
                 </dd>
               </div>
             )}

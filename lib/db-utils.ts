@@ -510,6 +510,58 @@ export interface TeamBankBalance {
   bonusesPaid: number;
 }
 
+export interface UnpaidDebtor {
+  name: string;
+  amount: number;
+}
+
+/** Everyone still owing money to the bank: players' fines plus trainers' payments. */
+export async function getUnpaidDebtors(
+  seasonId?: number,
+  leagueKey?: string,
+): Promise<UnpaidDebtor[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  const rows = await sql`
+    SELECT name, SUM(amount)::numeric as amount
+    FROM (
+      SELECT
+        COALESCE(NULLIF(CONCAT_WS(' ', pd.first_name, pd.last_name), ''), u.name) as name,
+        mpr.calculated_fine as amount
+      FROM match_player_results mpr
+      JOIN users u ON mpr.user_id = u.id
+      LEFT JOIN LATERAL (
+        SELECT sd.data->>'firstName' AS first_name, sd.data->>'lastName' AS last_name
+        FROM scraped_data sd
+        WHERE sd.type = 'player_detail' AND sd.external_id = u.external_player_id
+        LIMIT 1
+      ) pd ON true
+      JOIN matches m ON mpr.match_id = m.external_id
+      WHERE (m.season_id = ${targetSeasonId})
+      ${leagueCondition(leagueKey)}
+        AND mpr.is_paid = false
+
+      UNION ALL
+
+      SELECT u.name as name, tp.amount as amount
+      FROM trainer_payments tp
+      JOIN users u ON tp.user_id = u.id
+      JOIN matches m ON tp.match_id = m.external_id
+      WHERE (m.season_id = ${targetSeasonId})
+      ${leagueCondition(leagueKey)}
+        AND tp.is_paid = false
+    ) debts
+    GROUP BY name
+    HAVING SUM(amount) > 0
+    ORDER BY SUM(amount) DESC, name ASC
+  `;
+
+  return rows.map((r) => ({
+    name: String(r.name || 'Unknown'),
+    amount: Number(r.amount || 0),
+  }));
+}
+
 export async function getTeamBankBalance(
   seasonId?: number,
   leagueKey?: string,
