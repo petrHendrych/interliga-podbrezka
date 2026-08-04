@@ -4,6 +4,7 @@ import { useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { SeasonConfig } from '@/lib/season-config';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectTrigger,
@@ -22,6 +23,8 @@ interface SeasonLeagueFilterProps {
     interliga: string;
     pohar: string;
   };
+  /** Chrome around the control row is owned by the page that places the filter. */
+  className?: string;
 }
 
 export function SeasonLeagueFilter({
@@ -29,6 +32,7 @@ export function SeasonLeagueFilter({
   selectedSeasonId,
   selectedLeagueKey,
   labels,
+  className,
 }: SeasonLeagueFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -67,9 +71,11 @@ export function SeasonLeagueFilter({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 bg-card border border-border/80 rounded-xl p-3 shadow-sm transition-opacity duration-200 ${
-        isPending ? 'opacity-75' : ''
-      }`}
+      className={cn(
+        'flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 transition-opacity duration-200',
+        isPending && 'opacity-75',
+        className,
+      )}
     >
       <div className="flex items-center gap-2.5">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5">

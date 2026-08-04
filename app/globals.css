@@ -40,6 +40,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-decor-dot: var(--decor-dot);
+  --shadow-lift: var(--elevation-1);
+  --shadow-lift-lg: var(--elevation-2);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -51,19 +56,38 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  /* The page is tinted and panels are white, so a surface gets lighter as it
+     rises and its shadow reads as a real lift. Nested wells (surface-2) go the
+     other way -- nothing can be lighter than white, so depth is tone there. */
+  --background: oklch(0.97 0.003 264.695);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.962 0.003 264.695);
+  /* Decorative corner dots: a soft red that stays close to the white page. */
+  --decor-dot: oklch(0.72 0.15 24);
+  --decor-dot-opacity: 0.5;
+  /* Elevation shadows, tuned per theme -- see .dark for why they differ there. */
+  --elevation-1:
+    0 1px 2px -1px oklch(0.145 0 0 / 0.08),
+    0 3px 8px -2px oklch(0.145 0 0 / 0.06);
+  --elevation-2:
+    0 2px 4px -2px oklch(0.145 0 0 / 0.1),
+    0 8px 20px -4px oklch(0.145 0 0 / 0.08);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  /* Kept a step below the page tint, otherwise hover and muted fills would be
+     indistinguishable from the background they sit on. */
+  --secondary: oklch(0.945 0.002 264.695);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --muted: oklch(0.945 0.002 264.695);
+  /* Dark enough to clear WCAG AA (4.5:1) on the tinted page and on every light
+     surface below it, including muted fills. */
+  --muted-foreground: oklch(0.523 0 0);
+  --accent: oklch(0.945 0.002 264.695);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
@@ -91,6 +115,21 @@
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.147 0.043 265.755);
   --card-foreground: oklch(0.985 0 0);
+  --surface: oklch(0.187 0.036 265.755);
+  --surface-2: oklch(0.242 0.034 265.755);
+  /* Decorative corner dots: lifted off the background, same blue cast. */
+  --decor-dot: oklch(0.68 0.055 265.755);
+  --decor-dot-opacity: 0.45;
+  /* A cast shadow barely reads against a dark page, so most of the lift here
+     comes from a 1px rim of light along the top edge; the shadow only anchors. */
+  --elevation-1:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.05),
+    0 1px 2px -1px oklch(0 0 0 / 0.5),
+    0 4px 12px -2px oklch(0 0 0 / 0.4);
+  --elevation-2:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.06),
+    0 2px 4px -2px oklch(0 0 0 / 0.55),
+    0 10px 28px -4px oklch(0 0 0 / 0.45);
   --popover: oklch(0.129 0.042 264.695);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
@@ -129,5 +168,7 @@
   }
   html {
     @apply font-sans;
+    /* Reserve the scrollbar track so short pages don't shift wider than tall ones. */
+    scrollbar-gutter: stable;
   }
 }

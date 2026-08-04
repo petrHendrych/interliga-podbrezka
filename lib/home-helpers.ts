@@ -42,6 +42,8 @@ export interface TrainerWithStats {
 }
 
 export interface TopDonator {
+  /** External player id, so the matching card can be flagged without name matching. */
+  id: number;
   name: string;
   amount: number;
 }
@@ -246,6 +248,7 @@ async function fetchHomeDataInternal(
 
   const topDonator: TopDonator | null = biggestFined
     ? {
+      id: biggestFined.externalPlayerId!,
       name: biggestFined.firstName
         ? `${biggestFined.firstName} ${biggestFined.lastName}`
         : biggestFined.name,

@@ -13,6 +13,7 @@ import { signOut } from '@/lib/auth-actions';
 import { Locale } from '@/lib/i18n/config';
 import { LANGUAGES, changeLanguage } from '@/lib/i18n/languages';
 import { useSyncData } from '@/lib/hooks/useSyncData';
+import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
 
 interface MobileNavProps {
   user?: {
@@ -25,6 +26,9 @@ interface MobileNavProps {
     manageUsers: string;
     syncData: string;
     syncing: string;
+    syncConfirmTitle: string;
+    syncConfirmDescription: string;
+    cancel: string;
     logout: string;
     toggleTheme: string;
   };
@@ -37,7 +41,9 @@ export function MobileNav({
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLangOpen, setIsLangOpen] = React.useState(false);
-  const { isSyncing, handleSync } = useSyncData();
+  const {
+    isSyncing, isConfirmOpen, requestSync, setConfirmOpen, confirmSync,
+  } = useSyncData();
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
   const pathname = usePathname();
@@ -85,7 +91,7 @@ export function MobileNav({
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 border-b bg-background shadow-xl p-4 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 z-50">
+        <div className="absolute top-full left-0 right-0 border-b bg-popover shadow-xl p-4 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 z-50">
           {user && (
             <>
               <div className="flex flex-col gap-3">
@@ -106,7 +112,11 @@ export function MobileNav({
 
                     <button
                       type="button"
-                      onClick={handleSync}
+                      onClick={(e) => {
+                        // Collapse the panel so the confirmation is the only thing on screen.
+                        setIsOpen(false);
+                        requestSync(e);
+                      }}
                       disabled={isSyncing}
                       className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium text-left w-full disabled:opacity-50"
                     >
@@ -172,14 +182,14 @@ export function MobileNav({
                   <button
                     type="button"
                     onClick={() => setTheme('light')}
-                    className={`px-2.5 py-1 text-xs rounded font-medium transition-all ${resolvedTheme === 'light' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-2.5 py-1 text-xs rounded font-medium transition-all ${resolvedTheme === 'light' ? 'bg-popover shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                   >
                     Light
                   </button>
                   <button
                     type="button"
                     onClick={() => setTheme('dark')}
-                    className={`px-2.5 py-1 text-xs rounded font-medium transition-all ${resolvedTheme === 'dark' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    className={`px-2.5 py-1 text-xs rounded font-medium transition-all ${resolvedTheme === 'dark' ? 'bg-popover shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                   >
                     Dark
                   </button>
@@ -194,7 +204,7 @@ export function MobileNav({
               <button
                 type="button"
                 onClick={async () => {
-                  await signOut();
+                  await signOut(lang);
                 }}
                 className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20 font-medium transition-colors w-full"
               >
@@ -204,6 +214,22 @@ export function MobileNav({
             </>
           )}
         </div>
+      )}
+
+      {user?.role === 'admin' && (
+        <SyncDataDialog
+          open={isConfirmOpen}
+          onOpenChange={setConfirmOpen}
+          isSyncing={isSyncing}
+          onConfirm={confirmSync}
+          translations={{
+            syncData: translations.syncData,
+            syncing: translations.syncing,
+            syncConfirmTitle: translations.syncConfirmTitle,
+            syncConfirmDescription: translations.syncConfirmDescription,
+            cancel: translations.cancel,
+          }}
+        />
       )}
     </div>
   );
