@@ -7,7 +7,7 @@ import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { formatDateOnly } from '@/lib/home-helpers';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
@@ -68,13 +68,12 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
     return (
       <div className="mx-auto py-8 px-4 max-w-4xl w-full">
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start mb-8">
-          <Avatar className="w-32 h-32 rounded-2xl after:rounded-2xl border-2 border-primary shadow-sm">
-            <AvatarImage src="/players/3009.JPG" alt={fullName} className="rounded-2xl aspect-square object-cover" />
-            <AvatarFallback className="rounded-2xl text-2xl font-bold">
-              {player.firstName?.[0]}
-              {player.lastName?.[0]}
-            </AvatarFallback>
-          </Avatar>
+          <PlayerAvatar
+            name={fullName}
+            externalPlayerId={playerId}
+            className="w-32 h-32 border-2 border-primary shadow-sm"
+            fallbackClassName="text-2xl font-bold"
+          />
           <div className="text-center md:text-left">
             <h1 className="text-3xl font-bold tracking-tight">
               {fullName}

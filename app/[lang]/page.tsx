@@ -16,17 +16,18 @@ import {
 } from '@/lib/home-helpers';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
-const STAT_TILE = 'rounded-lg bg-surface-2 p-2 text-center flex flex-col justify-center';
-const STAT_LABEL = 'block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground';
-const STAT_GRID = 'grid flex-1 min-w-0 grid-cols-2 sm:grid-cols-4 gap-2';
+const STAT_TILE = 'rounded-lg bg-surface-2 px-2 py-1.5 sm:p-2 text-center flex flex-col justify-center';
+const STAT_LABEL = 'block text-[10px] leading-tight uppercase font-semibold tracking-wide text-muted-foreground';
+const STAT_VALUE = 'text-sm sm:text-base leading-tight tabular-nums';
+const STAT_GRID = 'grid flex-1 min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-4 gap-1.5 sm:gap-2';
 const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5 shadow-lift';
-const PERSON_BODY = 'mt-3 flex items-center gap-3 sm:gap-4';
-const AVATAR = 'w-20 h-20 rounded-2xl after:rounded-2xl shrink-0';
+const PERSON_BODY = 'mt-3 flex items-stretch gap-3 sm:items-center sm:gap-4';
+const AVATAR = 'w-24 h-24 sm:w-20 sm:h-20 rounded-2xl after:rounded-2xl shrink-0';
 /** One value per row, so a long name can never push the amount out of the card. */
 const BANK_ROW = 'flex items-baseline justify-between gap-3 border-b border-foreground/10 py-3';
 const BANK_LABEL = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
@@ -246,39 +247,35 @@ export default async function Home({
                   </h2>
 
                   <div className={PERSON_BODY}>
-                    <Avatar className={AVATAR}>
-                      <AvatarImage
-                        src="/players/3009.JPG"
-                        alt={trainer.name}
-                        className="rounded-2xl"
-                      />
-                      <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
-                        {trainer.name.split(' ').map((n) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
+                    <PlayerAvatar
+                      name={trainer.name}
+                      userId={trainer.id}
+                      className={AVATAR}
+                      fallbackClassName="text-lg"
+                    />
 
                     <div className={STAT_GRID}>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.count3800}</span>
-                        <span className="text-base font-bold tabular-nums">
+                        <span className={`${STAT_VALUE} font-bold`}>
                           {trainer.stats.count3800}
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.count3900}</span>
-                        <span className="text-base font-bold tabular-nums">
+                        <span className={`${STAT_VALUE} font-bold`}>
                           {trainer.stats.count3900}
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
-                        <span className="text-base font-semibold tabular-nums">
+                        <span className={`${STAT_VALUE} font-semibold`}>
                           {trainer.stats.zeroMisses}
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                        <span className="text-base font-semibold tabular-nums">
+                        <span className={`${STAT_VALUE} font-semibold`}>
                           {trainer.stats.totalPaid}
                         </span>
                       </div>
@@ -336,40 +333,35 @@ export default async function Home({
                     </div>
 
                     <div className={PERSON_BODY}>
-                      <Avatar className={AVATAR}>
-                        <AvatarImage
-                          src="/players/3009.JPG"
-                          alt={`${player.firstName} ${player.lastName}`}
-                          className="rounded-2xl"
-                        />
-                        <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
-                          {player.firstName?.[0]}
-                          {player.lastName?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                      <PlayerAvatar
+                        name={`${player.firstName} ${player.lastName}`}
+                        externalPlayerId={player.id}
+                        className={AVATAR}
+                        fallbackClassName="text-lg"
+                      />
 
                       <div className={STAT_GRID}>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.avg}</span>
-                          <span className="text-base font-bold tabular-nums text-primary">
+                          <span className={`${STAT_VALUE} font-bold text-primary`}>
                             {player.stats.avg || '-'}
                           </span>
                         </div>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.max}</span>
-                          <span className="text-base font-bold tabular-nums">
+                          <span className={`${STAT_VALUE} font-bold`}>
                             {player.stats.max || '-'}
                           </span>
                         </div>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.misses}</span>
-                          <span className="text-base font-semibold tabular-nums">
+                          <span className={`${STAT_VALUE} font-semibold`}>
                             {player.stats.misses}
                           </span>
                         </div>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                          <span className={`text-base font-semibold tabular-nums ${fineTone}`}>
+                          <span className={`${STAT_VALUE} font-semibold ${fineTone}`}>
                             {player.stats.totalPaid}
                           </span>
                         </div>
