@@ -220,6 +220,7 @@ export interface PlayerBalance {
   /** Season-wide, ignores the league filter — see `fineAmount`. */
   streakFines: number;
   streakFinesPaid: number;
+  streakFinesCount: number;
 }
 
 export interface PlayerMatchResult {
@@ -357,7 +358,14 @@ export async function getPlayerBalanceByExternalId(
         FROM match_player_results smpr
         JOIN matches sm ON smpr.match_id = sm.external_id
         WHERE smpr.user_id = u.id AND sm.season_id = ${targetSeasonId}
-      ), 0)::text as streak_fines_paid
+      ), 0)::text as streak_fines_paid,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM match_player_results smpr
+        JOIN matches sm ON smpr.match_id = sm.external_id
+        WHERE smpr.user_id = u.id AND sm.season_id = ${targetSeasonId}
+          AND COALESCE(smpr.streak_fine, 0) > 0
+      ), 0)::text as streak_fines_count
     FROM users u
     LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
     LEFT JOIN matches m ON mpr.match_id = m.external_id
@@ -375,6 +383,7 @@ export async function getPlayerBalanceByExternalId(
       balance: 0,
       streakFines: 0,
       streakFinesPaid: 0,
+      streakFinesCount: 0,
     };
   }
   return {
@@ -385,6 +394,7 @@ export async function getPlayerBalanceByExternalId(
     balance: Number(rows[0].balance || 0),
     streakFines: Number(rows[0].streak_fines || 0),
     streakFinesPaid: Number(rows[0].streak_fines_paid || 0),
+    streakFinesCount: Number(rows[0].streak_fines_count || 0),
   };
 }
 

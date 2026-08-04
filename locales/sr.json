@@ -159,6 +159,7 @@
   },
   "playerDetail": {
     "totalPayment": "Ukupno plaćeno: {amount} €",
+    "totalPaymentShort": "Ukupno plaćeno {amount} €",
     "unpaid": "Neplaćeno: {amount} €",
     "bonuses": "Bonusi: {amount} €",
     "totalFaults": "Ukupno grešaka: {count}",
@@ -190,7 +191,7 @@
       "specialFaults": "{count}x specijalna greška",
       "streak": "serija 5+ utakmica bez greške kroz sva takmičenja ({count}. utakmica)"
     },
-    "streakFinesBadge": "+{amount} € serija",
+    "streakFinesCount": "{count}x serija",
     "streakFinesHint": "Kazna za seriju od 5+ utakmica bez greške. Uključena je u ovaj iznos, ali pošto se računa kroz sva takmičenja, nema je u iznosima za pojedinačna takmičenja.",
     "streakBadge": "{count}. bez greške",
     "noResults": "Nema rezultata za ovog igrača.",

@@ -14,7 +14,6 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchFineTooltip } from '@/components/MatchFineTooltip';
@@ -84,56 +83,79 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
             </h1>
             <div className="mt-2 text-muted-foreground">
               <p className="text-lg">
-                {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
-                {' '}
-                <span className="text-sm text-red-600 dark:text-red-400 font-medium">
-                  (
-                  {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
-                  )
+                <span className="sm:hidden">
+                  {interpolate(dict.playerDetail.totalPaymentShort, { amount: balance.totalPaid })}
                 </span>
-                {showSeasonWideStreakFines ? (
-                  <Tooltip
-                    content={(
-                      <p className="max-w-[220px] text-[11px]">
-                        {dict.playerDetail.streakFinesHint}
-                      </p>
-                    )}
-                  >
-                    <span className="ml-2 inline-flex items-center rounded-full border border-red-600/40 bg-red-600/10 px-1.5 py-0.5 align-middle text-[11px] font-medium leading-none text-red-600 dark:border-red-400/40 dark:text-red-400">
-                      {interpolate(dict.playerDetail.streakFinesBadge, {
-                        amount: balance.streakFines,
-                      })}
+                <span className="hidden sm:inline">
+                  {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
+                </span>
+                {' '}
+                <Tooltip
+                  content={(
+                    <p className="max-w-[220px] text-[11px]">
+                      {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
+                    </p>
+                  )}
+                >
+                  <span className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    <span className="sm:hidden">
+                      (
+                      {balance.balance}
+                      {' €)'}
                     </span>
-                  </Tooltip>
-                ) : null}
+                    <span className="hidden sm:inline">
+                      (
+                      {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
+                      )
+                    </span>
+                  </span>
+                </Tooltip>
               </p>
               {balance.totalBonuses > 0 ? (
                 <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">
                   {interpolate(dict.playerDetail.bonuses, { amount: balance.totalBonuses })}
                 </p>
               ) : null}
-              <p className="text-lg">
+              <p className="text-sm">
                 {interpolate(dict.playerDetail.totalFaults, { count: totalFaults })}
+                {showSeasonWideStreakFines ? (
+                  <>
+                    {', '}
+                    <Tooltip
+                      content={(
+                        <p className="max-w-[220px] text-[11px]">
+                          {dict.playerDetail.streakFinesHint}
+                        </p>
+                      )}
+                    >
+                      <span className="underline decoration-dotted underline-offset-2">
+                        {interpolate(dict.playerDetail.streakFinesCount, {
+                          count: balance.streakFinesCount,
+                        })}
+                      </span>
+                    </Tooltip>
+                  </>
+                ) : null}
               </p>
             </div>
           </div>
         </div>
 
-        <Separator className="my-8" />
-
-        <SeasonLeagueFilter
-          className="mb-6 rounded-xl border border-border/80 bg-card p-3 shadow-lift"
-          seasons={SEASONS_CONFIG}
-          selectedSeasonId={selectedSeasonId}
-          selectedLeagueKey={selectedLeagueKey}
-          labels={{
-            seasonLabel: dict.home.season || 'Sezóna',
-            allLeagues: dict.home.filterAll || 'Všetky',
-            interliga: dict.home.filterInterliga || 'Interliga',
-            pohar: dict.home.filterPohar || 'Slovenský pohár',
-            turnaje: dict.home.filterTurnaje || 'Turnaje',
-          }}
-        />
+        {/* Pinned under the header so switching season/league never moves the control. */}
+        <div className="sticky top-16 z-30 -mx-4 mt-8 mb-8 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60">
+          <SeasonLeagueFilter
+            seasons={SEASONS_CONFIG}
+            selectedSeasonId={selectedSeasonId}
+            selectedLeagueKey={selectedLeagueKey}
+            labels={{
+              seasonLabel: dict.home.season || 'Sezóna',
+              allLeagues: dict.home.filterAll || 'Všetky',
+              interliga: dict.home.filterInterliga || 'Interliga',
+              pohar: dict.home.filterPohar || 'Slovenský pohár',
+              turnaje: dict.home.filterTurnaje || 'Turnaje',
+            }}
+          />
+        </div>
 
         <Card>
           <CardHeader>

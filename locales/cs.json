@@ -159,6 +159,7 @@
   },
   "playerDetail": {
     "totalPayment": "Celkem zaplaceno: {amount} €",
+    "totalPaymentShort": "Celkem zaplaceno {amount} €",
     "unpaid": "Nezaplaceno: {amount} €",
     "bonuses": "Bonusy: {amount} €",
     "totalFaults": "Chyby celkem: {count}",
@@ -190,7 +191,7 @@
       "specialFaults": "{count}x speciální chyba",
       "streak": "série 5+ zápasů bez chyby napříč soutěžemi ({count}. zápas)"
     },
-    "streakFinesBadge": "+{amount} € série",
+    "streakFinesCount": "{count}x série",
     "streakFinesHint": "Pokuta za sérii 5+ zápasů bez chyby. Je započítaná v této částce, ale protože se počítá napříč všemi soutěžemi, v částkách za jednotlivé soutěže není.",
     "streakBadge": "{count}. bez chyby",
     "noResults": "Tento hráč nemá žádné výsledky.",

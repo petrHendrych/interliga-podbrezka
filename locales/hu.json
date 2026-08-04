@@ -159,6 +159,7 @@
   },
   "playerDetail": {
     "totalPayment": "Összesen kifizetve: {amount} €",
+    "totalPaymentShort": "Összesen kifizetve {amount} €",
     "unpaid": "Kifizetetlen: {amount} €",
     "bonuses": "Bónuszok: {amount} €",
     "totalFaults": "Összes hiba: {count}",
@@ -190,7 +191,7 @@
       "specialFaults": "{count}x speciális hiba",
       "streak": "5+ hibátlan mérkőzés sorozat versenyeken át ({count}. mérkőzés)"
     },
-    "streakFinesBadge": "+{amount} € sorozat",
+    "streakFinesCount": "{count}x sorozat",
     "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel az összes verseny együtt számít, az egyes versenyek összegeiben nem szerepel.",
     "streakBadge": "{count}. hibátlan",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
