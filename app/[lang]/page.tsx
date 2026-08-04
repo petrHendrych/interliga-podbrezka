@@ -25,12 +25,15 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 const STAT_TILE = 'rounded-lg bg-surface-2 px-2 py-1.5 sm:p-2 text-center flex flex-col justify-center';
 const STAT_LABEL = 'block text-[10px] leading-tight uppercase font-semibold tracking-wide text-muted-foreground';
 const STAT_VALUE = 'text-sm sm:text-base leading-tight tabular-nums';
-const STAT_GRID = 'grid w-full min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-4 gap-1.5 sm:gap-2';
+const STAT_GRID = 'col-start-2 row-start-2 grid w-full min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-4 gap-1.5 sm:gap-2';
 const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5 shadow-lift';
-const PERSON_BODY = 'flex items-stretch gap-3 sm:gap-4';
-/** The avatar sets the card height; the name and the stats stack up beside it. */
-const AVATAR = 'w-28 h-28 sm:w-24 sm:h-24 rounded-2xl after:rounded-2xl shrink-0';
-const PERSON_MAIN = 'flex flex-1 min-w-0 flex-col justify-between gap-2';
+const PERSON_BODY = 'grid grid-cols-[auto_1fr] items-stretch gap-x-3 gap-y-2 sm:gap-x-4';
+/**
+ * Mobile puts the name on its own row and lets the avatar match the stats height;
+ * from `sm` the avatar sits beside both rows and sets the card height.
+ */
+const AVATAR = 'col-start-1 row-start-2 w-24 h-auto self-stretch sm:row-start-1 sm:row-span-2 sm:h-24 sm:self-start rounded-2xl after:rounded-2xl shrink-0';
+const NAME_SLOT = 'col-span-2 row-start-1 min-w-0 sm:col-span-1 sm:col-start-2';
 const PERSON_NAME = 'font-bold text-lg sm:text-xl leading-tight truncate';
 const PERSON_MATCHES = 'shrink-0 text-xs sm:text-sm font-normal text-muted-foreground tabular-nums';
 /** One value per row, so a long name can never push the amount out of the card. */
@@ -318,36 +321,34 @@ export default async function Home({
                       fallbackClassName="text-2xl"
                     />
 
-                    <div className={PERSON_MAIN}>
-                      <h2 className={PERSON_NAME}>
-                        {trainer.name}
-                      </h2>
+                    <h2 className={`${NAME_SLOT} ${PERSON_NAME}`}>
+                      {trainer.name}
+                    </h2>
 
-                      <div className={STAT_GRID}>
-                        <div className={STAT_TILE}>
-                          <span className={STAT_LABEL}>{dict.home.count3800}</span>
-                          <span className={`${STAT_VALUE} font-bold`}>
-                            {trainer.stats.count3800}
-                          </span>
-                        </div>
-                        <div className={STAT_TILE}>
-                          <span className={STAT_LABEL}>{dict.home.count3900}</span>
-                          <span className={`${STAT_VALUE} font-bold`}>
-                            {trainer.stats.count3900}
-                          </span>
-                        </div>
-                        <div className={STAT_TILE}>
-                          <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
-                          <span className={`${STAT_VALUE} font-semibold`}>
-                            {trainer.stats.zeroMisses}
-                          </span>
-                        </div>
-                        <div className={STAT_TILE}>
-                          <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                          <span className={`${STAT_VALUE} font-semibold ${fineTone(trainer.stats.totalPaid)}`}>
-                            {trainer.stats.totalPaid}
-                          </span>
-                        </div>
+                    <div className={STAT_GRID}>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.count3800}</span>
+                        <span className={`${STAT_VALUE} font-bold`}>
+                          {trainer.stats.count3800}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.count3900}</span>
+                        <span className={`${STAT_VALUE} font-bold`}>
+                          {trainer.stats.count3900}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
+                        <span className={`${STAT_VALUE} font-semibold`}>
+                          {trainer.stats.zeroMisses}
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
+                        <span className={`${STAT_VALUE} font-semibold ${fineTone(trainer.stats.totalPaid)}`}>
+                          {trainer.stats.totalPaid}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -389,45 +390,43 @@ export default async function Home({
                         fallbackClassName="text-2xl"
                       />
 
-                      <div className={PERSON_MAIN}>
-                        <div className={`flex items-baseline gap-1.5 min-w-0 ${titlePad}`}>
-                          <h2 className={PERSON_NAME}>
-                            {player.firstName}
-                            {' '}
-                            {player.lastName}
-                          </h2>
-                          <span className={PERSON_MATCHES}>
-                            (
-                            {pluralize(lang, player.stats.matchesCount, dict.home.matchesPlayed)}
-                            )
+                      <div className={`${NAME_SLOT} flex items-baseline gap-1.5 ${titlePad}`}>
+                        <h2 className={PERSON_NAME}>
+                          {player.firstName}
+                          {' '}
+                          {player.lastName}
+                        </h2>
+                        <span className={PERSON_MATCHES}>
+                          (
+                          {pluralize(lang, player.stats.matchesCount, dict.home.matchesPlayed)}
+                          )
+                        </span>
+                      </div>
+
+                      <div className={STAT_GRID}>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.avg}</span>
+                          <span className={`${STAT_VALUE} font-bold text-primary`}>
+                            {player.stats.avg || '-'}
                           </span>
                         </div>
-
-                        <div className={STAT_GRID}>
-                          <div className={STAT_TILE}>
-                            <span className={STAT_LABEL}>{dict.home.avg}</span>
-                            <span className={`${STAT_VALUE} font-bold text-primary`}>
-                              {player.stats.avg || '-'}
-                            </span>
-                          </div>
-                          <div className={STAT_TILE}>
-                            <span className={STAT_LABEL}>{dict.home.max}</span>
-                            <span className={`${STAT_VALUE} font-bold`}>
-                              {player.stats.max || '-'}
-                            </span>
-                          </div>
-                          <div className={STAT_TILE}>
-                            <span className={STAT_LABEL}>{dict.home.misses}</span>
-                            <span className={`${STAT_VALUE} font-semibold`}>
-                              {player.stats.misses}
-                            </span>
-                          </div>
-                          <div className={STAT_TILE}>
-                            <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                            <span className={`${STAT_VALUE} font-semibold ${fineTone(player.stats.totalPaid)}`}>
-                              {player.stats.totalPaid}
-                            </span>
-                          </div>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.max}</span>
+                          <span className={`${STAT_VALUE} font-bold`}>
+                            {player.stats.max || '-'}
+                          </span>
+                        </div>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.misses}</span>
+                          <span className={`${STAT_VALUE} font-semibold`}>
+                            {player.stats.misses}
+                          </span>
+                        </div>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
+                          <span className={`${STAT_VALUE} font-semibold ${fineTone(player.stats.totalPaid)}`}>
+                            {player.stats.totalPaid}
+                          </span>
                         </div>
                       </div>
                     </div>

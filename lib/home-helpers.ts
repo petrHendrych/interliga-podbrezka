@@ -74,13 +74,21 @@ export interface BelowLimitMatch {
   score: number;
 }
 
-/** Played matches under the limit, or null when the rule cannot apply. */
-function collectBelowLimit(matches: MatchListItem[]): BelowLimitMatch[] | null {
+/** Filters whose competition is subject to the rule, so the row belongs on screen at zero too. */
+const LIMIT_FILTER_KEYS = new Set<string>(['interliga', TOURNAMENT_FILTER_KEY]);
+
+/** Played matches under the limit, or null when the row does not belong on screen. */
+function collectBelowLimit(
+  matches: MatchListItem[],
+  leagueKey: string,
+): BelowLimitMatch[] | null {
+  if (leagueKey === 'pohar') return null;
+
   const played = matches.filter((m): m is MatchListItem & { teamTotalScore: number } => (
     isUnderLimitEligible(m)
     && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
   ));
-  if (played.length === 0) return null;
+  if (played.length === 0 && !LIMIT_FILTER_KEYS.has(leagueKey)) return null;
 
   return played
     .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
@@ -214,7 +222,6 @@ async function fetchHomeDataInternal(
   let upcomingMatches: MatchListItem[] = [];
   let nextHomeMatch: MatchListItem | null = null;
   let hasFinishedMatches = false;
-  let belowLimitMatches: BelowLimitMatch[] | null = null;
 
   if (matchList && matchList.length > 0) {
     const teamMatches = matchList; // Already filtered by season and includes team info
@@ -254,8 +261,9 @@ async function fetchHomeDataInternal(
     }
 
     hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
-    belowLimitMatches = collectBelowLimit(teamMatches);
   }
+
+  const belowLimitMatches = collectBelowLimit(matchList ?? [], leagueKey);
 
   const eligibleBalances = playerBalances.filter(
     (b) => b.externalPlayerId !== null && b.matchesCount > 0,
@@ -327,7 +335,9 @@ export const fetchHomeData = unstable_cache(
     seasonId: number = DEFAULT_SEASON_ID,
     leagueKey: string = 'all',
   ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
-  ['home-data'],
+  // The key hashes only the arguments, so a changed `FetchDataResult` shape would keep
+  // serving payloads missing the new fields. Bump the version whenever that shape changes.
+  ['home-data', 'v2'],
   {
     revalidate: SYNCED_DATA_REVALIDATE_SECONDS,
     tags: ['home-data'],
