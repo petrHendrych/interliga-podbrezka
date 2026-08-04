@@ -194,7 +194,7 @@ export function MobileNav({
               <button
                 type="button"
                 onClick={async () => {
-                  await signOut();
+                  await signOut(lang);
                 }}
                 className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20 font-medium transition-colors w-full"
               >

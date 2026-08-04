@@ -21,6 +21,8 @@ export default function SignInForm({ lang, dict }: SignInFormProps) {
         <p className="text-sm text-muted-foreground">{dict.signInDescription}</p>
       </div>
       <form action={action} className="space-y-4">
+        {/* Lets the action redirect back into the current locale instead of a slug-less path. */}
+        <input type="hidden" name="lang" value={lang} />
         <div className="space-y-2">
           <label
             htmlFor="email"

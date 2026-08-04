@@ -49,14 +49,12 @@ export async function proxy(req: NextRequest) {
   if (pathnameIsMissingLocale) {
     const locale = getLocale(req);
 
-    // e.g. incoming is /products
-    // The new URL is now /en/products
-    return NextResponse.redirect(
-      new URL(
-        `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`,
-        req.url,
-      ),
-    );
+    // e.g. incoming is /products?season=13
+    // The new URL is now /en/products?season=13 — cloning nextUrl keeps the query
+    // string, so filters set on a locale-less URL survive the redirect.
+    const url = req.nextUrl.clone();
+    url.pathname = `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
+    return NextResponse.redirect(url);
   }
 
   // Locale is present

@@ -81,7 +81,7 @@ export function UserDropdown({
         <DropdownMenuItem
           className="gap-2 cursor-pointer py-2 text-destructive focus:text-destructive focus:bg-destructive/10"
           onClick={async () => {
-            await signOut();
+            await signOut(lang);
           }}
         >
           <LogOut className="size-4 text-destructive" />

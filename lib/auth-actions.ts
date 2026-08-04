@@ -7,11 +7,19 @@ import { db } from './db';
 import { users } from './db/schema';
 import { hashPassword, verifyPassword } from './auth';
 import { setSession, clearSession } from './session';
+import { i18n } from './i18n/config';
 
 type ActionState = {
   error?: string;
   success?: boolean;
 } | null;
+
+/** Redirect targets must keep the locale slug, otherwise the URL loses it
+ *  until the proxy re-adds it (dropping any query string on the way). */
+function resolveLocale(value: unknown): string {
+  const lang = typeof value === 'string' ? value : '';
+  return (i18n.locales as readonly string[]).includes(lang) ? lang : i18n.defaultLocale;
+}
 
 export async function signUp(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const name = formData.get('name') as string;
@@ -47,6 +55,7 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
 export async function signIn(prevState: ActionState, formData: FormData): Promise<ActionState> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const lang = resolveLocale(formData.get('lang'));
 
   if (!email || !password) {
     return { error: 'missingFields' };
@@ -91,13 +100,13 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
     name: user.name,
   });
 
-  redirect('/');
+  redirect(`/${lang}`);
   return null; // Should not reach here due to redirect
 }
 
-export async function signOut() {
+export async function signOut(lang?: string) {
   await clearSession();
-  redirect('/sign-in');
+  redirect(`/${resolveLocale(lang)}/sign-in`);
 }
 
 /*
