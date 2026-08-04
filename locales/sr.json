@@ -41,6 +41,8 @@
     "manageUsers": "Upravljanje korisnicima",
     "syncing": "Sinhronizujem...",
     "syncData": "Sinhronizuj podatke",
+    "syncConfirmTitle": "Pokrenuti sinhronizaciju?",
+    "syncConfirmDescription": "Učitaće se novi rezultati iz statistike i ponovo će se izračunati kazne i bonusi. Može da potraje.",
     "cancel": "Otkaži",
     "delete": "Izbriši",
     "switchLanguage": "Promeni jezik",

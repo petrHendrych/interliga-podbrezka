@@ -12,7 +12,7 @@ import type { Dictionary } from '@/lib/i18n/types';
 import { DeleteUserButton } from './DeleteUserButton';
 import { LinkPlayerDialog, type LinkCandidate } from './LinkPlayerDialog';
 
-const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6';
+const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
 const SECTION_HINT = 'mt-1 text-sm text-muted-foreground';
 const COUNT_PILL = 'inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-surface-2 px-2 text-xs font-bold tabular-nums';

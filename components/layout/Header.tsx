@@ -16,6 +16,9 @@ export async function Header({ lang }: { lang: Locale }) {
     manageUsers: dict.common.manageUsers,
     syncData: dict.common.syncData,
     syncing: dict.common.syncing,
+    syncConfirmTitle: dict.common.syncConfirmTitle,
+    syncConfirmDescription: dict.common.syncConfirmDescription,
+    cancel: dict.common.cancel,
     logout: dict.common.logout,
     switchLanguage: dict.common.switchLanguage,
     toggleTheme: dict.common.toggleTheme,
@@ -52,6 +55,9 @@ export async function Header({ lang }: { lang: Locale }) {
                 manageUsers: dict.common.manageUsers,
                 syncData: dict.common.syncData,
                 syncing: dict.common.syncing,
+                syncConfirmTitle: dict.common.syncConfirmTitle,
+                syncConfirmDescription: dict.common.syncConfirmDescription,
+                cancel: dict.common.cancel,
                 logout: dict.common.logout,
               }}
             />

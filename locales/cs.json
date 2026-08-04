@@ -41,6 +41,8 @@
     "manageUsers": "Správa uživatelů",
     "syncing": "Synchronizuji...",
     "syncData": "Synchronizovat data",
+    "syncConfirmTitle": "Spustit synchronizaci?",
+    "syncConfirmDescription": "Načtou se nové výsledky ze statistik a přepočítají se pokuty i bonusy. Může to chvíli trvat.",
     "cancel": "Zrušit",
     "delete": "Odstranit",
     "switchLanguage": "Změnit jazyk",

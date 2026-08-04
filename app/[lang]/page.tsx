@@ -5,6 +5,7 @@ import {
   Crown,
   AlertTriangle,
   Wallet,
+  PiggyBank,
 } from 'lucide-react';
 import { TEAM_ID } from '@/lib/api';
 import {
@@ -22,7 +23,7 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 const STAT_TILE = 'rounded-lg bg-surface-2 p-2 text-center flex flex-col justify-center';
 const STAT_LABEL = 'block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground';
 const STAT_GRID = 'grid flex-1 min-w-0 grid-cols-2 sm:grid-cols-4 gap-2';
-const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5';
+const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5 shadow-lift';
 const PERSON_BODY = 'mt-3 flex items-center gap-3 sm:gap-4';
 const AVATAR = 'w-20 h-20 rounded-2xl after:rounded-2xl shrink-0';
 /** One value per row, so a long name can never push the amount out of the card. */
@@ -83,7 +84,7 @@ export default async function Home({
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
       {bankBalance && (
-        <section className="rounded-2xl bg-surface p-5 sm:p-7">
+        <section className="rounded-2xl bg-surface p-5 sm:p-7 shadow-lift-lg">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Wallet className="w-4 h-4" />
             <h1 className="text-xs font-semibold uppercase tracking-[0.15em]">
@@ -170,7 +171,7 @@ export default async function Home({
             return (
               <div
                 key={match.id}
-                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-amber-500"
+                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-amber-500 shadow-lift"
               >
                 <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
                   {isHome ? <HomeIcon className="w-4 h-4" /> : <Bus className="w-4 h-4" />}
@@ -217,7 +218,7 @@ export default async function Home({
       {/* Keeps the page taller than the viewport so the scrollbar never toggles. */}
       <div className="min-h-[60vh] pb-4">
         {hasNoData ? (
-          <div className="rounded-xl bg-surface p-8 text-center text-muted-foreground">
+          <div className="rounded-xl bg-surface p-8 text-center text-muted-foreground shadow-lift">
             <p>
               {dict.home.noResults}
               {' '}
@@ -230,7 +231,7 @@ export default async function Home({
               {trainers.map((trainer) => (
                 <div
                   key={trainer.id}
-                  className={`md:col-span-2 ${PERSON_CARD} ring-1 ring-inset ring-amber-500/25`}
+                  className={`md:col-span-2 ${PERSON_CARD} ring-1 ring-inset ring-red-800/25`}
                 >
                   <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
                     {trainer.name}
@@ -277,70 +278,98 @@ export default async function Home({
                   </div>
                 </div>
               ))}
-              {players.map((player, index) => (
-                <Link
-                  key={player.id}
-                  href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
-                  className={`relative block ${PERSON_CARD} ring-1 ring-inset ring-transparent transition-[box-shadow,transform] hover:ring-foreground/15 active:scale-[0.99]`}
-                >
-                  {index === 0 && (
-                    <Crown className="w-5 h-5 text-amber-500 fill-amber-400 rotate-12 absolute top-3.5 right-3.5 z-10" />
-                  )}
-                  <div className={`flex items-baseline gap-1.5 min-w-0 ${index === 0 ? 'pr-7' : ''}`}>
-                    <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
-                      {player.firstName}
-                      {' '}
-                      {player.lastName}
-                    </h2>
-                    <span className="shrink-0 text-sm font-normal text-muted-foreground tabular-nums">
-                      (
-                      {player.stats.matchesCount}
-                      )
-                    </span>
-                  </div>
+              {players.map((player, index) => {
+                const isTopScorer = index === 0;
+                const isTopDonator = topDonator?.id === player.id;
+                // Both badges can land on the same card, so the title has to
+                // clear one, two, or no icons.
+                const titlePad = ['', 'pr-7', 'pr-14'][
+                  Number(isTopScorer) + Number(isTopDonator)
+                ];
+                // totalPaid arrives pre-formatted ("12.5 €"), so read the sign
+                // back off it: a player who is owed money must not be painted
+                // as though he owed it.
+                const fineAmount = parseFloat(player.stats.totalPaid);
+                let fineTone = '';
+                if (fineAmount > 0) fineTone = 'text-red-600 dark:text-red-400';
+                else if (fineAmount < 0) fineTone = 'text-emerald-600 dark:text-emerald-400';
 
-                  <div className={PERSON_BODY}>
-                    <Avatar className={AVATAR}>
-                      <AvatarImage
-                        src="/players/3009.JPG"
-                        alt={`${player.firstName} ${player.lastName}`}
-                        className="rounded-2xl"
-                      />
-                      <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
-                        {player.firstName?.[0]}
-                        {player.lastName?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                return (
+                  <Link
+                    key={player.id}
+                    href={`/${lang}/player/${player.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
+                    className={`relative block ${PERSON_CARD} ring-1 ring-inset ring-transparent transition-[box-shadow,transform] hover:shadow-lift-lg hover:ring-foreground/15 active:scale-[0.99]`}
+                  >
+                    {(isTopScorer || isTopDonator) && (
+                      <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1.5">
+                        {isTopDonator && (
+                          <PiggyBank
+                            role="img"
+                            aria-label={dict.home.bank.topDonator}
+                            className="w-5 h-5 text-emerald-600 dark:text-emerald-400 rotate-12"
+                          />
+                        )}
+                        {isTopScorer && (
+                          <Crown className="w-5 h-5 text-amber-500 fill-amber-400 rotate-12" />
+                        )}
+                      </div>
+                    )}
+                    <div className={`flex items-baseline gap-1.5 min-w-0 ${titlePad}`}>
+                      <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
+                        {player.firstName}
+                        {' '}
+                        {player.lastName}
+                      </h2>
+                      <span className="shrink-0 text-sm font-normal text-muted-foreground tabular-nums">
+                        (
+                        {player.stats.matchesCount}
+                        )
+                      </span>
+                    </div>
 
-                    <div className={STAT_GRID}>
-                      <div className={STAT_TILE}>
-                        <span className={STAT_LABEL}>{dict.home.avg}</span>
-                        <span className="text-base font-bold tabular-nums text-primary">
-                          {player.stats.avg || '-'}
-                        </span>
-                      </div>
-                      <div className={STAT_TILE}>
-                        <span className={STAT_LABEL}>{dict.home.max}</span>
-                        <span className="text-base font-bold tabular-nums">
-                          {player.stats.max || '-'}
-                        </span>
-                      </div>
-                      <div className={STAT_TILE}>
-                        <span className={STAT_LABEL}>{dict.home.misses}</span>
-                        <span className="text-base font-semibold tabular-nums">
-                          {player.stats.misses}
-                        </span>
-                      </div>
-                      <div className={STAT_TILE}>
-                        <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                        <span className="text-base font-semibold tabular-nums">
-                          {player.stats.totalPaid}
-                        </span>
+                    <div className={PERSON_BODY}>
+                      <Avatar className={AVATAR}>
+                        <AvatarImage
+                          src="/players/3009.JPG"
+                          alt={`${player.firstName} ${player.lastName}`}
+                          className="rounded-2xl"
+                        />
+                        <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
+                          {player.firstName?.[0]}
+                          {player.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className={STAT_GRID}>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.avg}</span>
+                          <span className="text-base font-bold tabular-nums text-primary">
+                            {player.stats.avg || '-'}
+                          </span>
+                        </div>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.max}</span>
+                          <span className="text-base font-bold tabular-nums">
+                            {player.stats.max || '-'}
+                          </span>
+                        </div>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.misses}</span>
+                          <span className="text-base font-semibold tabular-nums">
+                            {player.stats.misses}
+                          </span>
+                        </div>
+                        <div className={STAT_TILE}>
+                          <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
+                          <span className={`text-base font-semibold tabular-nums ${fineTone}`}>
+                            {player.stats.totalPaid}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )
         )}

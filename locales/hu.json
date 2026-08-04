@@ -41,6 +41,8 @@
     "manageUsers": "Felhasználók kezelése",
     "syncing": "Szinkronizálás...",
     "syncData": "Adatok szinkronizálása",
+    "syncConfirmTitle": "Elindítod a szinkronizálást?",
+    "syncConfirmDescription": "Betöltjük az új eredményeket a statisztikákból, és újraszámoljuk a büntetéseket és a bónuszokat. Ez eltarthat egy ideig.",
     "cancel": "Mégse",
     "delete": "Törlés",
     "switchLanguage": "Nyelvváltás",

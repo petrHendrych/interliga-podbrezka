@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Montserrat } from 'next/font/google';
 import '../globals.css';
 import { Header } from '@/components/layout/Header';
+import { BackgroundDots } from '@/components/layout/BackgroundDots';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
@@ -59,6 +60,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <BackgroundDots />
           <Header lang={lang} />
           <main className="flex flex-1 flex-col">{children}</main>
         </ThemeProvider>
