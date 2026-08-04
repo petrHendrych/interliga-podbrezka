@@ -1,10 +1,14 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Image from 'next/image';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   getInitials,
   getPlayerImageByExternalId,
   getPlayerImageByUserId,
 } from '@/lib/player-images';
 import { cn } from '@/lib/utils';
+
+/** Largest rendered avatar; `next/image` derives the 1x/2x srcset from it. */
+const RENDER_SIZE = 128;
 
 interface PlayerAvatarProps {
   name: string;
@@ -25,18 +29,21 @@ export function PlayerAvatar({
 
   return (
     <Avatar className={cn('rounded-2xl after:rounded-2xl', className)}>
-      {src && (
-        <AvatarImage
+      {src ? (
+        <Image
           src={src}
           alt={name}
-          className="rounded-2xl aspect-square object-cover"
+          width={RENDER_SIZE}
+          height={RENDER_SIZE}
+          className="aspect-square size-full rounded-2xl object-cover"
         />
+      ) : (
+        <AvatarFallback
+          className={cn('rounded-2xl bg-surface-2 font-semibold', fallbackClassName)}
+        >
+          {getInitials(name)}
+        </AvatarFallback>
       )}
-      <AvatarFallback
-        className={cn('rounded-2xl bg-surface-2 font-semibold', fallbackClassName)}
-      >
-        {getInitials(name)}
-      </AvatarFallback>
     </Avatar>
   );
 }
