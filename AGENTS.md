@@ -19,6 +19,17 @@ Before finishing any task, you must run linting and type checks. No TypeScript e
 Strictly avoid using the `any` type in the codebase.
 <!-- END:check-rules -->
 
+<!-- BEGIN:comment-rules -->
+# Comment Rules
+
+Keep comments to a minimum. Code should be self-explanatory through clear naming and structure.
+
+- Do NOT add comments that restate what the code already says.
+- Do NOT add section banners, step-by-step narration, or "// eslint-disable" style explanations unless required.
+- Only comment when it explains *why* something non-obvious is done (a workaround, a business rule, an external API quirk).
+- Never leave commented-out code behind.
+<!-- END:comment-rules -->
+
 <!-- BEGIN:decision-rules -->
 # Decision Making Rules
 
