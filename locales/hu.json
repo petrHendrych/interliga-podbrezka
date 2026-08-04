@@ -188,8 +188,10 @@
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",
-      "streak": "5+ hibátlan mérkőzés sorozat ({count}. mérkőzés)"
+      "streak": "5+ hibátlan mérkőzés sorozat versenyeken át ({count}. mérkőzés)"
     },
+    "streakFinesBadge": "+{amount} € sorozat",
+    "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel az összes verseny együtt számít, az egyes versenyek összegeiben nem szerepel.",
     "streakBadge": "{count}. hibátlan",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"

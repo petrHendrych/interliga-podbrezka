@@ -188,8 +188,10 @@
       "fullFaults": "{count}x greška u pune",
       "secondToLastFaults": "{count}x pretposlednji hitac",
       "specialFaults": "{count}x specijalna greška",
-      "streak": "serija 5+ utakmica bez greške ({count}. utakmica)"
+      "streak": "serija 5+ utakmica bez greške kroz sva takmičenja ({count}. utakmica)"
     },
+    "streakFinesBadge": "+{amount} € serija",
+    "streakFinesHint": "Kazna za seriju od 5+ utakmica bez greške. Uključena je u ovaj iznos, ali pošto se računa kroz sva takmičenja, nema je u iznosima za pojedinačna takmičenja.",
     "streakBadge": "{count}. bez greške",
     "noResults": "Nema rezultata za ovog igrača.",
     "errorLoading": "Greška pri učitavanju podataka o igraču"

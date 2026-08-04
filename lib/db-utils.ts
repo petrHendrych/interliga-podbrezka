@@ -145,6 +145,22 @@ function idList(ids: number[]) {
   return sql.unsafe(ids.map(Number).join(', '));
 }
 
+function isAllLeagues(leagueKey?: string) {
+  return !leagueKey || leagueKey === 'all';
+}
+
+/**
+ * What a player owes for one result row; expects `match_player_results` aliased as `mpr`.
+ * The success gathering is earned across competitions, so it belongs to the season rather
+ * than to the league that happened to host the fifth faultless game — league-filtered sums
+ * therefore leave it out, and the player detail page surfaces it on its own line.
+ */
+function fineAmount(leagueKey?: string) {
+  return isAllLeagues(leagueKey)
+    ? sql`(COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0))`
+    : sql`COALESCE(mpr.calculated_fine, 0)`;
+}
+
 /** Narrows to one league; expects the `matches` table aliased as `m`. */
 function leagueCondition(leagueKey?: string) {
   if (leagueKey === 'interliga') {
@@ -201,11 +217,15 @@ export interface PlayerBalance {
   paidBonuses: number;
   totalPaid: number;
   balance: number;
+  /** Season-wide, ignores the league filter — see `fineAmount`. */
+  streakFines: number;
+  streakFinesPaid: number;
 }
 
 export interface PlayerMatchResult {
   matchId: number;
   calculatedFine: number;
+  streakFine: number;
   bonusReceived: number;
   isPaid: boolean;
   isBonusPaid: boolean;
@@ -257,10 +277,10 @@ export async function getPlayerBalances(
       u.id::text as user_id,
       pd.first_name,
       pd.last_name,
-      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN ${fineAmount(leagueKey)} ELSE 0 END), 0)::text as total_due,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
-      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_paid,
-      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0))::text as balance,
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END), 0)::text as total_paid,
+      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN ${fineAmount(leagueKey)} ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END), 0))::text as balance,
       COUNT(m.external_id)::text as matches_count,
       COALESCE(MAX(CASE WHEN m.external_id IS NOT NULL THEN mpr.total END), 0)::int as max_score,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.faults ELSE 0 END), 0)::int as total_faults,
@@ -320,19 +340,31 @@ export async function getPlayerBalanceByExternalId(
   const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
 
   const rows = await sql`
-    SELECT 
-      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_due,
+    SELECT
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN ${fineAmount(leagueKey)} ELSE 0 END), 0)::text as total_due,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END), 0)::text as paid_bonuses,
-      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0)::text as total_paid,
-      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.calculated_fine ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN mpr.calculated_fine ELSE 0 END), 0))::text as balance
+      COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END), 0)::text as total_paid,
+      (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN ${fineAmount(leagueKey)} ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END), 0))::text as balance,
+      COALESCE((
+        SELECT SUM(COALESCE(smpr.streak_fine, 0))
+        FROM match_player_results smpr
+        JOIN matches sm ON smpr.match_id = sm.external_id
+        WHERE smpr.user_id = u.id AND sm.season_id = ${targetSeasonId}
+      ), 0)::text as streak_fines,
+      COALESCE((
+        SELECT SUM(CASE WHEN smpr.is_paid THEN COALESCE(smpr.streak_fine, 0) ELSE 0 END)
+        FROM match_player_results smpr
+        JOIN matches sm ON smpr.match_id = sm.external_id
+        WHERE smpr.user_id = u.id AND sm.season_id = ${targetSeasonId}
+      ), 0)::text as streak_fines_paid
     FROM users u
     LEFT JOIN match_player_results mpr ON u.id = mpr.user_id
-    LEFT JOIN matches m ON mpr.match_id = m.external_id 
+    LEFT JOIN matches m ON mpr.match_id = m.external_id
       AND (m.season_id = ${targetSeasonId})
       ${leagueCondition(leagueKey)}
     WHERE u.external_player_id = ${externalPlayerId}
-    GROUP BY u.external_player_id
+    GROUP BY u.external_player_id, u.id
   `;
   if (rows.length === 0) {
     return {
@@ -341,6 +373,8 @@ export async function getPlayerBalanceByExternalId(
       paidBonuses: 0,
       totalPaid: 0,
       balance: 0,
+      streakFines: 0,
+      streakFinesPaid: 0,
     };
   }
   return {
@@ -349,6 +383,8 @@ export async function getPlayerBalanceByExternalId(
     paidBonuses: Number(rows[0].paid_bonuses || 0),
     totalPaid: Number(rows[0].total_paid || 0),
     balance: Number(rows[0].balance || 0),
+    streakFines: Number(rows[0].streak_fines || 0),
+    streakFinesPaid: Number(rows[0].streak_fines_paid || 0),
   };
 }
 
@@ -371,6 +407,7 @@ export async function getPlayerMatchResultsByExternalId(
     SELECT 
       mpr.match_id,
       mpr.calculated_fine,
+      COALESCE(mpr.streak_fine, 0) as streak_fine,
       mpr.bonus_received,
       mpr.is_paid,
       mpr.is_bonus_paid,
@@ -405,6 +442,7 @@ export async function getPlayerMatchResultsByExternalId(
     return {
       matchId,
       calculatedFine: Number(r.calculated_fine || 0),
+      streakFine: Number(r.streak_fine || 0),
       bonusReceived: Number(r.bonus_received || 0),
       isPaid: Boolean(r.is_paid),
       isBonusPaid: Boolean(r.is_bonus_paid),
@@ -520,7 +558,7 @@ export async function getUnpaidDebtors(
     FROM (
       SELECT
         COALESCE(NULLIF(CONCAT_WS(' ', pd.first_name, pd.last_name), ''), u.name) as name,
-        mpr.calculated_fine as amount
+        ${fineAmount(leagueKey)} as amount
       FROM match_player_results mpr
       JOIN users u ON mpr.user_id = u.id
       LEFT JOIN LATERAL (
@@ -564,8 +602,8 @@ export async function getTeamBankBalance(
   const result = await sql`
     WITH player_totals AS (
       SELECT
-        SUM(CASE WHEN mpr.is_paid THEN mpr.calculated_fine ELSE 0 END) as paid_fines,
-        SUM(mpr.calculated_fine) as all_fines,
+        SUM(CASE WHEN mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END) as paid_fines,
+        SUM(${fineAmount(leagueKey)}) as all_fines,
         SUM(CASE WHEN mpr.is_bonus_paid THEN mpr.bonus_received ELSE 0 END) as paid_bonuses,
         SUM(mpr.bonus_received) as all_bonuses
       FROM match_player_results mpr

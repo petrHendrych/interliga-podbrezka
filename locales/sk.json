@@ -188,8 +188,10 @@
       "fullFaults": "{count}x chyba do plných",
       "secondToLastFaults": "{count}x predposledný hod",
       "specialFaults": "{count}x špeciálna chyba",
-      "streak": "séria 5+ zápasov bez chyby ({count}. zápas)"
+      "streak": "séria 5+ zápasov bez chyby naprieč súťažami ({count}. zápas)"
     },
+    "streakFinesBadge": "+{amount} € séria",
+    "streakFinesHint": "Pokuta za sériu 5+ zápasov bez chyby. Je zarátaná v tejto sume, ale keďže sa počíta naprieč všetkými súťažami, v sumách za jednotlivé súťaže nie je.",
     "streakBadge": "{count}. bez chyby",
     "noResults": "Tento hráč nemá žiadne výsledky.",
     "errorLoading": "Chyba pri načítaní hráča"

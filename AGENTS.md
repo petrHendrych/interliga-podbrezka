@@ -134,13 +134,14 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Match our team by **team id only**, never by club name. Name matching also catches B-team, youth, and women's fixtures — it once pulled ~1250 foreign fixtures into `matches` and mislabelled them as our Slovenský pohár season.
 
 ### Derived Money Fields
-- `recalculateDerivedFinancials()` in `lib/sync.ts` is the single writer of every derived money field: `calculated_fine`, `bonus_received`, `is_worst_player`, `is_under_600`, `is_team_under_3750`, `faultless_streak`, and the `trainer_payments` rows. Sync upserts write raw scores only; admin actions and manual-match edits call the recalculation afterwards. Never compute these inline.
+- `recalculateDerivedFinancials()` in `lib/sync.ts` is the single writer of every derived money field: `calculated_fine`, `streak_fine`, `bonus_received`, `is_worst_player`, `is_under_600`, `is_team_under_3750`, `faultless_streak`, and the `trainer_payments` rows. Sync upserts write raw scores only; admin actions and manual-match edits call the recalculation afterwards. Never compute these inline.
 - Faultless streaks are counted across **all** seasons, so the streak query is never filtered by season or league.
+- The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
 
 ### Caching
 - Cached reads live for a week (`SYNCED_DATA_REVALIDATE_SECONDS`); freshness comes from explicit invalidation, not expiry. Any write that changes synced data must invalidate.
-- `revalidateSyncedData()` (stale-while-revalidate, for the weekly cron) is **route-handler only**. `updateSyncedData()` (expires immediately, for the admin Sync button) is for server actions. Neither may be called from `scripts/run-sync.ts`, which runs outside Next and would throw.
+- `revalidateSyncedData()` (stale-while-revalidate, for the weekly cron) is **route-handler only**. `updateSyncedData()` (expires immediately, for the admin Sync button) is for server actions. Neither may be called from `scripts/run-sync.ts`, which runs outside Next and would throw. CLI scripts invalidate over HTTP instead, via `requestSyncedDataRevalidation()` (`lib/revalidate-client.ts`) hitting `POST /api/revalidate` with `CRON_SECRET`; without it, each `(playerId, seasonId, leagueKey)` cache entry ages independently and different filters show different eras of the same data.
 - Cached player/home data is keyed by user id, so anything that moves result rows between users must invalidate too.
 
 ### i18n

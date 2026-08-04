@@ -159,8 +159,8 @@ export async function recalculateDerivedFinancials() {
                             + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
                             + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
                             + s.sfc * 5
-                            + CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
-                            + CASE WHEN s.team_under_3750 THEN 10 ELSE 0 END
+                            + CASE WHEN s.team_under_3750 THEN 10 ELSE 0 END,
+        streak_fine         = CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
     FROM streaks s
     WHERE mpr.match_id = s.match_id AND mpr.user_id = s.user_id
   `);

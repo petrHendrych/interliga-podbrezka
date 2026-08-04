@@ -22,6 +22,7 @@ export interface FineLabels {
 
 export interface MatchFineTooltipProps {
   calculatedFine: number;
+  streakFine: number;
   isPaid: boolean;
   faults: number;
   isWorstPlayer: boolean;
@@ -36,6 +37,7 @@ export interface MatchFineTooltipProps {
 
 export function MatchFineTooltip({
   calculatedFine,
+  streakFine,
   isPaid,
   faults,
   isWorstPlayer,
@@ -47,7 +49,9 @@ export function MatchFineTooltip({
   faultlessStreak,
   labels,
 }: MatchFineTooltipProps) {
-  if (calculatedFine <= 0) {
+  const totalFine = calculatedFine + streakFine;
+
+  if (totalFine <= 0) {
     return <span className="text-muted-foreground font-normal">0 €</span>;
   }
 
@@ -95,7 +99,7 @@ export function MatchFineTooltip({
     <div className="space-y-1 text-left">
       <div className="font-semibold flex items-center gap-1.5 border-b pb-1 mb-1">
         <span>
-          {calculatedFine}
+          {totalFine}
           {' '}
           €
         </span>
@@ -128,7 +132,7 @@ export function MatchFineTooltip({
       <span
         className={`cursor-pointer hover:underline focus:outline-none ${colorClasses}`}
       >
-        {calculatedFine}
+        {totalFine}
         {' '}
         €
       </span>

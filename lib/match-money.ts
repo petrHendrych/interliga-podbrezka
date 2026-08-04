@@ -76,6 +76,7 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
   const payments = await getMatchTrainerPayments(matchId);
 
   const sum = (values: number[]) => values.reduce((acc, value) => acc + value, 0);
+  const owed = (player: MatchPlayerResult) => player.calculated_fine + player.streak_fine;
 
   return {
     match: {
@@ -92,8 +93,8 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
     players,
     trainer_payments: payments,
     totals: {
-      fines: sum(players.map((p) => p.calculated_fine)),
-      fines_unpaid: sum(players.filter((p) => !p.is_paid).map((p) => p.calculated_fine)),
+      fines: sum(players.map(owed)),
+      fines_unpaid: sum(players.filter((p) => !p.is_paid).map(owed)),
       bonuses: sum(players.map((p) => p.bonus_received)),
       bonuses_unpaid: sum(players.filter((p) => !p.is_bonus_paid).map((p) => p.bonus_received)),
       trainer: sum(payments.map((p) => p.amount)),
@@ -175,7 +176,7 @@ async function applyPlayerUpdates(
     if (entry.isPaid !== current.is_paid) {
       entryChanges.push({
         who: current.user_name,
-        what: `fine ${current.calculated_fine}€`,
+        what: `fine ${current.calculated_fine + current.streak_fine}€`,
         from: current.is_paid ? 'paid' : 'unpaid',
         to: entry.isPaid ? 'paid' : 'unpaid',
       });

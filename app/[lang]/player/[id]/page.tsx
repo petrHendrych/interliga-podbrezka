@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchFineTooltip } from '@/components/MatchFineTooltip';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
@@ -48,6 +49,9 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
 
     const fullName = `${player.firstName} ${player.lastName}`;
     const totalFaults = matchFines?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
+    // Only the "all" total carries the success gathering, so that is the one place where
+    // breaking it out of the amount says something.
+    const showSeasonWideStreakFines = selectedLeagueKey === 'all' && balance.streakFines > 0;
 
     const fineLabels = {
       paidStatus: dict.playerDetail.paidStatus,
@@ -87,6 +91,21 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                   {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
                   )
                 </span>
+                {showSeasonWideStreakFines ? (
+                  <Tooltip
+                    content={(
+                      <p className="max-w-[220px] text-[11px]">
+                        {dict.playerDetail.streakFinesHint}
+                      </p>
+                    )}
+                  >
+                    <span className="ml-2 inline-flex items-center rounded-full border border-red-600/40 bg-red-600/10 px-1.5 py-0.5 align-middle text-[11px] font-medium leading-none text-red-600 dark:border-red-400/40 dark:text-red-400">
+                      {interpolate(dict.playerDetail.streakFinesBadge, {
+                        amount: balance.streakFines,
+                      })}
+                    </span>
+                  </Tooltip>
+                ) : null}
               </p>
               {balance.totalBonuses > 0 ? (
                 <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">
@@ -189,6 +208,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                         <TableCell className="text-right">
                           <MatchFineTooltip
                             calculatedFine={result.calculatedFine}
+                            streakFine={result.streakFine}
                             isPaid={result.isPaid}
                             faults={result.faults}
                             isWorstPlayer={result.isWorstPlayer}

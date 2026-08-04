@@ -99,6 +99,8 @@ async function runApply(args: string[]): Promise<void> {
   }
 
   const result = await applyMatchMoneyUpdates(matchId, payload);
+  const { requestSyncedDataRevalidation } = await import('../lib/revalidate-client');
+  await requestSyncedDataRevalidation();
   console.log(JSON.stringify(result, null, 2));
 }
 

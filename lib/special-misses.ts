@@ -24,6 +24,8 @@ export interface MatchPlayerResult {
   second_to_last_faults_count: number;
   special_faults_count: number;
   calculated_fine: number;
+  /** Success gathering, settled together with `calculated_fine` by `is_paid`. */
+  streak_fine: number;
   bonus_received: number;
   is_paid: boolean;
   is_bonus_paid: boolean;
@@ -82,6 +84,7 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
       secondToLastFaultsCount: matchPlayerResults.secondToLastFaultsCount,
       specialFaultsCount: matchPlayerResults.specialFaultsCount,
       calculatedFine: matchPlayerResults.calculatedFine,
+      streakFine: matchPlayerResults.streakFine,
       bonusReceived: matchPlayerResults.bonusReceived,
       isPaid: matchPlayerResults.isPaid,
       isBonusPaid: matchPlayerResults.isBonusPaid,
@@ -102,6 +105,7 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
     second_to_last_faults_count: Number(r.secondToLastFaultsCount || 0),
     special_faults_count: Number(r.specialFaultsCount || 0),
     calculated_fine: Number(r.calculatedFine || 0),
+    streak_fine: Number(r.streakFine || 0),
     bonus_received: Number(r.bonusReceived || 0),
     is_paid: Boolean(r.isPaid),
     is_bonus_paid: Boolean(r.isBonusPaid),
