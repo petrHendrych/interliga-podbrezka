@@ -16,23 +16,43 @@ import {
 } from '@/lib/home-helpers';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Locale, interpolate } from '@/lib/i18n/config';
+import { pluralize } from '@/lib/i18n/plural';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
-const STAT_TILE = 'rounded-lg bg-surface-2 p-2 text-center flex flex-col justify-center';
-const STAT_LABEL = 'block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground';
-const STAT_GRID = 'grid flex-1 min-w-0 grid-cols-2 sm:grid-cols-4 gap-2';
+const STAT_TILE = 'rounded-lg bg-surface-2 px-2 py-1.5 sm:p-2 text-center flex flex-col justify-center';
+const STAT_LABEL = 'block text-[10px] leading-tight uppercase font-semibold tracking-wide text-muted-foreground';
+const STAT_VALUE = 'text-sm sm:text-base leading-tight tabular-nums';
+const STAT_GRID = 'col-start-2 row-start-2 grid w-full min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-4 gap-1.5 sm:gap-2';
 const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5 shadow-lift';
-const PERSON_BODY = 'mt-3 flex items-center gap-3 sm:gap-4';
-const AVATAR = 'w-20 h-20 rounded-2xl after:rounded-2xl shrink-0';
+const PERSON_BODY = 'grid grid-cols-[auto_1fr] items-stretch gap-x-3 gap-y-2 sm:gap-x-4';
+/**
+ * Mobile puts the name on its own row and lets the avatar match the stats height;
+ * from `sm` the avatar sits beside both rows and sets the card height.
+ */
+const AVATAR = 'col-start-1 row-start-2 w-24 h-auto self-stretch sm:row-start-1 sm:row-span-2 sm:h-24 sm:self-start rounded-2xl after:rounded-2xl shrink-0';
+const NAME_SLOT = 'col-span-2 row-start-1 min-w-0 sm:col-span-1 sm:col-start-2';
+const PERSON_NAME = 'font-bold text-lg sm:text-xl leading-tight truncate';
+const PERSON_MATCHES = 'shrink-0 text-xs sm:text-sm font-normal text-muted-foreground tabular-nums';
 /** One value per row, so a long name can never push the amount out of the card. */
 const BANK_ROW = 'flex items-baseline justify-between gap-3 border-b border-foreground/10 py-3';
 const BANK_LABEL = 'text-xs font-semibold uppercase tracking-wide text-muted-foreground';
 const BANK_VALUE = 'shrink-0 text-base font-bold tabular-nums';
 /** Touch devices get no hover, so a tappable value has to look tappable. */
 const HINT = 'cursor-pointer underline decoration-dotted decoration-from-font underline-offset-4';
+const TOOLTIP_LIST = 'flex flex-col gap-1 min-w-40';
+const TOOLTIP_ROW = 'flex items-baseline justify-between gap-4';
+
+// totalPaid arrives pre-formatted ("12.5 €"), so read the sign back off it:
+// someone who is owed money must not be painted as though he owed it.
+function fineTone(totalPaid: string): string {
+  const amount = parseFloat(totalPaid);
+  if (amount > 0) return 'text-red-600 dark:text-red-400';
+  if (amount < 0) return 'text-emerald-600 dark:text-emerald-400';
+  return '';
+}
 
 export default async function Home({
   params,
@@ -75,8 +95,10 @@ export default async function Home({
   const players = data?.players || [];
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
+  const unpaidDebtors = data?.unpaidDebtors || [];
+  const unpaidBonusReceivers = data?.unpaidBonusReceivers || [];
   const topDonator = data?.topDonator || null;
-  const belowLimit = data?.belowLimit ?? null;
+  const belowLimitMatches = data?.belowLimitMatches ?? null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
   const hasNoData = !data
@@ -105,9 +127,36 @@ export default async function Home({
             <div className={BANK_ROW}>
               <dt className={BANK_LABEL}>{dict.home.bank.unpaid}</dt>
               <dd className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
-                {bankBalance.unpaid.toFixed(2)}
-                {' '}
-                €
+                {unpaidDebtors.length > 0 ? (
+                  <Tooltip
+                    content={(
+                      <ul className={TOOLTIP_LIST}>
+                        {unpaidDebtors.map((debtor) => (
+                          <li key={debtor.name} className={TOOLTIP_ROW}>
+                            <span className="truncate">{debtor.name}</span>
+                            <span className="shrink-0 font-semibold tabular-nums">
+                              {debtor.amount.toFixed(2)}
+                              {' '}
+                              €
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  >
+                    <span className={HINT}>
+                      {bankBalance.unpaid.toFixed(2)}
+                      {' '}
+                      €
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <>
+                    {bankBalance.unpaid.toFixed(2)}
+                    {' '}
+                    €
+                  </>
+                )}
               </dd>
             </div>
 
@@ -118,7 +167,27 @@ export default async function Home({
                 {' '}
                 €
                 {/* Awarded minus handed over, i.e. what the bank still owes. */}
-                <Tooltip content={dict.home.bank.bonusesToPay}>
+                <Tooltip
+                  content={(
+                    <div className={TOOLTIP_LIST}>
+                      <p className="font-semibold">{dict.home.bank.bonusesToPay}</p>
+                      {unpaidBonusReceivers.length > 0 && (
+                        <ul className="flex flex-col gap-1">
+                          {unpaidBonusReceivers.map((receiver) => (
+                            <li key={receiver.name} className={TOOLTIP_ROW}>
+                              <span className="truncate">{receiver.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums">
+                                {receiver.amount.toFixed(2)}
+                                {' '}
+                                €
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                >
                   <span className={`ml-1.5 text-xs font-medium text-muted-foreground ${HINT}`}>
                     (
                     {(bankBalance.bonusesAwarded - bankBalance.bonusesPaid).toFixed(2)}
@@ -144,12 +213,36 @@ export default async function Home({
               </div>
             )}
 
-            {belowLimit !== null && (
+            {belowLimitMatches !== null && (
               <div className={BANK_ROW}>
                 <dt className={BANK_LABEL}>{dict.home.bank.belowLimit}</dt>
-                <dd className={`${BANK_VALUE} ${belowLimit > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {belowLimit}
-                  x
+                <dd className={`${BANK_VALUE} ${belowLimitMatches.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {belowLimitMatches.length > 0 ? (
+                    <Tooltip
+                      content={(
+                        <ul className={TOOLTIP_LIST}>
+                          {belowLimitMatches.map((match) => (
+                            <li key={match.id} className={TOOLTIP_ROW}>
+                              <span className="truncate">{match.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums">
+                                {match.score}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    >
+                      <span className={HINT}>
+                        {belowLimitMatches.length}
+                        x
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <>
+                      {belowLimitMatches.length}
+                      x
+                    </>
+                  )}
                 </dd>
               </div>
             )}
@@ -178,15 +271,15 @@ export default async function Home({
             return (
               <div
                 key={match.id}
-                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-sky-500 shadow-lift"
+                className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 border-l-[3px] border-foreground/25 dark:border-foreground/20 shadow-lift"
               >
-                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <div className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-surface-2 text-muted-foreground ring-1 ring-inset ring-border">
                   {isHome ? <HomeIcon className="w-4 h-4" /> : <Bus className="w-4 h-4" />}
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {interpolate(dict.home.roundFormat, { round: match.round })}
                     </span>
                     <span className="text-sm font-bold truncate">
@@ -208,7 +301,7 @@ export default async function Home({
       )}
 
       {/* Pinned under the header so switching season/league never moves the control. */}
-      <div className="sticky top-16 z-30 -mx-4 md:-mx-8 mt-8 mb-8 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur-md md:px-8">
+      <div className="sticky top-16 z-30 -mx-4 md:-mx-8 mt-8 mb-8 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60 md:px-8">
         <SeasonLeagueFilter
           seasons={SEASONS_CONFIG}
           selectedSeasonId={selectedSeasonId}
@@ -241,44 +334,47 @@ export default async function Home({
                   key={trainer.id}
                   className={`md:col-span-2 ${PERSON_CARD} ring-1 ring-inset ring-red-800/25`}
                 >
-                  <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
-                    {trainer.name}
-                  </h2>
-
                   <div className={PERSON_BODY}>
-                    <Avatar className={AVATAR}>
-                      <AvatarImage
-                        src="/players/3009.JPG"
-                        alt={trainer.name}
-                        className="rounded-2xl"
-                      />
-                      <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
-                        {trainer.name.split(' ').map((n) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
+                    <PlayerAvatar
+                      name={trainer.name}
+                      userId={trainer.id}
+                      className={AVATAR}
+                      fallbackClassName="text-2xl"
+                    />
+
+                    <div className={`${NAME_SLOT} flex items-baseline gap-1.5`}>
+                      <h2 className={PERSON_NAME}>
+                        {trainer.name}
+                      </h2>
+                      <span className={PERSON_MATCHES}>
+                        –
+                        {' '}
+                        {dict.home.trainerLabel}
+                      </span>
+                    </div>
 
                     <div className={STAT_GRID}>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.count3800}</span>
-                        <span className="text-base font-bold tabular-nums">
+                        <span className={`${STAT_VALUE} font-bold`}>
                           {trainer.stats.count3800}
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.count3900}</span>
-                        <span className="text-base font-bold tabular-nums">
+                        <span className={`${STAT_VALUE} font-bold`}>
                           {trainer.stats.count3900}
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
-                        <span className="text-base font-semibold tabular-nums">
+                        <span className={`${STAT_VALUE} font-semibold`}>
                           {trainer.stats.zeroMisses}
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                        <span className="text-base font-semibold tabular-nums">
+                        <span className={`${STAT_VALUE} font-semibold ${fineTone(trainer.stats.totalPaid)}`}>
                           {trainer.stats.totalPaid}
                         </span>
                       </div>
@@ -294,14 +390,6 @@ export default async function Home({
                 const titlePad = ['', 'pr-7', 'pr-14'][
                   Number(isTopScorer) + Number(isTopDonator)
                 ];
-                // totalPaid arrives pre-formatted ("12.5 €"), so read the sign
-                // back off it: a player who is owed money must not be painted
-                // as though he owed it.
-                const fineAmount = parseFloat(player.stats.totalPaid);
-                let fineTone = '';
-                if (fineAmount > 0) fineTone = 'text-red-600 dark:text-red-400';
-                else if (fineAmount < 0) fineTone = 'text-emerald-600 dark:text-emerald-400';
-
                 return (
                   <Link
                     key={player.id}
@@ -322,54 +410,49 @@ export default async function Home({
                         )}
                       </div>
                     )}
-                    <div className={`flex items-baseline gap-1.5 min-w-0 ${titlePad}`}>
-                      <h2 className="font-bold text-base sm:text-lg leading-tight truncate">
-                        {player.firstName}
-                        {' '}
-                        {player.lastName}
-                      </h2>
-                      <span className="shrink-0 text-sm font-normal text-muted-foreground tabular-nums">
-                        (
-                        {player.stats.matchesCount}
-                        )
-                      </span>
-                    </div>
-
                     <div className={PERSON_BODY}>
-                      <Avatar className={AVATAR}>
-                        <AvatarImage
-                          src="/players/3009.JPG"
-                          alt={`${player.firstName} ${player.lastName}`}
-                          className="rounded-2xl"
-                        />
-                        <AvatarFallback className="rounded-2xl bg-surface-2 text-lg font-semibold">
-                          {player.firstName?.[0]}
-                          {player.lastName?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                      <PlayerAvatar
+                        name={`${player.firstName} ${player.lastName}`}
+                        externalPlayerId={player.id}
+                        className={AVATAR}
+                        fallbackClassName="text-2xl"
+                      />
+
+                      <div className={`${NAME_SLOT} flex items-baseline gap-1.5 ${titlePad}`}>
+                        <h2 className={PERSON_NAME}>
+                          {player.firstName}
+                          {' '}
+                          {player.lastName}
+                        </h2>
+                        <span className={PERSON_MATCHES}>
+                          (
+                          {pluralize(lang, player.stats.matchesCount, dict.home.matchesPlayed)}
+                          )
+                        </span>
+                      </div>
 
                       <div className={STAT_GRID}>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.avg}</span>
-                          <span className="text-base font-bold tabular-nums text-primary">
+                          <span className={`${STAT_VALUE} font-bold text-primary`}>
                             {player.stats.avg || '-'}
                           </span>
                         </div>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.max}</span>
-                          <span className="text-base font-bold tabular-nums">
+                          <span className={`${STAT_VALUE} font-bold`}>
                             {player.stats.max || '-'}
                           </span>
                         </div>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.misses}</span>
-                          <span className="text-base font-semibold tabular-nums">
+                          <span className={`${STAT_VALUE} font-semibold`}>
                             {player.stats.misses}
                           </span>
                         </div>
                         <div className={STAT_TILE}>
                           <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
-                          <span className={`text-base font-semibold tabular-nums ${fineTone}`}>
+                          <span className={`${STAT_VALUE} font-semibold ${fineTone(player.stats.totalPaid)}`}>
                             {player.stats.totalPaid}
                           </span>
                         </div>

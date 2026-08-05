@@ -19,6 +19,12 @@
     "count3800": "3800+",
     "count3900": "3900+",
     "zeroMisses": "0 hiba",
+    "trainerLabel": "edző",
+    "matchesPlayed": {
+      "one": "{count} mérkőzés",
+      "few": "{count} mérkőzés",
+      "other": "{count} mérkőzés"
+    },
     "season": "Szezon",
     "filterAll": "Összes",
     "filterInterliga": "Interliga",
@@ -154,6 +160,7 @@
   },
   "playerDetail": {
     "totalPayment": "Összesen kifizetve: {amount} €",
+    "totalPaymentShort": "Összesen kifizetve {amount} €",
     "unpaid": "Kifizetetlen: {amount} €",
     "bonuses": "Bónuszok: {amount} €",
     "totalFaults": "Összes hiba: {count}",
@@ -183,8 +190,10 @@
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",
-      "streak": "5+ hibátlan mérkőzés sorozat ({count}. mérkőzés)"
+      "streak": "5+ hibátlan mérkőzés sorozat versenyeken át ({count}. mérkőzés)"
     },
+    "streakFinesCount": "{count}x sorozat",
+    "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel az összes verseny együtt számít, az egyes versenyek összegeiben nem szerepel.",
     "streakBadge": "{count}. hibátlan",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"

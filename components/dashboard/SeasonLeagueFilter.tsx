@@ -117,7 +117,7 @@ export function SeasonLeagueFilter({
               className={`inline-flex items-center justify-center px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-colors hover:cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-80 ${
                 isActive
                   ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                  : 'bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground font-medium'
+                  : 'bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground font-medium'
               }`}
             >
               {isPending && isActive && (

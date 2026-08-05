@@ -4,6 +4,20 @@ const BASE_URL = 'https://api.vysledky.kolky.sk';
 
 export const TEAM_ID = 5008;
 
+/**
+ * The results API sends naive timestamps ("2026-09-12 11:00:00") that are UTC, so
+ * `new Date()` alone would read them in the machine's zone and shift every match by
+ * that offset — a fixture at 13:00 in Podbrezová showed up as 11:00.
+ */
+export function parseApiDate(dateString: string): Date {
+  if (!dateString) return new Date(NaN);
+  let iso = dateString.trim().replace(' ', 'T');
+  if (!iso.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(iso)) {
+    iso += 'Z';
+  }
+  return new Date(iso);
+}
+
 export interface MatchListItem {
   id: number;
   homeId: number;

@@ -1,7 +1,6 @@
-import { desc, eq, and } from 'drizzle-orm';
+import { desc, eq, isNotNull } from 'drizzle-orm';
 import { db } from './db';
 import { matches, matchPlayerResults, users } from './db/schema';
-import { recalculateDerivedFinancials } from './sync';
 
 export interface PlayedMatch {
   external_id: number;
@@ -25,12 +24,16 @@ export interface MatchPlayerResult {
   second_to_last_faults_count: number;
   special_faults_count: number;
   calculated_fine: number;
+  /** Success gathering, settled together with `calculated_fine` by `is_paid`. */
+  streak_fine: number;
   bonus_received: number;
   is_paid: boolean;
   is_bonus_paid: boolean;
 }
 
 async function selectMatches(limit?: number): Promise<PlayedMatch[]> {
+  // Fixtures are stored as soon as they are scheduled, so anything without a team
+  // score has not been played yet and has no money to settle.
   const query = db
     .select({
       externalId: matches.externalId,
@@ -42,6 +45,7 @@ async function selectMatches(limit?: number): Promise<PlayedMatch[]> {
       opponentTotalScore: matches.opponentTotalScore,
     })
     .from(matches)
+    .where(isNotNull(matches.teamTotalScore))
     .orderBy(desc(matches.date));
 
   const result = limit ? await query.limit(limit) : await query;
@@ -57,8 +61,8 @@ async function selectMatches(limit?: number): Promise<PlayedMatch[]> {
   }));
 }
 
-export async function getPlayedMatches(): Promise<PlayedMatch[]> {
-  return selectMatches();
+export async function getPlayedMatches(limit?: number): Promise<PlayedMatch[]> {
+  return selectMatches(limit);
 }
 
 export async function getLastPlayedMatch(): Promise<PlayedMatch | null> {
@@ -80,6 +84,7 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
       secondToLastFaultsCount: matchPlayerResults.secondToLastFaultsCount,
       specialFaultsCount: matchPlayerResults.specialFaultsCount,
       calculatedFine: matchPlayerResults.calculatedFine,
+      streakFine: matchPlayerResults.streakFine,
       bonusReceived: matchPlayerResults.bonusReceived,
       isPaid: matchPlayerResults.isPaid,
       isBonusPaid: matchPlayerResults.isBonusPaid,
@@ -100,41 +105,9 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
     second_to_last_faults_count: Number(r.secondToLastFaultsCount || 0),
     special_faults_count: Number(r.specialFaultsCount || 0),
     calculated_fine: Number(r.calculatedFine || 0),
+    streak_fine: Number(r.streakFine || 0),
     bonus_received: Number(r.bonusReceived || 0),
     is_paid: Boolean(r.isPaid),
     is_bonus_paid: Boolean(r.isBonusPaid),
   }));
-}
-
-export async function updatePlayerSpecialMisses(
-  matchId: number,
-  userId: string,
-  fullFaults: number,
-  secondToLastFaults: number,
-): Promise<void> {
-  await db
-    .update(matchPlayerResults)
-    .set({
-      fullFaultsCount: fullFaults,
-      secondToLastFaultsCount: secondToLastFaults,
-      specialFaultsCount: fullFaults + secondToLastFaults,
-    })
-    .where(and(eq(matchPlayerResults.matchId, matchId), eq(matchPlayerResults.userId, userId)));
-
-  await recalculateDerivedFinancials();
-}
-
-export async function updatePlayerPaymentStatus(
-  matchId: number,
-  userId: string,
-  isPaid: boolean,
-  isBonusPaid: boolean,
-): Promise<void> {
-  await db
-    .update(matchPlayerResults)
-    .set({
-      isPaid,
-      isBonusPaid,
-    })
-    .where(and(eq(matchPlayerResults.matchId, matchId), eq(matchPlayerResults.userId, userId)));
 }

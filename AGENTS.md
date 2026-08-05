@@ -114,3 +114,48 @@ Rules for calculating gatherings (fines) and bonuses for each role.
 - Manually marking 5-game faultless streaks.
 - General system maintenance and data synchronization.
 <!-- END:money-rules -->
+# Codebase Invariants
+
+Rules distilled from the code. Break one and the data or the money goes wrong.
+
+### Player Photos
+- Photos live in `public/players/`; the mapping lives in `lib/player-images.ts`. Adding a photo means adding the file **and** an entry there — nothing scans the directory.
+- Keying is by stable identifier, never by name: scraper spelling changes and surnames collide. Players use their external (scraper) id (`IMAGES_BY_EXTERNAL_ID`); trainers and admins have no external id, so they use their `users.id` (`IMAGES_BY_USER_ID`).
+
+### Seasons, Leagues, Ids
+- `lib/season-config.ts` is the single source of truth for seasons, leagues, team ids, and id ranges. Never hardcode a league or team id elsewhere; derive it from the helpers (`getLeagueIdsForKey`, `getTeamIdsForSeason`, …).
+- Tournaments (World Cup, Champions League) are absent from the results API, so their ids are ours: `9000 + seasonId` and `9100 + seasonId`. kolky.sk league ids are three digits, so the 9xxx block cannot collide.
+- Manually entered matches get external ids `>= 900_000_000` (`MANUAL_MATCH_ID_BASE`), so the id range alone says "not scraped".
+- `POHAR_LEAGUE_IDS` keeps the retired id `366` ("Finále") because rows in the database still carry it.
+- Manual leagues are excluded from every scrape-side lookup, so a scrape can never stamp a tournament id onto a match.
+- `TEAM_SCORE_LIMIT = 3750`. Interliga **home** matches and tournaments (home and away alike) are penalised under it; away Interliga and the Slovak Cup are not.
+
+### Matching Our Team
+- Match our team by **team id only**, never by club name. Name matching also catches B-team, youth, and women's fixtures — it once pulled ~1250 foreign fixtures into `matches` and mislabelled them as our Slovenský pohár season.
+
+### Derived Money Fields
+- `recalculateDerivedFinancials()` in `lib/sync.ts` is the single writer of every derived money field: `calculated_fine`, `streak_fine`, `bonus_received`, `is_worst_player`, `is_under_600`, `is_team_under_3750`, `faultless_streak`, and the `trainer_payments` rows. Sync upserts write raw scores only; admin actions and manual-match edits call the recalculation afterwards. Never compute these inline.
+- Faultless streaks are counted across **all** seasons, so the streak query is never filtered by season or league.
+- The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
+- Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
+
+### Caching
+- Cached reads live for a week (`SYNCED_DATA_REVALIDATE_SECONDS`); freshness comes from explicit invalidation, not expiry. Any write that changes synced data must invalidate.
+- `revalidateSyncedData()` (stale-while-revalidate, for the weekly cron) is **route-handler only**. `updateSyncedData()` (expires immediately, for the admin Sync button) is for server actions. Neither may be called from `scripts/run-sync.ts`, which runs outside Next and would throw. CLI scripts invalidate over HTTP instead, via `requestSyncedDataRevalidation()` (`lib/revalidate-client.ts`) hitting `POST /api/revalidate` with `CRON_SECRET`; without it, each `(playerId, seasonId, leagueKey)` cache entry ages independently and different filters show different eras of the same data.
+- Cached player/home data is keyed by user id, so anything that moves result rows between users must invalidate too.
+
+### i18n
+- `matches.league_name` and `LeagueConfig.name` are Slovak by definition. Every competition name shown in the UI goes through `lib/i18n/league-labels.ts`, never straight from the database or config.
+- Counted nouns go through `pluralize` (`lib/i18n/plural.ts`): Slavic locales need three forms (1 zápas / 3 zápasy / 5 zápasov); Hungarian keeps the noun singular after any numeral.
+- Server actions return **error codes**, not messages (`AdminActionError`, and the equivalents in `manual-match-actions.ts`); the client maps them to localized strings. Raw error messages never reach the client.
+- Redirects must preserve the locale slug and the query string. Cloning `nextUrl` keeps filters (`?season=`, `?league=`) alive across a proxy redirect; building a fresh URL drops them.
+
+### Auth & Admin
+- Password-reset and similar flows always report success, to prevent e-mail enumeration.
+- Scraped placeholder users have no e-mail — they exist only so match results have something to hang off. Everything with an e-mail is a real, registered account.
+- `match_player_results` and `trainer_payments` both FK to `users` without cascade, so children go first on delete, and a player with any results cannot simply be removed.
+
+### UI
+- Portalled popups (tooltip, popover, select) must carry a z-index on the **Positioner**, above the header (`z-50`); the blurred sticky filter bar makes its own stacking context and will otherwise paint over them.
+- Tooltips toggle on click as well as hover — touch devices have no hover.
+- Dialogs that can fail stay open on failure, so the reason is visible instead of silently swallowed.

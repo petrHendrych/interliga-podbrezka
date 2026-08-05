@@ -60,6 +60,9 @@ export const matchPlayerResults = pgTable('match_player_results', {
   // Counted across all seasons; 5+ triggers the success gathering.
   faultlessStreak: integer('faultless_streak').default(0),
   calculatedFine: numeric('calculated_fine').default('0'),
+  // The success gathering is earned across competitions and seasons, so it is kept out of
+  // `calculated_fine` and never attributed to the league that hosted the fifth faultless game.
+  streakFine: numeric('streak_fine').default('0'),
   bonusReceived: numeric('bonus_received').default('0'),
   isPaid: boolean('is_paid').default(false),
   isBonusPaid: boolean('is_bonus_paid').default(false),

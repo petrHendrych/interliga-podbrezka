@@ -19,6 +19,12 @@
     "count3800": "3800+",
     "count3900": "3900+",
     "zeroMisses": "0 chyb",
+    "trainerLabel": "tréner",
+    "matchesPlayed": {
+      "one": "{count} zápas",
+      "few": "{count} zápasy",
+      "other": "{count} zápasov"
+    },
     "season": "Sezóna",
     "filterAll": "Všetky",
     "filterInterliga": "Interliga",
@@ -154,6 +160,7 @@
   },
   "playerDetail": {
     "totalPayment": "Celkom zaplatené: {amount} €",
+    "totalPaymentShort": "Celkom zaplatené {amount} €",
     "unpaid": "Nezaplatené: {amount} €",
     "bonuses": "Bonusy: {amount} €",
     "totalFaults": "Chyby celkom: {count}",
@@ -183,8 +190,10 @@
       "fullFaults": "{count}x chyba do plných",
       "secondToLastFaults": "{count}x predposledný hod",
       "specialFaults": "{count}x špeciálna chyba",
-      "streak": "séria 5+ zápasov bez chyby ({count}. zápas)"
+      "streak": "séria 5+ zápasov bez chyby naprieč súťažami ({count}. zápas)"
     },
+    "streakFinesCount": "{count}x séria",
+    "streakFinesHint": "Pokuta za sériu 5+ zápasov bez chyby. Je zarátaná v tejto sume, ale keďže sa počíta naprieč všetkými súťažami, v sumách za jednotlivé súťaže nie je.",
     "streakBadge": "{count}. bez chyby",
     "noResults": "Tento hráč nemá žiadne výsledky.",
     "errorLoading": "Chyba pri načítaní hráča"

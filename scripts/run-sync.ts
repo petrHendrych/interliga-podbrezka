@@ -8,6 +8,8 @@ async function main() {
   try {
     const { syncData } = await import('../lib/sync');
     await syncData();
+    const { requestSyncedDataRevalidation } = await import('../lib/revalidate-client');
+    await requestSyncedDataRevalidation();
     console.log('Sync completed successfully.');
     process.exit(0);
   } catch (error) {

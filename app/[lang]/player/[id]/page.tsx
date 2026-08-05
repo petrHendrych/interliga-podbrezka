@@ -7,17 +7,17 @@ import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { formatDateOnly } from '@/lib/home-helpers';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchFineTooltip } from '@/components/MatchFineTooltip';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
@@ -48,6 +48,9 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
 
     const fullName = `${player.firstName} ${player.lastName}`;
     const totalFaults = matchFines?.reduce((acc, result) => acc + (result.faults || 0), 0) || 0;
+    // Only the "all" total carries the success gathering, so that is the one place where
+    // breaking it out of the amount says something.
+    const showSeasonWideStreakFines = selectedLeagueKey === 'all' && balance.streakFines > 0;
 
     const fineLabels = {
       paidStatus: dict.playerDetail.paidStatus,
@@ -68,54 +71,91 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
     return (
       <div className="mx-auto py-8 px-4 max-w-4xl w-full">
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start mb-8">
-          <Avatar className="w-32 h-32 rounded-2xl after:rounded-2xl border-2 border-primary shadow-sm">
-            <AvatarImage src="/players/3009.JPG" alt={fullName} className="rounded-2xl aspect-square object-cover" />
-            <AvatarFallback className="rounded-2xl text-2xl font-bold">
-              {player.firstName?.[0]}
-              {player.lastName?.[0]}
-            </AvatarFallback>
-          </Avatar>
+          <PlayerAvatar
+            name={fullName}
+            externalPlayerId={playerId}
+            className="w-32 h-32 border-2 border-primary shadow-sm"
+            fallbackClassName="text-2xl font-bold"
+          />
           <div className="text-center md:text-left">
             <h1 className="text-3xl font-bold tracking-tight">
               {fullName}
             </h1>
             <div className="mt-2 text-muted-foreground">
               <p className="text-lg">
-                {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
-                {' '}
-                <span className="text-sm text-red-600 dark:text-red-400 font-medium">
-                  (
-                  {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
-                  )
+                <span className="sm:hidden">
+                  {interpolate(dict.playerDetail.totalPaymentShort, { amount: balance.totalPaid })}
                 </span>
+                <span className="hidden sm:inline">
+                  {interpolate(dict.playerDetail.totalPayment, { amount: balance.totalPaid })}
+                </span>
+                {' '}
+                <Tooltip
+                  content={(
+                    <p className="max-w-[220px] text-[11px]">
+                      {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
+                    </p>
+                  )}
+                >
+                  <span className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    <span className="sm:hidden">
+                      (
+                      {balance.balance}
+                      {' €)'}
+                    </span>
+                    <span className="hidden sm:inline">
+                      (
+                      {interpolate(dict.playerDetail.unpaid, { amount: balance.balance })}
+                      )
+                    </span>
+                  </span>
+                </Tooltip>
               </p>
               {balance.totalBonuses > 0 ? (
                 <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">
                   {interpolate(dict.playerDetail.bonuses, { amount: balance.totalBonuses })}
                 </p>
               ) : null}
-              <p className="text-lg">
+              <p className="text-sm">
                 {interpolate(dict.playerDetail.totalFaults, { count: totalFaults })}
+                {showSeasonWideStreakFines ? (
+                  <>
+                    {', '}
+                    <Tooltip
+                      content={(
+                        <p className="max-w-[220px] text-[11px]">
+                          {dict.playerDetail.streakFinesHint}
+                        </p>
+                      )}
+                    >
+                      <span className="underline decoration-dotted underline-offset-2">
+                        {interpolate(dict.playerDetail.streakFinesCount, {
+                          count: balance.streakFinesCount,
+                        })}
+                      </span>
+                    </Tooltip>
+                  </>
+                ) : null}
               </p>
             </div>
           </div>
         </div>
 
-        <Separator className="my-8" />
-
-        <SeasonLeagueFilter
-          className="mb-6 rounded-xl border border-border/80 bg-card p-3 shadow-lift"
-          seasons={SEASONS_CONFIG}
-          selectedSeasonId={selectedSeasonId}
-          selectedLeagueKey={selectedLeagueKey}
-          labels={{
-            seasonLabel: dict.home.season || 'Sezóna',
-            allLeagues: dict.home.filterAll || 'Všetky',
-            interliga: dict.home.filterInterliga || 'Interliga',
-            pohar: dict.home.filterPohar || 'Slovenský pohár',
-            turnaje: dict.home.filterTurnaje || 'Turnaje',
-          }}
-        />
+        {/* Pinned under the header so switching season/league never moves the control. */}
+        <div className="sticky top-16 z-30 -mx-4 mt-8 mb-8 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60">
+          <SeasonLeagueFilter
+            seasons={SEASONS_CONFIG}
+            selectedSeasonId={selectedSeasonId}
+            selectedLeagueKey={selectedLeagueKey}
+            labels={{
+              seasonLabel: dict.home.season || 'Sezóna',
+              allLeagues: dict.home.filterAll || 'Všetky',
+              interliga: dict.home.filterInterliga || 'Interliga',
+              pohar: dict.home.filterPohar || 'Slovenský pohár',
+              turnaje: dict.home.filterTurnaje || 'Turnaje',
+            }}
+          />
+        </div>
 
         <Card>
           <CardHeader>
@@ -190,6 +230,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                         <TableCell className="text-right">
                           <MatchFineTooltip
                             calculatedFine={result.calculatedFine}
+                            streakFine={result.streakFine}
                             isPaid={result.isPaid}
                             faults={result.faults}
                             isWorstPlayer={result.isWorstPlayer}
