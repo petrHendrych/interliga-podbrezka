@@ -1,5 +1,7 @@
 import { unstable_cache } from 'next/cache';
-import { MatchListItem, PlayerDetail, TEAM_ID } from '@/lib/api';
+import {
+  MatchListItem, PlayerDetail, TEAM_ID, parseApiDate,
+} from '@/lib/api';
 import { SYNCED_DATA_REVALIDATE_SECONDS } from '@/lib/cache';
 import {
   getTrainersWithStats,
@@ -111,14 +113,7 @@ export interface FetchDataResult {
   nextHomeMatch: MatchListItem | null;
 }
 
-export function parseUtcDate(dateString: string): Date {
-  if (!dateString) return new Date(NaN);
-  let iso = dateString.trim().replace(' ', 'T');
-  if (!iso.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(iso)) {
-    iso += 'Z';
-  }
-  return new Date(iso);
-}
+export const parseUtcDate = parseApiDate;
 
 export function getStartOfBratislavaToday(now: Date = new Date()): Date {
   const str = new Intl.DateTimeFormat('en-CA', {

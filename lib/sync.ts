@@ -16,7 +16,7 @@ import {
   TEAM_SCORE_LIMIT,
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
-import { MatchListItem } from './api';
+import { MatchListItem, parseApiDate } from './api';
 
 /** Renders a number list for an `IN (...)` clause. */
 function idList(ids: number[]) {
@@ -285,7 +285,7 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
         if (match && match.id) {
           const matchId = Number(match.id);
           const dateStr = match.startDate || match.created || null;
-          const date = dateStr ? new Date(dateStr) : null;
+          const date = dateStr ? parseApiDate(dateStr) : null;
           const homeClubId = match.homeTeam?.clubId || match.homeTeam?.club?.id;
           const homeTeamId = match.homeTeam?.id;
           const homeName = match.homeTeam?.name || match.homeTeam?.club?.name || '';
@@ -518,7 +518,7 @@ export async function syncData(payloads?: ScrapePayloads) {
 
             const opponent = isHome ? awayName : homeName;
             const dateStr = m.startDate || null;
-            const date = dateStr ? new Date(dateStr) : null;
+            const date = dateStr ? parseApiDate(dateStr) : null;
 
             let teamTotalScore: number | null = null;
             let opponentTotalScore: number | null = null;
@@ -573,7 +573,7 @@ export async function syncData(payloads?: ScrapePayloads) {
         || homeName.includes('Podbrezová');
 
       const dateStr = data.details?.date || data.startDate || null;
-      const date = dateStr ? new Date(dateStr) : null;
+      const date = dateStr ? parseApiDate(dateStr) : null;
 
       const matchedTeamId = isHome ? homeTeamId : (data.awayTeam?.id || undefined);
       const matchedLeagueId = (data as unknown as { leagueId?: number }).leagueId;
