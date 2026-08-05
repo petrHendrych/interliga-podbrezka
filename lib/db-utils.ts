@@ -603,6 +603,40 @@ export async function getUnpaidDebtors(
   }));
 }
 
+/** Players whose earned bonus the bank has not handed over yet. */
+export async function getUnpaidBonusReceivers(
+  seasonId?: number,
+  leagueKey?: string,
+): Promise<UnpaidDebtor[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  const rows = await sql`
+    SELECT
+      COALESCE(NULLIF(CONCAT_WS(' ', pd.first_name, pd.last_name), ''), u.name) as name,
+      SUM(mpr.bonus_received)::numeric as amount
+    FROM match_player_results mpr
+    JOIN users u ON mpr.user_id = u.id
+    LEFT JOIN LATERAL (
+      SELECT sd.data->>'firstName' AS first_name, sd.data->>'lastName' AS last_name
+      FROM scraped_data sd
+      WHERE sd.type = 'player_detail' AND sd.external_id = u.external_player_id
+      LIMIT 1
+    ) pd ON true
+    JOIN matches m ON mpr.match_id = m.external_id
+    WHERE (m.season_id = ${targetSeasonId})
+    ${leagueCondition(leagueKey)}
+      AND mpr.is_bonus_paid = false
+      AND mpr.bonus_received > 0
+    GROUP BY 1
+    ORDER BY SUM(mpr.bonus_received) DESC, 1 ASC
+  `;
+
+  return rows.map((r) => ({
+    name: String(r.name || 'Unknown'),
+    amount: Number(r.amount || 0),
+  }));
+}
+
 export async function getTeamBankBalance(
   seasonId?: number,
   leagueKey?: string,

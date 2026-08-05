@@ -96,6 +96,7 @@ export default async function Home({
   const trainers = data?.trainers || [];
   const bankBalance = data?.bankBalance || null;
   const unpaidDebtors = data?.unpaidDebtors || [];
+  const unpaidBonusReceivers = data?.unpaidBonusReceivers || [];
   const topDonator = data?.topDonator || null;
   const belowLimitMatches = data?.belowLimitMatches ?? null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
@@ -166,7 +167,27 @@ export default async function Home({
                 {' '}
                 €
                 {/* Awarded minus handed over, i.e. what the bank still owes. */}
-                <Tooltip content={dict.home.bank.bonusesToPay}>
+                <Tooltip
+                  content={(
+                    <div className={TOOLTIP_LIST}>
+                      <p className="font-semibold">{dict.home.bank.bonusesToPay}</p>
+                      {unpaidBonusReceivers.length > 0 && (
+                        <ul className="flex flex-col gap-1">
+                          {unpaidBonusReceivers.map((receiver) => (
+                            <li key={receiver.name} className={TOOLTIP_ROW}>
+                              <span className="truncate">{receiver.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums">
+                                {receiver.amount.toFixed(2)}
+                                {' '}
+                                €
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                >
                   <span className={`ml-1.5 text-xs font-medium text-muted-foreground ${HINT}`}>
                     (
                     {(bankBalance.bonusesAwarded - bankBalance.bonusesPaid).toFixed(2)}
@@ -321,9 +342,16 @@ export default async function Home({
                       fallbackClassName="text-2xl"
                     />
 
-                    <h2 className={`${NAME_SLOT} ${PERSON_NAME}`}>
-                      {trainer.name}
-                    </h2>
+                    <div className={`${NAME_SLOT} flex items-baseline gap-1.5`}>
+                      <h2 className={PERSON_NAME}>
+                        {trainer.name}
+                      </h2>
+                      <span className={PERSON_MATCHES}>
+                        –
+                        {' '}
+                        {dict.home.trainerLabel}
+                      </span>
+                    </div>
 
                     <div className={STAT_GRID}>
                       <div className={STAT_TILE}>

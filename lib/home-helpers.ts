@@ -9,6 +9,7 @@ import {
   getTeamBankBalance,
   getMatchesByTeamId,
   getUnpaidDebtors,
+  getUnpaidBonusReceivers,
   type TeamBankBalance,
   type UnpaidDebtor,
 } from '@/lib/db-utils';
@@ -108,6 +109,7 @@ export interface FetchDataResult {
   trainers: TrainerWithStats[];
   bankBalance: TeamBankBalance | null;
   unpaidDebtors: UnpaidDebtor[];
+  unpaidBonusReceivers: UnpaidDebtor[];
   topDonator: TopDonator | null;
   belowLimitMatches: BelowLimitMatch[] | null;
   nextHomeMatch: MatchListItem | null;
@@ -203,7 +205,14 @@ async function fetchHomeDataInternal(
     || teamId;
 
   // Independent, and each is its own HTTPS round trip over neon-http.
-  const [bankBalance, matchList, playerBalances, trainersData, unpaidDebtors] = await Promise.all([
+  const [
+    bankBalance,
+    matchList,
+    playerBalances,
+    trainersData,
+    unpaidDebtors,
+    unpaidBonusReceivers,
+  ] = await Promise.all([
     getTeamBankBalance(seasonId, leagueKey),
     getMatchesByTeamId(effectiveTeamId, seasonId, targetLeagueIds, {
       // Fixtures with no league id are unplayed scraped ones, never tournaments.
@@ -212,6 +221,7 @@ async function fetchHomeDataInternal(
     getPlayerBalances(seasonId, leagueKey),
     leagueKey === 'pohar' ? [] : getTrainersWithStats(seasonId, leagueKey),
     getUnpaidDebtors(seasonId, leagueKey),
+    getUnpaidBonusReceivers(seasonId, leagueKey),
   ]);
 
   let upcomingMatches: MatchListItem[] = [];
@@ -318,6 +328,7 @@ async function fetchHomeDataInternal(
     trainers,
     bankBalance,
     unpaidDebtors,
+    unpaidBonusReceivers,
     topDonator,
     belowLimitMatches,
     nextHomeMatch,
@@ -332,7 +343,7 @@ export const fetchHomeData = unstable_cache(
   ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
   // The key hashes only the arguments, so a changed `FetchDataResult` shape would keep
   // serving payloads missing the new fields. Bump the version whenever that shape changes.
-  ['home-data', 'v3'],
+  ['home-data', 'v4'],
   {
     revalidate: SYNCED_DATA_REVALIDATE_SECONDS,
     tags: ['home-data'],
