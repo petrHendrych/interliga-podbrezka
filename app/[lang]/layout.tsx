@@ -32,8 +32,22 @@ export async function generateMetadata({
   const dict = await getDictionary(lang as Locale);
 
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
     title: dict.home.pageTitle,
     description: dict.home.pageDescription,
+    openGraph: {
+      type: 'website',
+      siteName: 'Interliga Podbrezová',
+      title: dict.home.pageTitle,
+      description: dict.home.pageDescription,
+      locale: lang,
+      url: `/${lang}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: dict.home.pageTitle,
+      description: dict.home.pageDescription,
+    },
   };
 }
 
