@@ -1,0 +1,18 @@
+name: Setup
+description: pnpm and Node with the dependencies installed from the lockfile.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    # vite and jsdom need Node 22.12+, which is what .nvmrc pins.
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash
