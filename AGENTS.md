@@ -17,6 +17,7 @@ The main and first focus of the design should be mobile view. All components and
 
 Before finishing any task, you must run linting and type checks. No TypeScript errors or linting violations (Airbnb style) are allowed.
 Strictly avoid using the `any` type in the codebase.
+If the task touched anything covered by the Testing Rules, the test suite must run and pass in the same check (`pnpm check`).
 <!-- END:check-rules -->
 
 <!-- BEGIN:comment-rules -->
@@ -74,7 +75,8 @@ When working in plan mode, the plan must be detailed and written to a file — n
 
 - **Delivery Steps** must be ordered, independently verifiable, and each state which files it touches. Mark a step done by prefixing its title with `✓` while executing the plan.
 - **Testing** must state how the change is validated (lint, type check, manual flows to click through, data to verify).
-- Every plan ends with the mandatory lint and type check from the Quality Check Rules as the final step.
+- Every plan ends with the mandatory lint, type check, and test run from the Quality Check Rules as the final step.
+- If the plan touches money or any other calculation, the **Testing** section must list the concrete test files and the boundary cases they cover (see Testing Rules), and writing those tests must be its own numbered Delivery Step, placed before the final check step.
 <!-- END:plan-rules -->
 
 <!-- BEGIN:money-rules -->
@@ -138,6 +140,105 @@ The player-facing wording of all of the above lives in the `rules` namespace of
 `locales/{sk,cs,hu,sr}.json` and is rendered by `app/[lang]/rules/page.tsx`. Any change to
 the calculation must update those four files too.
 <!-- END:money-rules -->
+
+<!-- BEGIN:test-rules -->
+# Testing Rules
+
+No test tooling is installed yet. The first task that touches calculation logic sets it up
+as described here; every task after that follows the same layout. These rules are binding
+from now on, not aspirational.
+
+### Tooling
+
+- **Vitest** is the runner. Set up `vitest.config.ts` with two projects: `node` (default
+  environment, for `lib/**`) and `jsdom` + `@testing-library/react` + `@testing-library/jest-dom`
+  (for `components/**` and `app/**`).
+- Scripts: `"test": "vitest"`, `"test:run": "vitest run"`, and `check` becomes
+  `pnpm lint && pnpm type-check && pnpm test:run`.
+- Test files sit next to the source: `lib/db-utils.test.ts`, `components/MatchFineTooltip.test.tsx`.
+  No `__tests__` directory, no `.spec.` suffix.
+- Tests obey the same lint and `any` rules as the rest of the codebase.
+
+### When tests are mandatory
+
+Writing or updating unit tests is **not optional** for any change that touches:
+
+- `lib/sync.ts` — `recalculateDerivedFinancials()` and anything it computes.
+- `lib/match-money.ts`, `lib/special-misses.ts`, `lib/trainer-payments.ts`,
+  `lib/admin-actions.ts`, `lib/manual-match-actions.ts`, `lib/bank-withdrawal-actions.ts`.
+- `lib/db-utils.ts` money aggregation — `fineAmount()`, `withdrawalTotal()`,
+  `getTeamBankBalance()`, `getPlayerBalances()`, `getUnpaidDebtors()`, `getUnpaidBonusReceivers()`.
+- `lib/season-config.ts`, `lib/bank-withdrawals.ts`, `lib/home-helpers.ts` stat helpers.
+- Any threshold, formula, or league-scope rule described in the Money Calculation Rules.
+
+A change to any of these that ships without a test change is incomplete. If a bug is fixed,
+the test that reproduces it comes first and must fail before the fix.
+
+### Testing SQL-resident calculations
+
+`recalculateDerivedFinancials()` is pure SQL and cannot be unit tested directly. Therefore:
+
+- Every threshold and formula it applies must also exist as a **pure, db-free TypeScript
+  function** in `lib/money-rules.ts` (no import path from there may reach `lib/db.ts` — see
+  the Client/Server Boundary invariant). Constants such as `TEAM_SCORE_LIMIT` are imported
+  by both sides, never retyped.
+- `lib/money-rules.test.ts` tests those functions. The SQL and the pure mirror change in the
+  **same commit**, and each mirror function carries a one-line comment naming the SQL block
+  it mirrors — this is a `why` comment and is allowed under the Comment Rules.
+- A test that needs real rows (window functions, streak grouping, the `trainer_payments`
+  delete-unless-paid pass) is an integration test against a throwaway Postgres, not a mock.
+  Mocking `db.execute` to assert on SQL strings is forbidden — it tests the string, not the money.
+
+### Required cases for money tests
+
+Every rule is a strict threshold, so tests are table-driven and always cover the value below,
+at, and above the boundary:
+
+- Player total `599 / 600 / 601` (under-600 fine) and `699 / 700 / 701` (40€ bonus).
+- Team total `3749 / 3750 / 3751` (10€ per player), `3800 / 3801`, `3900 / 3901` (trainer
+  `score_bonus`, 15€ replaces 10€ rather than stacking).
+- Faults `0, 1, 2, 3, n` against `(n * (n + 1)) / 2`.
+- `special_faults_count` at 5€ each, summed from `full_faults_count` and
+  `second_to_last_faults_count`.
+- Faultless streak `4 / 5 / 6` — `streak_fine` is 10€ from the 5th consecutive game on, lands
+  in `streak_fine` and never in `calculated_fine`.
+- Worst-in-team **including a tie**: every player on the minimum pays, no tie-break.
+- Players with `total = 0` are excluded from under-600, worst-in-team, and the under-3750 fine.
+- League scope for the under-3750 fine: home Interliga (penalised), away Interliga (exempt),
+  tournament home and away (both penalised), Slovak Cup (exempt).
+- Trainer `zero_faults`: 10€ at 0 team faults with ≥ 6 players who played; no bonus at 5
+  players; no bonus when the fault sum is NULL. Both approved trainers get the full set.
+- Trainer `elite_player`: one row per match with `amount = count * 10`.
+- League filtering: `streak_fine` and withdrawals count only under the "all" filter.
+- Paid rows survive a recalculation untouched.
+
+### Frontend tests
+
+Scope is pure helpers and the components that display money. No page-level or end-to-end
+tests — do not add Playwright without asking first.
+
+- **Pure helpers** (`lib/i18n/plural.ts`, `lib/i18n/league-labels.ts`, `lib/home-helpers.ts`
+  date and stat helpers, `lib/withdrawal-categories.ts`): tested for all four locales where
+  the output is localized. `pluralize` needs 1 / 2 / 5 / 0 for `sk`, `cs`, `sr` and the
+  singular-after-numeral case for `hu`. `leagueLabelForId` and `leagueLabelForKey` must be
+  shown never to leak the raw Slovak `league_name`.
+- **Money-displaying components** (`components/MatchFineTooltip.tsx`, dashboard badges,
+  balance and bank totals, `components/dashboard/SeasonLeagueFilter.tsx`): render with fixed
+  props and assert the exact rendered amount, including that a per-match total reads
+  `calculated_fine + streak_fine` and that the success gathering appears as its own named badge.
+- Query by role and visible text (`getByRole`, `getByText`). No snapshot tests, no test ids
+  unless there is no accessible alternative.
+- Date-dependent helpers pin the clock with `vi.setSystemTime` — no test may depend on the
+  day it runs. `getStartOfBratislavaToday()` is covered on both sides of a DST switch.
+- Server actions are tested for the **error codes** they return, not for messages, and the
+  client mapping is tested for having a localized string per code in all four locale files.
+
+### Keeping documents in sync
+
+A calculation change is only complete when all four move together: the code, its tests, the
+Money Calculation Rules section above, and the `rules` namespace of `locales/{sk,cs,hu,sr}.json`.
+<!-- END:test-rules -->
+
 # Codebase Invariants
 
 Rules distilled from the code. Break one and the data or the money goes wrong.
@@ -162,6 +263,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Faultless streaks are counted across **all** seasons, so the streak query is never filtered by season or league.
 - The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
+- The SQL is not unit testable, so its thresholds and formulas are mirrored by pure functions in `lib/money-rules.ts`, which is what the tests exercise. SQL and mirror change in the same commit — see the Testing Rules.
 
 ### Bank Withdrawals
 - `bank_withdrawals` is hand-entered money leaving the bank (food, gear, travel), never derived from match data, so `recalculateDerivedFinancials()` neither writes nor reads it.
