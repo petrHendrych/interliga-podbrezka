@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "check": "pnpm lint && pnpm type-check",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "check": "pnpm lint && pnpm type-check && pnpm test:run",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push"
   },
@@ -42,6 +44,9 @@
     "@eslint/js": "^10.0.1",
     "@next/eslint-plugin-next": "^16.2.6",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.4",
     "@types/bcryptjs": "^3.0.0",
     "@types/negotiator": "^0.6.4",
     "@types/node": "^20",
@@ -49,6 +54,7 @@
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "@vitejs/plugin-react": "6.0.5",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-airbnb": "^19.0.4",
@@ -59,8 +65,11 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "28.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
   }
 }

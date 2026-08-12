@@ -1,7 +1,8 @@
 import { unstable_cache } from 'next/cache';
+import { MatchListItem, PlayerDetail, TEAM_ID } from '@/lib/api';
 import {
-  MatchListItem, PlayerDetail, TEAM_ID, parseApiDate,
-} from '@/lib/api';
+  parseUtcDate, getStartOfBratislavaToday, isNextDay,
+} from '@/lib/dates';
 import { SYNCED_DATA_REVALIDATE_SECONDS } from '@/lib/cache';
 import {
   getTrainersWithStats,
@@ -10,20 +11,20 @@ import {
   getMatchesByTeamId,
   getUnpaidDebtors,
   getUnpaidBonusReceivers,
+  type PlayerSeasonBalance,
   type TeamBankBalance,
   type UnpaidDebtor,
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
-  INTERLIGA_LEAGUE_IDS,
   TEAM_SCORE_LIMIT,
   TOURNAMENT_FILTER_KEY,
-  TOURNAMENT_LEAGUE_IDS,
   getLeagueConfig,
   getManualLeagues,
   getTeamIdsForSeason,
   isCurrentSeason,
 } from '@/lib/season-config';
+import { isUnderLimitEligible } from '@/lib/money-rules';
 
 export interface PlayerStats {
   avg: number;
@@ -57,31 +58,57 @@ export interface TopDonator {
   amount: number;
 }
 
-function isInterliga(match: MatchListItem): boolean {
-  return (match.leagueId !== undefined && INTERLIGA_LEAGUE_IDS.includes(match.leagueId))
-    || (match.leagueName?.toLowerCase().includes('interliga') ?? false);
-}
-
-function isTournament(match: MatchListItem): boolean {
-  return match.leagueId !== undefined && TOURNAMENT_LEAGUE_IDS.includes(match.leagueId);
-}
-
-/** Mirrors the `team_under_3750` rule in `recalculateDerivedFinancials`. */
-function isUnderLimitEligible(match: MatchListItem): boolean {
-  return (isInterliga(match) && Boolean(match.isHome)) || isTournament(match);
-}
-
 export interface BelowLimitMatch {
   id: number;
   name: string;
   score: number;
 }
 
+/** Only players with an external id and a played match belong in the dashboard lists. */
+export function eligibleForStats(balances: PlayerSeasonBalance[]): PlayerSeasonBalance[] {
+  return balances.filter((b) => b.externalPlayerId !== null && b.matchesCount > 0);
+}
+
+/** Dashboard cards, best average first. */
+export function toPlayersWithStats(balances: PlayerSeasonBalance[]): PlayerWithStats[] {
+  return balances
+    .map((b) => ({
+      id: b.externalPlayerId!,
+      firstName: b.firstName || 'Player',
+      lastName: b.lastName || String(b.externalPlayerId),
+      stats: {
+        avg: b.avgScore,
+        max: b.maxScore,
+        misses: b.totalFaults,
+        totalPaid: `${b.totalDue} €`,
+        matchesCount: b.matchesCount,
+      },
+    }))
+    .sort((a, b) => b.stats.avg - a.stats.avg);
+}
+
+/** The player who owes the bank the most, or null when nobody owes anything. */
+export function pickTopDonator(balances: PlayerSeasonBalance[]): TopDonator | null {
+  const [biggestFined] = [...balances]
+    .filter((b) => b.totalDue > 0)
+    .sort((a, b) => b.totalDue - a.totalDue);
+
+  if (!biggestFined) return null;
+
+  return {
+    id: biggestFined.externalPlayerId!,
+    name: biggestFined.firstName
+      ? `${biggestFined.firstName} ${biggestFined.lastName}`
+      : biggestFined.name,
+    amount: biggestFined.totalDue,
+  };
+}
+
 /** Filters whose competition is subject to the rule, so the row belongs on screen at zero too. */
 const LIMIT_FILTER_KEYS = new Set<string>(['interliga', TOURNAMENT_FILTER_KEY]);
 
 /** Played matches under the limit, or null when the row does not belong on screen. */
-function collectBelowLimit(
+export function collectBelowLimit(
   matches: MatchListItem[],
   leagueKey: string,
 ): BelowLimitMatch[] | null {
@@ -115,72 +142,9 @@ export interface FetchDataResult {
   nextHomeMatch: MatchListItem | null;
 }
 
-export const parseUtcDate = parseApiDate;
-
-export function getStartOfBratislavaToday(now: Date = new Date()): Date {
-  const str = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Bratislava',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-  return new Date(`${str}T00:00:00Z`);
-}
-
-export function isNextDay(dateString1: string, dateString2: string): boolean {
-  const d1 = parseUtcDate(dateString1);
-  const d2 = parseUtcDate(dateString2);
-  if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime())) return false;
-
-  const getBratislavaDateStr = (d: Date) => new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Bratislava',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(d);
-
-  const str1 = getBratislavaDateStr(d1);
-  const str2 = getBratislavaDateStr(d2);
-
-  const day1Start = new Date(`${str1}T00:00:00Z`).getTime();
-  const day2Start = new Date(`${str2}T00:00:00Z`).getTime();
-
-  const diffInDays = Math.round((day2Start - day1Start) / (1000 * 60 * 60 * 24));
-  return diffInDays === 1;
-}
-
-export function formatMatchDate(dateString: string, lang: string): string {
-  try {
-    const date = parseUtcDate(dateString);
-    if (Number.isNaN(date.getTime())) return dateString;
-    return new Intl.DateTimeFormat(lang, {
-      timeZone: 'Europe/Bratislava',
-      weekday: 'short',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  } catch {
-    return dateString;
-  }
-}
-
-export function formatDateOnly(dateString: string, lang: string): string {
-  try {
-    const date = parseUtcDate(dateString);
-    if (Number.isNaN(date.getTime())) return dateString;
-    return new Intl.DateTimeFormat(lang, {
-      timeZone: 'Europe/Bratislava',
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-    }).format(date);
-  } catch {
-    return dateString;
-  }
-}
+export {
+  parseUtcDate, getStartOfBratislavaToday, isNextDay, formatMatchDate, formatDateOnly,
+} from '@/lib/dates';
 
 async function fetchHomeDataInternal(
   teamId: number = TEAM_ID,
@@ -270,45 +234,9 @@ async function fetchHomeDataInternal(
 
   const belowLimitMatches = collectBelowLimit(matchList ?? [], leagueKey);
 
-  const eligibleBalances = playerBalances.filter(
-    (b) => b.externalPlayerId !== null && b.matchesCount > 0,
-  );
-
-  const playersWithStats = eligibleBalances.map((b) => {
-    const totalPaid = `${b.totalDue} €`;
-
-    const player: PlayerWithStats = {
-      id: b.externalPlayerId!,
-      firstName: b.firstName || 'Player',
-      lastName: b.lastName || String(b.externalPlayerId),
-      stats: {
-        avg: b.avgScore,
-        max: b.maxScore,
-        misses: b.totalFaults,
-        totalPaid,
-        matchesCount: b.matchesCount,
-      },
-    };
-
-    return player;
-  });
-
-  // Sort players by AVG descending
-  playersWithStats.sort((a, b) => b.stats.avg - a.stats.avg);
-
-  const [biggestFined] = [...eligibleBalances]
-    .filter((b) => b.totalDue > 0)
-    .sort((a, b) => b.totalDue - a.totalDue);
-
-  const topDonator: TopDonator | null = biggestFined
-    ? {
-      id: biggestFined.externalPlayerId!,
-      name: biggestFined.firstName
-        ? `${biggestFined.firstName} ${biggestFined.lastName}`
-        : biggestFined.name,
-      amount: biggestFined.totalDue,
-    }
-    : null;
+  const eligibleBalances = eligibleForStats(playerBalances);
+  const playersWithStats = toPlayersWithStats(eligibleBalances);
+  const topDonator = pickTopDonator(eligibleBalances);
 
   const trainers: TrainerWithStats[] = trainersData.map((t) => ({
     id: t.id,

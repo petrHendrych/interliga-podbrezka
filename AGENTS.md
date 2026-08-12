@@ -144,20 +144,25 @@ the calculation must update those four files too.
 <!-- BEGIN:test-rules -->
 # Testing Rules
 
-No test tooling is installed yet. The first task that touches calculation logic sets it up
-as described here; every task after that follows the same layout. These rules are binding
-from now on, not aspirational.
+These rules are binding, not aspirational.
 
 ### Tooling
 
-- **Vitest** is the runner. Set up `vitest.config.ts` with two projects: `node` (default
-  environment, for `lib/**`) and `jsdom` + `@testing-library/react` + `@testing-library/jest-dom`
-  (for `components/**` and `app/**`).
-- Scripts: `"test": "vitest"`, `"test:run": "vitest run"`, and `check` becomes
-  `pnpm lint && pnpm type-check && pnpm test:run`.
+- **Vitest** is the runner. `vitest.config.ts` declares two projects: `node` (environment
+  `node`, for `lib/**`, `locales/**`, `proxy.ts`) and `dom` (jsdom + `@testing-library/react`,
+  for `components/**`, `app/**`, `lib/hooks/**`, set up by `vitest.setup.dom.ts`).
+- Run with `nvm use 22` — `vite` and `jsdom` need Node ≥ 22.12, whatever Next needs.
+- `test.env` supplies a dummy `DATABASE_URL`, because `lib/db.ts` throws at import time
+  without one; `neon()` opens no connection, so no test ever reaches a database.
+- `server-only` is aliased to `test/mocks/server-only.ts`; the real package throws outside
+  Next's react-server condition.
+- Scripts: `pnpm test`, `pnpm test:run`, and `pnpm check` = lint + type check + tests.
 - Test files sit next to the source: `lib/db-utils.test.ts`, `components/MatchFineTooltip.test.tsx`.
   No `__tests__` directory, no `.spec.` suffix.
 - Tests obey the same lint and `any` rules as the rest of the codebase.
+- base-ui popups (tooltip, select, dialog) portal outside the render container and carry no
+  role, so they are read off `[data-base-ui-portal]`. Use `fireEvent`, not `user-event`, to
+  open them: a full pointer sequence closes the tooltip again in jsdom.
 
 ### When tests are mandatory
 
@@ -185,9 +190,14 @@ the test that reproduces it comes first and must fail before the fix.
 - `lib/money-rules.test.ts` tests those functions. The SQL and the pure mirror change in the
   **same commit**, and each mirror function carries a one-line comment naming the SQL block
   it mirrors — this is a `why` comment and is allowed under the Comment Rules.
-- A test that needs real rows (window functions, streak grouping, the `trainer_payments`
-  delete-unless-paid pass) is an integration test against a throwaway Postgres, not a mock.
-  Mocking `db.execute` to assert on SQL strings is forbidden — it tests the string, not the money.
+- Mocking `db.execute` to assert on SQL strings is forbidden — it tests the string, not the
+  money. The exception is `lib/db-utils.test.ts`, which reads the *fragments* built by
+  `fineAmount()`, `withdrawalTotal()`, and `leagueCondition()`, because the rule those encode
+  (the success gathering and withdrawals count only under the "all" filter) is a money rule.
+- After changing the mirror or the SQL, verify them against real rows once: read a sample of
+  matches out of the database and compare `derivePlayers()` / `deriveTrainerPayments()` /
+  `faultlessStreaks()` with the stored `calculated_fine`, `streak_fine`, `bonus_received`,
+  the `is_*` flags, and `trainer_payments`. Read-only, never committed to `scripts/`.
 
 ### Required cases for money tests
 
@@ -217,8 +227,9 @@ at, and above the boundary:
 Scope is pure helpers and the components that display money. No page-level or end-to-end
 tests — do not add Playwright without asking first.
 
-- **Pure helpers** (`lib/i18n/plural.ts`, `lib/i18n/league-labels.ts`, `lib/home-helpers.ts`
-  date and stat helpers, `lib/withdrawal-categories.ts`): tested for all four locales where
+- **Pure helpers** (`lib/i18n/plural.ts`, `lib/i18n/league-labels.ts`, `lib/dates.ts`,
+  `lib/home-helpers.ts` stat helpers, `lib/sync-transform.ts`, `lib/validation/*`,
+  `lib/withdrawal-categories.ts`): tested for all four locales where
   the output is localized. `pluralize` needs 1 / 2 / 5 / 0 for `sk`, `cs`, `sr` and the
   singular-after-numeral case for `hu`. `leagueLabelForId` and `leagueLabelForKey` must be
   shown never to leak the raw Slovak `league_name`.
@@ -228,10 +239,14 @@ tests — do not add Playwright without asking first.
   `calculated_fine + streak_fine` and that the success gathering appears as its own named badge.
 - Query by role and visible text (`getByRole`, `getByText`). No snapshot tests, no test ids
   unless there is no accessible alternative.
-- Date-dependent helpers pin the clock with `vi.setSystemTime` — no test may depend on the
-  day it runs. `getStartOfBratislavaToday()` is covered on both sides of a DST switch.
-- Server actions are tested for the **error codes** they return, not for messages, and the
-  client mapping is tested for having a localized string per code in all four locale files.
+- Date-dependent code takes an injected `now` (as `validateWithdrawal()` and
+  `getStartOfBratislavaToday()` do) or pins the clock with `vi.setSystemTime`. No test may
+  depend on the day it runs, and the Bratislava helpers are covered on both DST switch days.
+- Server actions return **error codes**, so their pure validation lives in `lib/validation/*`
+  (a `'use server'` file may only export async functions) and is tested there code by code.
+  The client side is tested for rendering the mapped `translations.errors[code]` string, and
+  `locales/locales.test.ts` guards that all four locale files carry the same keys and
+  placeholders.
 
 ### Keeping documents in sync
 

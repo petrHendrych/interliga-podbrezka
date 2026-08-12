@@ -17,6 +17,12 @@ import {
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
 import { MatchListItem, parseApiDate } from './api';
+import {
+  type SnapshotRow,
+  computeAverage,
+  isOurTeam,
+  toSnapshotRows,
+} from './sync-transform';
 
 /** Renders a number list for an `IN (...)` clause. */
 function idList(ids: number[]) {
@@ -87,15 +93,6 @@ export interface ScrapePayloads {
   matchDetails: Map<number, unknown>;
   matchLists: Map<number, unknown>;
   playerResults: Map<number, unknown>;
-}
-
-interface SnapshotRow {
-  externalId: number | null;
-  data: unknown;
-}
-
-function toSnapshotRows(payload: Map<number, unknown>): SnapshotRow[] {
-  return Array.from(payload, ([externalId, data]) => ({ externalId, data }));
 }
 
 /**
@@ -286,12 +283,11 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
           const matchId = Number(match.id);
           const dateStr = match.startDate || match.created || null;
           const date = dateStr ? parseApiDate(dateStr) : null;
-          const homeClubId = match.homeTeam?.clubId || match.homeTeam?.club?.id;
-          const homeTeamId = match.homeTeam?.id;
-          const homeName = match.homeTeam?.name || match.homeTeam?.club?.name || '';
-          const isHome = homeClubId === 649
-            || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
-            || homeName.includes('Podbrezová');
+          const isHome = isOurTeam({
+            clubId: match.homeTeam?.clubId || match.homeTeam?.club?.id,
+            teamId: match.homeTeam?.id,
+            name: match.homeTeam?.name || match.homeTeam?.club?.name,
+          });
 
           const opponentTeam = isHome ? match.awayTeam : match.homeTeam;
           const opponent = opponentTeam?.name || opponentTeam?.club?.name || 'Unknown';
@@ -332,9 +328,7 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
               full: Number(item.full || 0),
               clean: Number(item.clean || 0),
               total,
-              avg: String(Number(
-                item.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0),
-              )),
+              avg: String(Number(item.average || computeAverage(total))),
               faults: Number(item.faults || 0),
               teamId: playerTeamId,
             });
@@ -411,12 +405,11 @@ export async function syncData(payloads?: ScrapePayloads) {
       const data = snapshot.data as SyncMatchData;
       matchDataList.push({ matchId, data });
 
-      const homeClubId = data.homeTeam?.club?.id;
-      const homeTeamId = data.homeTeam?.id;
-      const homeName = data.homeTeam?.club?.name || data.homeTeam?.name || '';
-      const isHome = homeClubId === 649
-        || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
-        || homeName.includes('Podbrezová');
+      const isHome = isOurTeam({
+        clubId: data.homeTeam?.club?.id,
+        teamId: data.homeTeam?.id,
+        name: data.homeTeam?.club?.name || data.homeTeam?.name,
+      });
 
       const teamKey = isHome ? 'home' : 'away';
       const teamLineup = data.lineUp?.[teamKey] || data.results?.[teamKey]?.players || [];
@@ -565,17 +558,16 @@ export async function syncData(payloads?: ScrapePayloads) {
     }> = [];
 
     for (const { matchId, data } of matchDataList) {
-      const homeClubId = data.homeTeam?.club?.id;
-      const homeTeamId = data.homeTeam?.id;
-      const homeName = data.homeTeam?.club?.name || data.homeTeam?.name || '';
-      const isHome = homeClubId === 649
-        || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
-        || homeName.includes('Podbrezová');
+      const isHome = isOurTeam({
+        clubId: data.homeTeam?.club?.id,
+        teamId: data.homeTeam?.id,
+        name: data.homeTeam?.club?.name || data.homeTeam?.name,
+      });
 
       const dateStr = data.details?.date || data.startDate || null;
       const date = dateStr ? parseApiDate(dateStr) : null;
 
-      const matchedTeamId = isHome ? homeTeamId : (data.awayTeam?.id || undefined);
+      const matchedTeamId = isHome ? data.homeTeam?.id : (data.awayTeam?.id || undefined);
       const matchedLeagueId = (data as unknown as { leagueId?: number }).leagueId;
       const config = getSeasonAndLeagueConfig(matchedTeamId, matchedLeagueId, data.league?.name);
 
@@ -629,7 +621,7 @@ export async function syncData(payloads?: ScrapePayloads) {
             const clean = p.clean || 0;
             const total = p.total || 0;
             const faults = p.faults || 0;
-            const avg = p.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0);
+            const avg = p.average || computeAverage(total);
             playerResultsList.push({
               userId,
               full,

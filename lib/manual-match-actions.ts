@@ -15,81 +15,21 @@ import {
   getTeamIdsForSeason,
   isManualMatchId,
 } from './season-config';
+import {
+  type ManualMatchError,
+  type ManualMatchInput,
+  type ManualMatchPlayerInput,
+  validateManualMatch,
+} from './validation/manual-match';
+import { computeAverage } from './sync-transform';
 
 const MATCHES_PATH = '/[lang]/admin/matches';
 
-/** A slot can be split between two players, so the squad can exceed six. */
-const MAX_PLAYERS = 12;
-const MAX_SCORE = 1000;
-const MAX_FAULTS = 200;
-
-/** Error codes the client maps to a localized message; raw messages never reach it. */
-export type ManualMatchError =
-  | 'unauthorized'
-  | 'invalidLeague'
-  | 'invalidDate'
-  | 'noPlayers'
-  | 'duplicatePlayer'
-  | 'invalidScore'
-  | 'notFound'
-  | 'notManual'
-  | 'unknown';
+export type { ManualMatchError, ManualMatchInput, ManualMatchPlayerInput };
 
 export type ManualMatchResult =
   | { success: true; matchId: number }
   | { success: false; error: ManualMatchError };
-
-export interface ManualMatchPlayerInput {
-  userId: string;
-  full: number;
-  clean: number;
-  faults: number;
-}
-
-export interface ManualMatchInput {
-  /** Present → edit an existing manual match. */
-  externalId?: number;
-  seasonId: number;
-  leagueId: number;
-  /** `YYYY-MM-DD` from the date input. */
-  date: string;
-  opponent: string;
-  isHome: boolean;
-  opponentTotalScore: number | null;
-  players: ManualMatchPlayerInput[];
-}
-
-function isCountable(value: number, max: number): boolean {
-  return Number.isInteger(value) && value >= 0 && value <= max;
-}
-
-function validate(input: ManualMatchInput): ManualMatchError | null {
-  const league = getManualLeagues(input.seasonId).find((l) => l.leagueId === input.leagueId);
-  if (!league) return 'invalidLeague';
-
-  const date = new Date(`${input.date}T12:00:00Z`);
-  if (!input.date || Number.isNaN(date.getTime())) return 'invalidDate';
-
-  if (input.players.length === 0 || input.players.length > MAX_PLAYERS) return 'noPlayers';
-  if (input.players.some((p) => !p.userId)) return 'noPlayers';
-
-  const uniqueIds = new Set(input.players.map((p) => p.userId));
-  if (uniqueIds.size !== input.players.length) return 'duplicatePlayer';
-
-  const scoresValid = input.players.every((p) => (
-    isCountable(p.full, MAX_SCORE)
-    && isCountable(p.clean, MAX_SCORE)
-    && isCountable(p.faults, MAX_FAULTS)
-  ));
-  if (!scoresValid) return 'invalidScore';
-
-  if (input.opponentTotalScore !== null
-    && !isCountable(input.opponentTotalScore, MAX_SCORE * MAX_PLAYERS)) {
-    return 'invalidScore';
-  }
-
-  return null;
-}
 
 /** Ids live in a reserved range, so the next one cannot collide with a scraped match. */
 async function allocateMatchId(): Promise<number> {
@@ -107,7 +47,7 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
     return { success: false, error: 'unauthorized' };
   }
 
-  const validationError = validate(input);
+  const validationError = validateManualMatch(input);
   if (validationError) {
     return { success: false, error: validationError };
   }
@@ -142,8 +82,7 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
         full: p.full,
         clean: p.clean,
         total,
-        // Same formula the scraper falls back to when the API omits the average.
-        avg: String(total > 0 ? Math.round((total / 4) * 10) / 10 : 0),
+        avg: String(computeAverage(total)),
         faults: p.faults,
         teamId: getTeamIdsForSeason(input.seasonId)[0] ?? null,
       };
