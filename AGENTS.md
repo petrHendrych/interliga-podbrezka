@@ -152,7 +152,8 @@ These rules are binding, not aspirational.
 - **Vitest** is the runner. `vitest.config.ts` declares two projects: `node` (environment
   `node`, for `lib/**`, `locales/**`, `proxy.ts`) and `dom` (jsdom + `@testing-library/react`,
   for `components/**`, `app/**`, `lib/hooks/**`, set up by `vitest.setup.dom.ts`).
-- Run with `nvm use 22` — `vite` and `jsdom` need Node ≥ 22.12, whatever Next needs.
+- Run with `nvm use` — the project pins Node 24 (`.nvmrc`, `.npmrc`, `engines`); `jsdom` needs
+  Node ≥ 24.15, whatever Next needs.
 - `test.env` supplies a dummy `DATABASE_URL`, because `lib/db.ts` throws at import time
   without one; `neon()` opens no connection, so no test ever reaches a database.
 - `server-only` is aliased to `test/mocks/server-only.ts`; the real package throws outside
