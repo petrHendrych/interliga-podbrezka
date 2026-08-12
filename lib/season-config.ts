@@ -13,6 +13,8 @@ export interface LeagueConfig {
 export interface SeasonConfig {
   id: number;
   name: string; // Display name e.g. "2026/2027"
+  /** Calendar year the season opens in; maps a date to a season. */
+  startYear: number;
   leagues: LeagueConfig[];
 }
 
@@ -43,6 +45,7 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
   {
     id: 13,
     name: '2026/2027',
+    startYear: 2026,
     leagues: [
       {
         leagueId: 368,
@@ -57,6 +60,7 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
   {
     id: 12,
     name: '2025/2026',
+    startYear: 2025,
     leagues: [
       {
         leagueId: 354,
@@ -95,6 +99,17 @@ export function isCurrentSeason(seasonId: number): boolean {
 
 export function isManualMatchId(externalId: number): boolean {
   return externalId >= MANUAL_MATCH_ID_BASE;
+}
+
+/** August, zero-based: the 2026/2027 season opens in the autumn of 2026. */
+const SEASON_START_MONTH = 7;
+
+/** Null for a date outside every configured season, so callers can reject it. */
+export function getSeasonIdForDate(date: Date): number | null {
+  const startYear = date.getUTCMonth() >= SEASON_START_MONTH
+    ? date.getUTCFullYear()
+    : date.getUTCFullYear() - 1;
+  return SEASONS_CONFIG.find((s) => s.startYear === startYear)?.id ?? null;
 }
 
 export function getSeasonConfig(seasonId: number): SeasonConfig | undefined {

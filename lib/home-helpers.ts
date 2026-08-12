@@ -343,7 +343,7 @@ export const fetchHomeData = unstable_cache(
   ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
   // The key hashes only the arguments, so a changed `FetchDataResult` shape would keep
   // serving payloads missing the new fields. Bump the version whenever that shape changes.
-  ['home-data', 'v4'],
+  ['home-data', 'v5'],
   {
     revalidate: SYNCED_DATA_REVALIDATE_SECONDS,
     tags: ['home-data'],

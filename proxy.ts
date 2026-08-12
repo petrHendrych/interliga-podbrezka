@@ -28,7 +28,9 @@ function getLocale(request: NextRequest): string {
   }
 }
 
-const publicRoutes = ['/sign-in', '/sign-up'];
+// The OG image is fetched by unauthenticated crawlers, so it must stay open or
+// link previews render the sign-in redirect instead of the image.
+const publicRoutes = ['/sign-in', '/sign-up', '/opengraph-image'];
 const publicApiPrefixes = ['/api/cron/'];
 
 export async function proxy(req: NextRequest) {

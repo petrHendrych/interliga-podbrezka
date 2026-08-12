@@ -39,7 +39,8 @@
       "bonusesToPay": "Třeba vyplatit",
       "topDonator": "Největší dárce",
       "belowLimit": "Pod limit (3750)",
-      "nextPickup": "Nejbližší výběr peněz: {date}"
+      "nextPickup": "Nejbližší výběr peněz: {date}",
+      "withdrawals": "Výběry"
     }
   },
   "common": {
@@ -55,7 +56,9 @@
     "cancel": "Zrušit",
     "delete": "Odstranit",
     "switchLanguage": "Změnit jazyk",
-    "toggleTheme": "Přepnout téma"
+    "toggleTheme": "Přepnout téma",
+    "rules": "Pravidla pokut",
+    "withdrawals": "Výběry z banky"
   },
   "admin": {
     "users": {
@@ -231,6 +234,136 @@
       "invalidCredentials": "Nesprávný email nebo heslo",
       "dbError": "Chyba připojení k databázi",
       "notApproved": "Tvůj účet čeká na schválení administrátorem."
+    }
+  },
+  "rules": {
+    "pageTitle": "Pravidla pokut | Interliga Podbrezová",
+    "pageDescription": "Přehled pokut a bonusů pro hráče a trenéra.",
+    "title": "Pravidla pokut",
+    "subtitle": "Jak se počítají pokuty a bonusy. Všechny částky jsou za jeden zápas.",
+    "finesLabel": "Pokuty",
+    "bonusesLabel": "Bonusy",
+    "player": {
+      "title": "Hráč",
+      "description": "Platí do týmové banky, dostává bonus za výkon.",
+      "fines": [
+        {
+          "title": "Celkem pod 600",
+          "amount": "1 €",
+          "note": "Za každý zápas, ve kterém nahraješ méně než 600."
+        },
+        {
+          "title": "Nejhorší v týmu",
+          "amount": "1 €",
+          "note": "Nejnižší celkový nához mezi hráči, kteří v zápase hráli."
+        },
+        {
+          "title": "Chyby",
+          "amount": "1 € + 2 € + 3 € …",
+          "note": "Sčítá se pořadové číslo každé chyby."
+        },
+        {
+          "title": "Speciální chyby",
+          "amount": "5 €",
+          "note": "Za každou chybu do plných a za každý vynechaný předposlední hod."
+        },
+        {
+          "title": "Tým pod 3750",
+          "amount": "10 €",
+          "note": "Pro každého hráče, který v zápase hrál. Platí pro domácí zápasy Interligy a pro turnaje doma i venku. Přesně 3750 je v pohodě, trestá se až méně."
+        },
+        {
+          "title": "Zápasy bez chyb",
+          "amount": "10 €",
+          "note": "Za 5. a každý další zápas v řadě bez chyby. Série se počítá napříč všemi soutěžemi."
+        }
+      ],
+      "faultsFormulaLabel": "Jak rostou pokuty za chyby",
+      "faultsFormula": [
+        "1 chyba = 1 €",
+        "2 chyby = 1 + 2 = 3 €",
+        "3 chyby = 1 + 2 + 3 = 6 €",
+        "n chyb = n × (n + 1) / 2"
+      ],
+      "bonuses": [
+        {
+          "title": "Celkem nad 700",
+          "amount": "40 €",
+          "note": "30 € z týmové banky + 10 € od trenéra."
+        }
+      ]
+    },
+    "trainer": {
+      "title": "Trenér",
+      "description": "Trenér neplatí žádné pokuty. Tyto částky vyplácí týmu a hráčům.",
+      "bonuses": [
+        {
+          "title": "Tým nad 3800",
+          "amount": "10 €",
+          "note": "Celkový nához týmu je vyšší než 3800."
+        },
+        {
+          "title": "Tým nad 3900",
+          "amount": "15 €",
+          "note": "Nahrazuje 10 € za 3800, nesčítá se."
+        },
+        {
+          "title": "Tým bez chyby",
+          "amount": "10 €",
+          "note": "Celý tým odehraje zápas bez jediné chyby a hrálo aspoň 6 hráčů."
+        },
+        {
+          "title": "Hráč nad 700",
+          "amount": "10 €",
+          "note": "Za každého hráče, který v zápase nahraje více než 700."
+        }
+      ]
+    },
+    "notes": {
+      "title": "Poznámky",
+      "items": [
+        "Pokuta za zápasy bez chyb je vedená zvlášť. V částkách za jednotlivé soutěže ji nenajdeš, protože se počítá napříč všemi.",
+        "Speciální chyby označuje admin ručně po zápase.",
+        "Zaplacené pokuty a bonusy se zpětným přepočtem už nemění."
+      ]
+    }
+  },
+  "withdrawals": {
+    "title": "Výběry z banky",
+    "description": "Peníze vybrané z týmové banky a na co se použily.",
+    "empty": "Zatím se z banky nic nevybralo.",
+    "totalLabel": "Vybráno celkem",
+    "formTitle": "Nový výběr",
+    "amount": "Částka (€)",
+    "amountPlaceholder": "Např. 85.50",
+    "date": "Datum",
+    "datePlaceholder": "Vyber datum",
+    "category": "Kategorie",
+    "categoryPlaceholder": "Vyber kategorii",
+    "descriptionLabel": "Na co to bylo",
+    "descriptionPlaceholder": "Např. Občerstvení na domácí zápas",
+    "save": "Uložit výběr",
+    "saving": "Ukládám...",
+    "delete": "Smazat",
+    "deleteTitle": "Smazat výběr?",
+    "deleteDescription": "Záznam se odstraní a částka se vrátí do zůstatku banky. Nedá se to vrátit.",
+    "addedBy": "Přidal: {name}",
+    "season": "Sezóna",
+    "listTitle": "Historie výběrů",
+    "categories": {
+      "food": "Jídlo a občerstvení",
+      "equipment": "Vybavení",
+      "travel": "Cestovné",
+      "other": "Jiné"
+    },
+    "errors": {
+      "unauthorized": "Na tuto akci nemáš oprávnění.",
+      "invalidAmount": "Zadej částku větší než 0 a maximálně 10 000 €.",
+      "invalidDescription": "Popiš, na co peníze šly (3 až 300 znaků).",
+      "invalidCategory": "Vyber kategorii výběru.",
+      "invalidDate": "Zadej platné datum, které patří do některé sezóny a není v budoucnosti.",
+      "notFound": "Výběr se nenašel.",
+      "unknown": "Někde se stala chyba, zkus to znovu."
     }
   }
 }
