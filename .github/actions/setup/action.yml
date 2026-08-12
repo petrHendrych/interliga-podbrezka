@@ -8,7 +8,7 @@ runs:
       with:
         version: 10
 
-    # vite and jsdom need Node 22.12+, which is what .nvmrc pins.
+    # jsdom needs Node 24.15+, which is what .nvmrc pins.
     - uses: actions/setup-node@v4
       with:
         node-version-file: .nvmrc
