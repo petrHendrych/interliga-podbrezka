@@ -287,7 +287,7 @@
       ],
       "bonuses": [
         {
-          "title": "Ukupno preko 700",
+          "title": "Ukupno 700 i više",
           "amount": "40 €",
           "note": "30 € iz timske kase + 10 € od trenera."
         }
@@ -298,14 +298,14 @@
       "description": "Trener ne plaća nikakve kazne. Ove iznose on isplaćuje timu i igračima.",
       "bonuses": [
         {
-          "title": "Tim preko 3800",
+          "title": "Tim 3800 i više",
           "amount": "10 €",
-          "note": "Ukupan rezultat tima je veći od 3800."
+          "note": "Ukupan rezultat tima je 3800 ili više."
         },
         {
-          "title": "Tim preko 3900",
+          "title": "Tim 3900 i više",
           "amount": "15 €",
-          "note": "Zamenjuje 10 € za 3800, ne sabira se."
+          "note": "Od 3900 zamenjuje 10 € za 3800, ne sabira se."
         },
         {
           "title": "Tim bez greške",
@@ -313,9 +313,9 @@
           "note": "Ceo tim odigra meč bez ijedne greške i igralo je bar 6 igrača."
         },
         {
-          "title": "Igrač preko 700",
+          "title": "Igrač 700 i više",
           "amount": "10 €",
-          "note": "Za svakog igrača koji na meču obori više od 700."
+          "note": "Za svakog igrača koji na meču obori 700 ili više."
         }
       ]
     },

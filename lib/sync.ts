@@ -151,7 +151,7 @@ export async function recalculateDerivedFinancials() {
         is_under_600        = (s.total < 600 AND s.total > 0),
         is_team_under_3750  = s.team_under_3750,
         faultless_streak    = s.streak,
-        bonus_received      = CASE WHEN s.total > 700 THEN 40 ELSE 0 END,
+        bonus_received      = CASE WHEN s.total >= 700 THEN 40 ELSE 0 END,
         calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
                             + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
                             + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
@@ -167,15 +167,15 @@ export async function recalculateDerivedFinancials() {
       SELECT m.external_id AS match_id, m.team_total_score,
              COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
              SUM(mpr.faults) AS team_faults,
-             COUNT(*) FILTER (WHERE mpr.total > 700) AS elite
+             COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
       FROM matches m
       JOIN match_player_results mpr ON mpr.match_id = m.external_id
       GROUP BY 1, 2
     ),
     spec AS (
       SELECT match_id, 'score_bonus' AS condition_type,
-             CASE WHEN team_total_score > 3900 THEN 15
-                  WHEN team_total_score > 3800 THEN 10 END AS amount
+             CASE WHEN team_total_score >= 3900 THEN 15
+                  WHEN team_total_score >= 3800 THEN 10 END AS amount
       FROM agg
       UNION ALL
       SELECT match_id, 'zero_faults',
@@ -203,7 +203,7 @@ export async function recalculateDerivedFinancials() {
         SELECT m.external_id AS match_id, m.team_total_score,
                COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
                SUM(mpr.faults) AS team_faults,
-               COUNT(*) FILTER (WHERE mpr.total > 700) AS elite
+               COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
         FROM matches m
         JOIN match_player_results mpr ON mpr.match_id = m.external_id
         GROUP BY 1, 2
@@ -211,7 +211,7 @@ export async function recalculateDerivedFinancials() {
       SELECT 1 FROM agg
       WHERE agg.match_id = tp.match_id
         AND CASE tp.condition_type
-              WHEN 'score_bonus'  THEN agg.team_total_score > 3800
+              WHEN 'score_bonus'  THEN agg.team_total_score >= 3800
               WHEN 'zero_faults'  THEN agg.team_faults = 0 AND agg.active >= 6
               WHEN 'elite_player' THEN agg.elite > 0
               ELSE true

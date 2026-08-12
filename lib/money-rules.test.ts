@@ -83,8 +83,8 @@ describe('player total under 600', () => {
   });
 });
 
-describe('player bonus above 700', () => {
-  it.each([[699, 0], [700, 0], [701, 40]])('a total of %i earns %i €', (total, expected) => {
+describe('player bonus from 700', () => {
+  it.each([[699, 0], [700, 40], [701, 40]])('a total of %i earns %i €', (total, expected) => {
     expect(playerBonus(total)).toBe(expected);
   });
 });
@@ -231,10 +231,10 @@ describe('success gathering (faultless streak)', () => {
 describe('trainer: team performance', () => {
   it.each([
     [3799, null],
-    [3800, null],
+    [3800, 10],
     [3801, 10],
     [3899, 10],
-    [3900, 10],
+    [3900, 15],
     [3901, 15],
   ])('a team total of %i pays %s €', (teamTotal, expected) => {
     expect(trainerScoreBonus(teamTotal)).toBe(expected);
@@ -276,9 +276,9 @@ describe('trainer: zero faults', () => {
 });
 
 describe('trainer: elite players', () => {
-  it('pays 10 € per player above 700 and nothing at exactly 700', () => {
-    expect(trainerElitePlayerBonus([player({ userId: 'a', total: 700 })])).toBeNull();
-    expect(trainerElitePlayerBonus([player({ userId: 'a', total: 701 })])).toBe(10);
+  it('pays 10 € per player from 700 up, and nothing at 699', () => {
+    expect(trainerElitePlayerBonus([player({ userId: 'a', total: 699 })])).toBeNull();
+    expect(trainerElitePlayerBonus([player({ userId: 'a', total: 700 })])).toBe(10);
     expect(trainerElitePlayerBonus([
       player({ userId: 'a', total: 720 }),
       player({ userId: 'b', total: 800 }),

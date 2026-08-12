@@ -92,9 +92,9 @@ export function isTeamUnderLimit(match: MatchContext): boolean {
     && match.teamTotalScore < TEAM_SCORE_LIMIT;
 }
 
-/** `CASE WHEN s.total > 700 THEN 40 ELSE 0 END` — sync.ts `bonus_received`. */
+/** `CASE WHEN s.total >= 700 THEN 40 ELSE 0 END` — sync.ts `bonus_received`. */
 export function playerBonus(total: number): number {
-  return total > BONUS_TOTAL_LIMIT ? PLAYER_BONUS : 0;
+  return total >= BONUS_TOTAL_LIMIT ? PLAYER_BONUS : 0;
 }
 
 /** `CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END` — sync.ts `streak_fine`. */
@@ -164,11 +164,11 @@ export function derivePlayers(
   }));
 }
 
-/** `score_bonus` in the `spec` CTE: 15 replaces 10 above 3900, it never stacks. */
+/** `score_bonus` in the `spec` CTE: 15 replaces 10 from 3900 on, it never stacks. */
 export function trainerScoreBonus(teamTotalScore: number | null | undefined): number | null {
   if (typeof teamTotalScore !== 'number') return null;
-  if (teamTotalScore > TRAINER_SCORE_HIGH_LIMIT) return TRAINER_SCORE_HIGH_BONUS;
-  if (teamTotalScore > TRAINER_SCORE_LIMIT) return TRAINER_SCORE_BONUS;
+  if (teamTotalScore >= TRAINER_SCORE_HIGH_LIMIT) return TRAINER_SCORE_HIGH_BONUS;
+  if (teamTotalScore >= TRAINER_SCORE_LIMIT) return TRAINER_SCORE_BONUS;
   return null;
 }
 
@@ -183,9 +183,9 @@ export function trainerZeroFaultsBonus(rows: PlayerRow[]): number | null {
   return TRAINER_ZERO_FAULTS_BONUS;
 }
 
-/** `elite_player`: one row per match worth 10 € per player above 700. */
+/** `elite_player`: one row per match worth 10 € per player on 700 or more. */
 export function trainerElitePlayerBonus(rows: PlayerRow[]): number | null {
-  const elite = rows.filter((r) => r.total > BONUS_TOTAL_LIMIT).length;
+  const elite = rows.filter((r) => r.total >= BONUS_TOTAL_LIMIT).length;
   return elite > 0 ? elite * TRAINER_ELITE_PLAYER_BONUS : null;
 }
 

@@ -82,10 +82,11 @@ When working in plan mode, the plan must be detailed and written to a file — n
 <!-- BEGIN:money-rules -->
 # Money Calculation Rules
 
-Rules for calculating gatherings (fines) and bonuses for each role. Every threshold is
-strict — a player on exactly 600 or a team on exactly 3750 is not penalised, and exactly
-700 / 3800 / 3900 earns nothing. `recalculateDerivedFinancials()` in `lib/sync.ts` is the
-only implementation; this section describes it, so the two change together.
+Rules for calculating gatherings (fines) and bonuses for each role. The fine thresholds are
+strict — a player on exactly 600 or a team on exactly 3750 is not penalised — while the bonus
+thresholds are inclusive: exactly 700 / 3800 / 3900 already earns the bonus.
+`recalculateDerivedFinancials()` in `lib/sync.ts` is the only implementation; this section
+describes it, so the two change together.
 
 ### Role: Player
 **Gatherings (to be paid to the bank):**
@@ -112,7 +113,7 @@ The first five land in `calculated_fine`; the success gathering lands in `streak
 player's debt for one match row is always `calculated_fine + streak_fine`.
 
 **Bonuses (to be received):**
-- **Total > 700**: 40€ total (30€ from team bank + 10€ from trainer), written to
+- **Total 700 or more**: 40€ total (30€ from team bank + 10€ from trainer), written to
   `bonus_received`.
 
 ### Role: Trainer
@@ -120,12 +121,12 @@ player's debt for one match row is always `calculated_fine + streak_fine`.
 `(match, trainer, condition_type)`. Every **approved** trainer gets the full set, so two
 trainers each owe the full amount.
 - **Team Performance** (`score_bonus`):
-  - Team Total > 3800: 10€
-  - Team Total > 3900: 15€ (replaces the 3800 bonus, not cumulative).
+  - Team Total 3800 or more: 10€
+  - Team Total 3900 or more: 15€ (replaces the 3800 bonus, not cumulative).
 - **Zero Faults Bonus** (`zero_faults`): 10€ when the team's fault total is 0 and at least
   6 players actually played (`total > 0`). If no player row carries a fault count at all,
   the sum is NULL and no bonus is created.
-- **Elite Player Bonus** (`elite_player`): 10€ for each player scoring > 700, stored as a
+- **Elite Player Bonus** (`elite_player`): 10€ for each player scoring 700 or more, stored as a
   single row per match with `amount = count * 10`.
 
 ### Role: Admin
@@ -204,9 +205,11 @@ the test that reproduces it comes first and must fail before the fix.
 Every rule is a strict threshold, so tests are table-driven and always cover the value below,
 at, and above the boundary:
 
-- Player total `599 / 600 / 601` (under-600 fine) and `699 / 700 / 701` (40€ bonus).
-- Team total `3749 / 3750 / 3751` (10€ per player), `3800 / 3801`, `3900 / 3901` (trainer
-  `score_bonus`, 15€ replaces 10€ rather than stacking).
+- Player total `599 / 600 / 601` (under-600 fine, strict) and `699 / 700 / 701` (40€ bonus,
+  inclusive from 700).
+- Team total `3749 / 3750 / 3751` (10€ per player, strict), and `3799 / 3800` / `3899 / 3900`
+  for the trainer `score_bonus`, which starts at each limit and where 15€ replaces 10€ rather
+  than stacking.
 - Faults `0, 1, 2, 3, n` against `(n * (n + 1)) / 2`.
 - `special_faults_count` at 5€ each, summed from `full_faults_count` and
   `second_to_last_faults_count`.
