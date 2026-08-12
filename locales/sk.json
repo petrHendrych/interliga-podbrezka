@@ -39,7 +39,8 @@
       "bonusesToPay": "Treba vyplatiť",
       "topDonator": "Najväčší darca",
       "belowLimit": "Pod limit (3750)",
-      "nextPickup": "Najbližší výber peňazí: {date}"
+      "nextPickup": "Najbližší výber peňazí: {date}",
+      "withdrawals": "Výbery"
     }
   },
   "common": {
@@ -56,7 +57,8 @@
     "delete": "Odstrániť",
     "switchLanguage": "Zmeniť jazyk",
     "toggleTheme": "Prepnúť tému",
-    "rules": "Pravidlá pokút"
+    "rules": "Pravidlá pokút",
+    "withdrawals": "Výbery z banky"
   },
   "admin": {
     "users": {
@@ -324,6 +326,44 @@
         "Špeciálne chyby označuje admin ručne po zápase.",
         "Zaplatené pokuty a bonusy sa spätným prepočtom už nemenia."
       ]
+    }
+  },
+  "withdrawals": {
+    "title": "Výbery z banky",
+    "description": "Peniaze vybraté z tímovej banky a na čo sa použili.",
+    "empty": "Zatiaľ sa z banky nič nevybralo.",
+    "totalLabel": "Vybraté celkom",
+    "formTitle": "Nový výber",
+    "amount": "Suma (€)",
+    "amountPlaceholder": "Napr. 85.50",
+    "date": "Dátum",
+    "datePlaceholder": "Vyber dátum",
+    "category": "Kategória",
+    "categoryPlaceholder": "Vyber kategóriu",
+    "descriptionLabel": "Na čo to bolo",
+    "descriptionPlaceholder": "Napr. Občerstvenie na domáci zápas",
+    "save": "Uložiť výber",
+    "saving": "Ukladám...",
+    "delete": "Zmazať",
+    "deleteTitle": "Zmazať výber?",
+    "deleteDescription": "Záznam sa odstráni a suma sa vráti do zostatku banky. Nedá sa to vrátiť.",
+    "addedBy": "Pridal: {name}",
+    "season": "Sezóna",
+    "listTitle": "História výberov",
+    "categories": {
+      "food": "Jedlo a občerstvenie",
+      "equipment": "Vybavenie",
+      "travel": "Cestovné",
+      "other": "Iné"
+    },
+    "errors": {
+      "unauthorized": "Na túto akciu nemáš oprávnenie.",
+      "invalidAmount": "Zadaj sumu väčšiu ako 0 a maximálne 10 000 €.",
+      "invalidDescription": "Popíš, na čo peniaze išli (3 až 300 znakov).",
+      "invalidCategory": "Vyber kategóriu výberu.",
+      "invalidDate": "Zadaj platný dátum, ktorý patrí do niektorej sezóny a nie je v budúcnosti.",
+      "notFound": "Výber sa nenašiel.",
+      "unknown": "Niekde sa stala chyba, skús to znova."
     }
   }
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, Sun, Moon, Languages, Users, RefreshCw, ClipboardList, LogOut, ChevronDown, Check,
-  BookOpen,
+  BookOpen, Wallet,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ interface MobileNavProps {
   lang: Locale;
   translations: {
     rules: string;
+    withdrawals: string;
     manageUsers: string;
     manualMatches: string;
     syncData: string;
@@ -108,6 +109,14 @@ export function MobileNav({
                 >
                   <BookOpen className="size-4 text-muted-foreground" />
                   <span>{translations.rules}</span>
+                </Link>
+
+                <Link
+                  href={`/${lang}/withdrawals`}
+                  className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
+                >
+                  <Wallet className="size-4 text-muted-foreground" />
+                  <span>{translations.withdrawals}</span>
                 </Link>
 
                 {user.role === 'admin' && (

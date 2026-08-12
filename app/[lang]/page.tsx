@@ -160,6 +160,18 @@ export default async function Home({
               </dd>
             </div>
 
+            {bankBalance.withdrawals > 0 && (
+              <div className={BANK_ROW}>
+                <dt className={BANK_LABEL}>{dict.home.bank.withdrawals}</dt>
+                <dd className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
+                  -
+                  {bankBalance.withdrawals.toFixed(2)}
+                  {' '}
+                  €
+                </dd>
+              </div>
+            )}
+
             <div className={BANK_ROW}>
               <dt className={BANK_LABEL}>{dict.home.bank.bonusesTotal}</dt>
               <dd className={BANK_VALUE}>

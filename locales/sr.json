@@ -39,7 +39,8 @@
       "bonusesToPay": "Treba isplatiti",
       "topDonator": "Najveći donator",
       "belowLimit": "Ispod limita (3750)",
-      "nextPickup": "Sledeće podizanje novca: {date}"
+      "nextPickup": "Sledeće podizanje novca: {date}",
+      "withdrawals": "Podizanja"
     }
   },
   "common": {
@@ -56,7 +57,8 @@
     "delete": "Izbriši",
     "switchLanguage": "Promeni jezik",
     "toggleTheme": "Promeni temu",
-    "rules": "Pravila kazni"
+    "rules": "Pravila kazni",
+    "withdrawals": "Podizanja iz banke"
   },
   "admin": {
     "users": {
@@ -324,6 +326,44 @@
         "Posebne greške admin označava ručno, posle meča.",
         "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju."
       ]
+    }
+  },
+  "withdrawals": {
+    "title": "Podizanja iz banke",
+    "description": "Novac podignut iz timske banke i za šta je potrošen.",
+    "empty": "Za sada nije bilo podizanja iz banke.",
+    "totalLabel": "Ukupno podignuto",
+    "formTitle": "Novo podizanje",
+    "amount": "Iznos (€)",
+    "amountPlaceholder": "Npr. 85.50",
+    "date": "Datum",
+    "datePlaceholder": "Izaberi datum",
+    "category": "Kategorija",
+    "categoryPlaceholder": "Izaberi kategoriju",
+    "descriptionLabel": "Za šta je bilo",
+    "descriptionPlaceholder": "Npr. Osveženje za domaći meč",
+    "save": "Sačuvaj podizanje",
+    "saving": "Čuvam...",
+    "delete": "Izbriši",
+    "deleteTitle": "Izbrisati podizanje?",
+    "deleteDescription": "Zapis se briše, a iznos se vraća u stanje banke. Ne može da se poništi.",
+    "addedBy": "Dodao: {name}",
+    "season": "Sezona",
+    "listTitle": "Istorija podizanja",
+    "categories": {
+      "food": "Hrana i osveženje",
+      "equipment": "Oprema",
+      "travel": "Putni troškovi",
+      "other": "Ostalo"
+    },
+    "errors": {
+      "unauthorized": "Nemaš dozvolu za ovu akciju.",
+      "invalidAmount": "Unesi iznos veći od 0 i najviše 10 000 €.",
+      "invalidDescription": "Opiši za šta je novac potrošen (3 do 300 karaktera).",
+      "invalidCategory": "Izaberi kategoriju podizanja.",
+      "invalidDate": "Unesi ispravan datum koji pripada nekoj sezoni i nije u budućnosti.",
+      "notFound": "Podizanje nije pronađeno.",
+      "unknown": "Došlo je do greške, pokušaj ponovo."
     }
   }
 }

@@ -39,7 +39,8 @@
       "bonusesToPay": "Kifizetésre vár",
       "topDonator": "Legnagyobb adományozó",
       "belowLimit": "Limit alatt (3750)",
-      "nextPickup": "Következő pénzfelvétel: {date}"
+      "nextPickup": "Következő pénzfelvétel: {date}",
+      "withdrawals": "Kivétek"
     }
   },
   "common": {
@@ -56,7 +57,8 @@
     "delete": "Törlés",
     "switchLanguage": "Nyelvváltás",
     "toggleTheme": "Téma váltása",
-    "rules": "Büntetések szabályai"
+    "rules": "Büntetések szabályai",
+    "withdrawals": "Kivétek a kasszából"
   },
   "admin": {
     "users": {
@@ -324,6 +326,44 @@
         "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
         "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg."
       ]
+    }
+  },
+  "withdrawals": {
+    "title": "Kivétek a kasszából",
+    "description": "A csapatkasszából kivett pénz és annak felhasználása.",
+    "empty": "Eddig nem volt kivét a kasszából.",
+    "totalLabel": "Összesen kivéve",
+    "formTitle": "Új kivét",
+    "amount": "Összeg (€)",
+    "amountPlaceholder": "Pl. 85.50",
+    "date": "Dátum",
+    "datePlaceholder": "Válassz dátumot",
+    "category": "Kategória",
+    "categoryPlaceholder": "Válassz kategóriát",
+    "descriptionLabel": "Mire ment el",
+    "descriptionPlaceholder": "Pl. Frissítő a hazai meccsre",
+    "save": "Kivét mentése",
+    "saving": "Mentés...",
+    "delete": "Törlés",
+    "deleteTitle": "Törlöd a kivétet?",
+    "deleteDescription": "A bejegyzés törlődik és az összeg visszakerül a kassza egyenlegébe. Nem vonható vissza.",
+    "addedBy": "Hozzáadta: {name}",
+    "season": "Szezon",
+    "listTitle": "Kivétek előzményei",
+    "categories": {
+      "food": "Étel és frissítő",
+      "equipment": "Felszerelés",
+      "travel": "Útiköltség",
+      "other": "Egyéb"
+    },
+    "errors": {
+      "unauthorized": "Nincs jogosultságod ehhez a művelethez.",
+      "invalidAmount": "Adj meg 0-nál nagyobb, legfeljebb 10 000 €-s összeget.",
+      "invalidDescription": "Írd le, mire ment el a pénz (3–300 karakter).",
+      "invalidCategory": "Válassz kategóriát a kivéthez.",
+      "invalidDate": "Adj meg érvényes dátumot, amely egy szezonba esik és nem a jövőben van.",
+      "notFound": "A kivét nem található.",
+      "unknown": "Hiba történt, próbáld újra."
     }
   }
 }

@@ -163,6 +163,17 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
 
+### Bank Withdrawals
+- `bank_withdrawals` is hand-entered money leaving the bank (food, gear, travel), never derived from match data, so `recalculateDerivedFinancials()` neither writes nor reads it.
+- A withdrawal has a season (derived from its date by `getSeasonIdForDate()`) but no league, so it counts only under the "all" league filter — same rule as `streak_fine`. `withdrawalTotal()` in `lib/db-utils.ts` is the only place that decides this.
+- It lowers `TeamBankBalance.total` and never touches `unpaid`: unpaid answers who still owes the bank, a withdrawal is money already spent.
+- Writes go through `lib/bank-withdrawal-actions.ts` (admin only) and must call `updateSyncedData()`, because the bank total is served from the `home-data` cache.
+- The category list lives in `lib/withdrawal-categories.ts`, apart from `lib/bank-withdrawals.ts`, because the form is a client component and the query module is not importable from one.
+
+### Client/Server Boundary
+- A `'use client'` file must never import a module whose import graph reaches `lib/db.ts` — not even for a constant or a type-only symbol, because the import still pulls the module into the browser bundle. `lib/db.ts` throws `DATABASE_URL is not defined in environment variables` at module scope, and in the browser that variable is always undefined: it has no `NEXT_PUBLIC_` prefix, so Next never inlines it. The page then fails to render with an error that reads like a missing environment variable even though the server has it.
+- Keep shared constants, enums, and types that both the client and a query module need in their own db-free file (`lib/withdrawal-categories.ts` is the pattern), and let the server module re-import them.
+
 ### Caching
 - Cached reads live for a week (`SYNCED_DATA_REVALIDATE_SECONDS`); freshness comes from explicit invalidation, not expiry. Any write that changes synced data must invalidate.
 - `revalidateSyncedData()` (stale-while-revalidate, for the weekly cron) is **route-handler only**. `updateSyncedData()` (expires immediately, for the admin Sync button) is for server actions. Neither may be called from `scripts/run-sync.ts`, which runs outside Next and would throw. CLI scripts invalidate over HTTP instead, via `requestSyncedDataRevalidation()` (`lib/revalidate-client.ts`) hitting `POST /api/revalidate` with `CRON_SECRET`; without it, each `(playerId, seasonId, leagueKey)` cache entry ages independently and different filters show different eras of the same data.

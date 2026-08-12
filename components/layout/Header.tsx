@@ -15,6 +15,7 @@ export async function Header({ lang }: { lang: Locale }) {
 
   const translations = {
     rules: dict.common.rules,
+    withdrawals: dict.common.withdrawals,
     manageUsers: dict.common.manageUsers,
     manualMatches: dict.common.manualMatches,
     syncData: dict.common.syncData,
@@ -54,6 +55,7 @@ export async function Header({ lang }: { lang: Locale }) {
               lang={lang}
               translations={{
                 rules: dict.common.rules,
+                withdrawals: dict.common.withdrawals,
                 manageUsers: dict.common.manageUsers,
                 manualMatches: dict.common.manualMatches,
                 syncData: dict.common.syncData,

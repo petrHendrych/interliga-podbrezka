@@ -11,6 +11,7 @@ import {
   serial,
   primaryKey,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 import { sql, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 
@@ -83,6 +84,20 @@ export const trainerPayments = pgTable('trainer_payments', {
   uniqueIndex('idx_trainer_payments_match_user_condition').on(table.matchId, table.userId, table.conditionType),
 ]);
 
+export const bankWithdrawals = pgTable('bank_withdrawals', {
+  id: serial('id').primaryKey(),
+  amount: numeric('amount').notNull(),
+  description: text('description').notNull(),
+  category: text('category').notNull(),
+  withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }).notNull(),
+  seasonId: integer('season_id').notNull(),
+  // Set null rather than restrict: the history must outlive the admin who entered it.
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index('idx_bank_withdrawals_season_date').on(table.seasonId, table.withdrawnAt),
+]);
+
 export const scrapedData = pgTable('scraped_data', {
   id: serial('id').primaryKey(),
   type: text('type').notNull(),
@@ -115,6 +130,8 @@ export type MatchPlayerResult = InferSelectModel<typeof matchPlayerResults>;
 export type NewMatchPlayerResult = InferInsertModel<typeof matchPlayerResults>;
 export type TrainerPayment = InferSelectModel<typeof trainerPayments>;
 export type NewTrainerPayment = InferInsertModel<typeof trainerPayments>;
+export type BankWithdrawal = InferSelectModel<typeof bankWithdrawals>;
+export type NewBankWithdrawal = InferInsertModel<typeof bankWithdrawals>;
 export type ScrapedData = InferSelectModel<typeof scrapedData>;
 export type NewScrapedData = InferInsertModel<typeof scrapedData>;
 export type SystemStatus = InferSelectModel<typeof systemStatus>;
