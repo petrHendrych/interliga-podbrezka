@@ -4,9 +4,9 @@ description: pnpm and Node with the dependencies installed from the lockfile.
 runs:
   using: composite
   steps:
+    # No version here: the action reads packageManager from package.json, and
+    # specifying both is an error.
     - uses: pnpm/action-setup@v4
-      with:
-        version: 10
 
     # jsdom needs Node 24.15+, which is what .nvmrc pins.
     - uses: actions/setup-node@v4
