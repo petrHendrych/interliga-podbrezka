@@ -55,7 +55,8 @@
     "cancel": "Otkaži",
     "delete": "Izbriši",
     "switchLanguage": "Promeni jezik",
-    "toggleTheme": "Promeni temu"
+    "toggleTheme": "Promeni temu",
+    "rules": "Pravila kazni"
   },
   "admin": {
     "users": {
@@ -231,6 +232,98 @@
       "invalidCredentials": "Pogrešan email ili lozinka",
       "dbError": "Greška u vezi sa bazom podataka",
       "notApproved": "Tvoj nalog čeka na odobrenje administratora."
+    }
+  },
+  "rules": {
+    "pageTitle": "Pravila kazni | Interliga Podbrezová",
+    "pageDescription": "Pregled kazni i bonusa za igrače i trenera.",
+    "title": "Pravila kazni",
+    "subtitle": "Kako se računaju kazne i bonusi. Svi iznosi važe za jedan meč.",
+    "finesLabel": "Kazne",
+    "bonusesLabel": "Bonusi",
+    "player": {
+      "title": "Igrač",
+      "description": "Uplaćuje u timsku kasu, a za dobru igru dobija bonus.",
+      "fines": [
+        {
+          "title": "Ukupno ispod 600",
+          "amount": "1 €",
+          "note": "Za svaki meč u kom oboriš manje od 600."
+        },
+        {
+          "title": "Najslabiji u timu",
+          "amount": "1 €",
+          "note": "Najniži ukupan rezultat među igračima koji su igrali na meču."
+        },
+        {
+          "title": "Greške",
+          "amount": "1 € + 2 € + 3 € …",
+          "note": "Sabira se redni broj svake greške."
+        },
+        {
+          "title": "Posebne greške",
+          "amount": "5 €",
+          "note": "Za svaku grešku u pune i za svako propušteno pretposlednje bacanje."
+        },
+        {
+          "title": "Tim ispod 3750",
+          "amount": "10 €",
+          "note": "Za svakog igrača koji je igrao na meču. Važi za domaće mečeve Interlige i za turnire, i kod kuće i u gostima. Tačno 3750 je u redu, kažnjava se tek manje."
+        },
+        {
+          "title": "Mečevi bez greške",
+          "amount": "10 €",
+          "note": "Za 5. i svaki naredni meč u nizu bez greške. Niz se broji kroz sva takmičenja."
+        }
+      ],
+      "faultsFormulaLabel": "Kako rastu kazne za greške",
+      "faultsFormula": [
+        "1 greška = 1 €",
+        "2 greške = 1 + 2 = 3 €",
+        "3 greške = 1 + 2 + 3 = 6 €",
+        "n grešaka = n × (n + 1) / 2"
+      ],
+      "bonuses": [
+        {
+          "title": "Ukupno preko 700",
+          "amount": "40 €",
+          "note": "30 € iz timske kase + 10 € od trenera."
+        }
+      ]
+    },
+    "trainer": {
+      "title": "Trener",
+      "description": "Trener ne plaća nikakve kazne. Ove iznose on isplaćuje timu i igračima.",
+      "bonuses": [
+        {
+          "title": "Tim preko 3800",
+          "amount": "10 €",
+          "note": "Ukupan rezultat tima je veći od 3800."
+        },
+        {
+          "title": "Tim preko 3900",
+          "amount": "15 €",
+          "note": "Zamenjuje 10 € za 3800, ne sabira se."
+        },
+        {
+          "title": "Tim bez greške",
+          "amount": "10 €",
+          "note": "Ceo tim odigra meč bez ijedne greške i igralo je bar 6 igrača."
+        },
+        {
+          "title": "Igrač preko 700",
+          "amount": "10 €",
+          "note": "Za svakog igrača koji na meču obori više od 700."
+        }
+      ]
+    },
+    "notes": {
+      "title": "Napomene",
+      "items": [
+        "Kazna za mečeve bez greške vodi se posebno. Nećeš je naći u iznosima po takmičenjima jer se računa kroz sva.",
+        "Posebne greške admin označava ručno, posle meča.",
+        "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju."
+      ]
     }
   }
 }

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  ChevronDown, Users, RefreshCw, ClipboardList, LogOut,
+  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,7 @@ interface UserDropdownProps {
   };
   lang: Locale;
   translations: {
+    rules: string;
     manageUsers: string;
     manualMatches: string;
     syncData: string;
@@ -64,6 +65,16 @@ export function UserDropdown({
           <ChevronDown className="size-3.5 text-muted-foreground shrink-0 transition-transform duration-200" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 p-1.5">
+          <DropdownMenuItem className="gap-2 cursor-pointer py-2">
+            <Link
+              href={`/${lang}/rules`}
+              className="flex items-center gap-2 w-full"
+            >
+              <BookOpen className="size-4 text-muted-foreground" />
+              <span>{translations.rules}</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {isAdmin && (
             <>
               <DropdownMenuItem className="gap-2 cursor-pointer py-2">

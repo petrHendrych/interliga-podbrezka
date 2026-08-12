@@ -55,7 +55,8 @@
     "cancel": "Mégse",
     "delete": "Törlés",
     "switchLanguage": "Nyelvváltás",
-    "toggleTheme": "Téma váltása"
+    "toggleTheme": "Téma váltása",
+    "rules": "Büntetések szabályai"
   },
   "admin": {
     "users": {
@@ -231,6 +232,98 @@
       "invalidCredentials": "Helytelen email vagy jelszó",
       "dbError": "Hiba az adatbázis-kapcsolatban",
       "notApproved": "A fiókod adminisztrátori jóváhagyásra vár."
+    }
+  },
+  "rules": {
+    "pageTitle": "Büntetések szabályai | Interliga Podbrezová",
+    "pageDescription": "A játékosok és az edző büntetéseinek és bónuszainak áttekintése.",
+    "title": "Büntetések szabályai",
+    "subtitle": "Így számoljuk a büntetéseket és a bónuszokat. Minden összeg egy meccsre vonatkozik.",
+    "finesLabel": "Büntetések",
+    "bonusesLabel": "Bónuszok",
+    "player": {
+      "title": "Játékos",
+      "description": "A csapatkasszába fizet, és teljesítményért bónuszt kap.",
+      "fines": [
+        {
+          "title": "Összesen 600 alatt",
+          "amount": "1 €",
+          "note": "Minden meccsért, ahol 600-nál kevesebbet dobsz."
+        },
+        {
+          "title": "A csapat leggyengébbje",
+          "amount": "1 €",
+          "note": "A legalacsonyabb összeredmény azok között, akik a meccsen játszottak."
+        },
+        {
+          "title": "Hibák",
+          "amount": "1 € + 2 € + 3 € …",
+          "note": "Minden hiba sorszámát összeadjuk."
+        },
+        {
+          "title": "Különleges hibák",
+          "amount": "5 €",
+          "note": "Minden teliből vétett hibáért és minden kihagyott utolsó előtti dobásért."
+        },
+        {
+          "title": "Csapat 3750 alatt",
+          "amount": "10 €",
+          "note": "Minden játékosnak, aki a meccsen játszott. Az Interliga hazai meccseire és a tornákra vonatkozik, itthon és idegenben is. Pontosan 3750 még rendben van, csak az az alatti számít."
+        },
+        {
+          "title": "Hibátlan meccsek",
+          "amount": "10 €",
+          "note": "Az 5. és minden további hiba nélküli meccsért sorozatban. A sorozat minden versenyen át számít."
+        }
+      ],
+      "faultsFormulaLabel": "Így nőnek a hibák büntetései",
+      "faultsFormula": [
+        "1 hiba = 1 €",
+        "2 hiba = 1 + 2 = 3 €",
+        "3 hiba = 1 + 2 + 3 = 6 €",
+        "n hiba = n × (n + 1) / 2"
+      ],
+      "bonuses": [
+        {
+          "title": "Összesen 700 felett",
+          "amount": "40 €",
+          "note": "30 € a csapatkasszából + 10 € az edzőtől."
+        }
+      ]
+    },
+    "trainer": {
+      "title": "Edző",
+      "description": "Az edző nem fizet büntetést. Ezeket az összegeket ő fizeti ki a csapatnak és a játékosoknak.",
+      "bonuses": [
+        {
+          "title": "Csapat 3800 felett",
+          "amount": "10 €",
+          "note": "A csapat összeredménye több mint 3800."
+        },
+        {
+          "title": "Csapat 3900 felett",
+          "amount": "15 €",
+          "note": "A 3800-ért járó 10 € helyett, nem adódik hozzá."
+        },
+        {
+          "title": "Csapat hiba nélkül",
+          "amount": "10 €",
+          "note": "Az egész csapat egyetlen hiba nélkül játszik, és legalább 6 játékos lépett pályára."
+        },
+        {
+          "title": "Játékos 700 felett",
+          "amount": "10 €",
+          "note": "Minden játékosért, aki a meccsen 700-nál többet dob."
+        }
+      ]
+    },
+    "notes": {
+      "title": "Megjegyzések",
+      "items": [
+        "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert minden versenyen át számoljuk.",
+        "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
+        "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg."
+      ]
     }
   }
 }

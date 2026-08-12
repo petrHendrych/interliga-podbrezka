@@ -55,7 +55,8 @@
     "cancel": "Zrušiť",
     "delete": "Odstrániť",
     "switchLanguage": "Zmeniť jazyk",
-    "toggleTheme": "Prepnúť tému"
+    "toggleTheme": "Prepnúť tému",
+    "rules": "Pravidlá pokút"
   },
   "admin": {
     "users": {
@@ -231,6 +232,98 @@
       "invalidCredentials": "Nesprávny email alebo heslo",
       "dbError": "Chyba pripojenia k databáze",
       "notApproved": "Tvoj účet čaká na schválenie administrátorom."
+    }
+  },
+  "rules": {
+    "pageTitle": "Pravidlá pokút | Interliga Podbrezová",
+    "pageDescription": "Prehľad pokút a bonusov pre hráčov a trénera.",
+    "title": "Pravidlá pokút",
+    "subtitle": "Ako sa počítajú pokuty a bonusy. Všetky sumy sú za jeden zápas.",
+    "finesLabel": "Pokuty",
+    "bonusesLabel": "Bonusy",
+    "player": {
+      "title": "Hráč",
+      "description": "Platí do tímovej banky, dostáva bonus za výkon.",
+      "fines": [
+        {
+          "title": "Celkom pod 600",
+          "amount": "1 €",
+          "note": "Za každý zápas, v ktorom nahráš menej ako 600."
+        },
+        {
+          "title": "Najhorší v tíme",
+          "amount": "1 €",
+          "note": "Najnižší celkový nához spomedzi hráčov, ktorí v zápase hrali."
+        },
+        {
+          "title": "Chyby",
+          "amount": "1 € + 2 € + 3 € …",
+          "note": "Sčítava sa poradové číslo každej chyby."
+        },
+        {
+          "title": "Špeciálne chyby",
+          "amount": "5 €",
+          "note": "Za každú chybu do plných a za každý vynechaný predposledný hod."
+        },
+        {
+          "title": "Tím pod 3750",
+          "amount": "10 €",
+          "note": "Pre každého hráča, ktorý v zápase hral. Platí pre domáce zápasy Interligy a pre turnaje doma aj vonku. Presne 3750 je v pohode, trestá sa až menej."
+        },
+        {
+          "title": "Zápasy bez chyby",
+          "amount": "10 €",
+          "note": "Za 5. a každý ďalší zápas v rade bez chyby. Séria sa počíta naprieč všetkými súťažami."
+        }
+      ],
+      "faultsFormulaLabel": "Ako rastú pokuty za chyby",
+      "faultsFormula": [
+        "1 chyba = 1 €",
+        "2 chyby = 1 + 2 = 3 €",
+        "3 chyby = 1 + 2 + 3 = 6 €",
+        "n chýb = n × (n + 1) / 2"
+      ],
+      "bonuses": [
+        {
+          "title": "Celkom nad 700",
+          "amount": "40 €",
+          "note": "30 € z tímovej banky + 10 € od trénera."
+        }
+      ]
+    },
+    "trainer": {
+      "title": "Tréner",
+      "description": "Tréner neplatí žiadne pokuty. Tieto sumy vypláca tímu a hráčom.",
+      "bonuses": [
+        {
+          "title": "Tím nad 3800",
+          "amount": "10 €",
+          "note": "Celkový nához tímu je vyšší ako 3800."
+        },
+        {
+          "title": "Tím nad 3900",
+          "amount": "15 €",
+          "note": "Nahrádza 10 € za 3800, nesčítava sa."
+        },
+        {
+          "title": "Tím bez chyby",
+          "amount": "10 €",
+          "note": "Celý tím odohrá zápas bez jedinej chyby a hralo aspoň 6 hráčov."
+        },
+        {
+          "title": "Hráč nad 700",
+          "amount": "10 €",
+          "note": "Za každého hráča, ktorý v zápase nahrá viac ako 700."
+        }
+      ]
+    },
+    "notes": {
+      "title": "Poznámky",
+      "items": [
+        "Pokuta za zápasy bez chyby je vedená zvlášť. V sumách za jednotlivé súťaže ju nenájdeš, lebo sa počíta naprieč všetkými.",
+        "Špeciálne chyby označuje admin ručne po zápase.",
+        "Zaplatené pokuty a bonusy sa spätným prepočtom už nemenia."
+      ]
     }
   }
 }

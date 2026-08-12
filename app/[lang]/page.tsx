@@ -347,9 +347,10 @@ export default async function Home({
                         {trainer.name}
                       </h2>
                       <span className={PERSON_MATCHES}>
-                        –
                         {' '}
+                        (
                         {dict.home.trainerLabel}
+                        )
                       </span>
                     </div>
 
@@ -358,18 +359,21 @@ export default async function Home({
                         <span className={STAT_LABEL}>{dict.home.count3800}</span>
                         <span className={`${STAT_VALUE} font-bold`}>
                           {trainer.stats.count3800}
+                          x
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.count3900}</span>
                         <span className={`${STAT_VALUE} font-bold`}>
                           {trainer.stats.count3900}
+                          x
                         </span>
                       </div>
                       <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
                         <span className={`${STAT_VALUE} font-semibold`}>
                           {trainer.stats.zeroMisses}
+                          x
                         </span>
                       </div>
                       <div className={STAT_TILE}>
