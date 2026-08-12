@@ -80,39 +80,63 @@ When working in plan mode, the plan must be detailed and written to a file — n
 <!-- BEGIN:money-rules -->
 # Money Calculation Rules
 
-Rules for calculating gatherings (fines) and bonuses for each role.
+Rules for calculating gatherings (fines) and bonuses for each role. Every threshold is
+strict — a player on exactly 600 or a team on exactly 3750 is not penalised, and exactly
+700 / 3800 / 3900 earns nothing. `recalculateDerivedFinancials()` in `lib/sync.ts` is the
+only implementation; this section describes it, so the two change together.
 
 ### Role: Player
 **Gatherings (to be paid to the bank):**
-- **Score < 600**: 1€ per game.
-- **Worst in Team**: 1€ per game (lowest total score among players with total > 0).
-- **Team under 3750 (Interliga home matches only)**: 10€ per player who played (total > 0), when the team total is below 3750. Exactly 3750 is fine — only under 3750 is penalised. Does not apply away or in the Slovak Cup.
+- **Total < 600**: 1€ per game. Only for players who actually played (`total > 0`).
+- **Worst in Team**: 1€ per game — the lowest total among players with `total > 0`. On a tie
+  every player on that minimum pays; there is no tie-break.
+- **Team under 3750**: 10€ per player who played (`total > 0`) when the team total is below
+  `TEAM_SCORE_LIMIT`. Applies to **home Interliga matches** and to **tournaments home and
+  away** (`TOURNAMENT_LEAGUE_IDS` — World Cup, Champions League). Away Interliga and the
+  Slovak Cup are exempt.
 - **Faults (Sequential Fine)**: Sum of numeric order of faults. Formula: `(n * (n + 1)) / 2`.
   - 1 fault = 1€
   - 2 faults = 1€ + 2€ = 3€
   - 3 faults = 1€ + 2€ + 3€ = 6€
   - ... and so on.
-- **Special Faults**: 5€ per occurrence (marked manually).
-  - Includes: Fault into playing full, missing 2nd to last throw.
-- **Success Gathering**: 10€ for 5th and every subsequent consecutive game without a fault (5th, 6th, 7th... consecutive game with 0 faults).
+- **Special Faults**: 5€ per occurrence. `special_faults_count` is the sum of
+  `full_faults_count` (fault into playing full) and `second_to_last_faults_count` (missing
+  the 2nd to last throw); both are entered by hand through `lib/match-money.ts`.
+- **Success Gathering**: 10€ for the 5th and every subsequent consecutive game without a
+  fault. Computed automatically from the match history — never marked by hand — and stored
+  in its own `streak_fine` column, never folded into `calculated_fine`.
+
+The first five land in `calculated_fine`; the success gathering lands in `streak_fine`. A
+player's debt for one match row is always `calculated_fine + streak_fine`.
 
 **Bonuses (to be received):**
-- **Score > 700**: 40€ total (30€ from team bank + 10€ from trainer).
+- **Total > 700**: 40€ total (30€ from team bank + 10€ from trainer), written to
+  `bonus_received`.
 
 ### Role: Trainer
-**Payments (to be paid by trainer):**
-- **Team Performance**:
+**Payments (to be paid by trainer)** — rows in `trainer_payments`, one per
+`(match, trainer, condition_type)`. Every **approved** trainer gets the full set, so two
+trainers each owe the full amount.
+- **Team Performance** (`score_bonus`):
   - Team Total > 3800: 10€
   - Team Total > 3900: 15€ (replaces the 3800 bonus, not cumulative).
-- **Zero Faults Bonus**: 10€ if the team plays without any faults (at least 6 players must be present).
-- **Elite Player Bonus**: 10€ paid to any player who scores > 700.
+- **Zero Faults Bonus** (`zero_faults`): 10€ when the team's fault total is 0 and at least
+  6 players actually played (`total > 0`). If no player row carries a fault count at all,
+  the sum is NULL and no bonus is created.
+- **Elite Player Bonus** (`elite_player`): 10€ for each player scoring > 700, stored as a
+  single row per match with `amount = count * 10`.
 
 ### Role: Admin
 **Responsibilities:**
 - Approving new user registrations.
-- Manually marking special faults (playing full fault, 2nd to last throw miss).
-- Manually marking 5-game faultless streaks.
+- Manually marking special misses (fault into playing full, 2nd to last throw miss) — the
+  only money input that is not derived.
+- Marking fines and bonuses as paid.
 - General system maintenance and data synchronization.
+
+The player-facing wording of all of the above lives in the `rules` namespace of
+`locales/{sk,cs,hu,sr}.json` and is rendered by `app/[lang]/rules/page.tsx`. Any change to
+the calculation must update those four files too.
 <!-- END:money-rules -->
 # Codebase Invariants
 
