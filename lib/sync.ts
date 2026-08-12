@@ -17,6 +17,12 @@ import {
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
 import { MatchListItem, parseApiDate } from './api';
+import {
+  type SnapshotRow,
+  computeAverage,
+  isOurTeam,
+  toSnapshotRows,
+} from './sync-transform';
 
 /** Renders a number list for an `IN (...)` clause. */
 function idList(ids: number[]) {
@@ -89,15 +95,6 @@ export interface ScrapePayloads {
   playerResults: Map<number, unknown>;
 }
 
-interface SnapshotRow {
-  externalId: number | null;
-  data: unknown;
-}
-
-function toSnapshotRows(payload: Map<number, unknown>): SnapshotRow[] {
-  return Array.from(payload, ([externalId, data]) => ({ externalId, data }));
-}
-
 /**
  * Single source of truth for every derived money field (see AGENTS.md).
  * Sync upserts write raw scores only; admin actions call this afterwards.
@@ -154,7 +151,7 @@ export async function recalculateDerivedFinancials() {
         is_under_600        = (s.total < 600 AND s.total > 0),
         is_team_under_3750  = s.team_under_3750,
         faultless_streak    = s.streak,
-        bonus_received      = CASE WHEN s.total > 700 THEN 40 ELSE 0 END,
+        bonus_received      = CASE WHEN s.total >= 700 THEN 40 ELSE 0 END,
         calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
                             + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
                             + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
@@ -170,15 +167,15 @@ export async function recalculateDerivedFinancials() {
       SELECT m.external_id AS match_id, m.team_total_score,
              COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
              SUM(mpr.faults) AS team_faults,
-             COUNT(*) FILTER (WHERE mpr.total > 700) AS elite
+             COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
       FROM matches m
       JOIN match_player_results mpr ON mpr.match_id = m.external_id
       GROUP BY 1, 2
     ),
     spec AS (
       SELECT match_id, 'score_bonus' AS condition_type,
-             CASE WHEN team_total_score > 3900 THEN 15
-                  WHEN team_total_score > 3800 THEN 10 END AS amount
+             CASE WHEN team_total_score >= 3900 THEN 15
+                  WHEN team_total_score >= 3800 THEN 10 END AS amount
       FROM agg
       UNION ALL
       SELECT match_id, 'zero_faults',
@@ -206,7 +203,7 @@ export async function recalculateDerivedFinancials() {
         SELECT m.external_id AS match_id, m.team_total_score,
                COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
                SUM(mpr.faults) AS team_faults,
-               COUNT(*) FILTER (WHERE mpr.total > 700) AS elite
+               COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
         FROM matches m
         JOIN match_player_results mpr ON mpr.match_id = m.external_id
         GROUP BY 1, 2
@@ -214,7 +211,7 @@ export async function recalculateDerivedFinancials() {
       SELECT 1 FROM agg
       WHERE agg.match_id = tp.match_id
         AND CASE tp.condition_type
-              WHEN 'score_bonus'  THEN agg.team_total_score > 3800
+              WHEN 'score_bonus'  THEN agg.team_total_score >= 3800
               WHEN 'zero_faults'  THEN agg.team_faults = 0 AND agg.active >= 6
               WHEN 'elite_player' THEN agg.elite > 0
               ELSE true
@@ -286,12 +283,11 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
           const matchId = Number(match.id);
           const dateStr = match.startDate || match.created || null;
           const date = dateStr ? parseApiDate(dateStr) : null;
-          const homeClubId = match.homeTeam?.clubId || match.homeTeam?.club?.id;
-          const homeTeamId = match.homeTeam?.id;
-          const homeName = match.homeTeam?.name || match.homeTeam?.club?.name || '';
-          const isHome = homeClubId === 649
-            || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
-            || homeName.includes('Podbrezová');
+          const isHome = isOurTeam({
+            clubId: match.homeTeam?.clubId || match.homeTeam?.club?.id,
+            teamId: match.homeTeam?.id,
+            name: match.homeTeam?.name || match.homeTeam?.club?.name,
+          });
 
           const opponentTeam = isHome ? match.awayTeam : match.homeTeam;
           const opponent = opponentTeam?.name || opponentTeam?.club?.name || 'Unknown';
@@ -332,9 +328,7 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
               full: Number(item.full || 0),
               clean: Number(item.clean || 0),
               total,
-              avg: String(Number(
-                item.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0),
-              )),
+              avg: String(Number(item.average || computeAverage(total))),
               faults: Number(item.faults || 0),
               teamId: playerTeamId,
             });
@@ -411,12 +405,11 @@ export async function syncData(payloads?: ScrapePayloads) {
       const data = snapshot.data as SyncMatchData;
       matchDataList.push({ matchId, data });
 
-      const homeClubId = data.homeTeam?.club?.id;
-      const homeTeamId = data.homeTeam?.id;
-      const homeName = data.homeTeam?.club?.name || data.homeTeam?.name || '';
-      const isHome = homeClubId === 649
-        || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
-        || homeName.includes('Podbrezová');
+      const isHome = isOurTeam({
+        clubId: data.homeTeam?.club?.id,
+        teamId: data.homeTeam?.id,
+        name: data.homeTeam?.club?.name || data.homeTeam?.name,
+      });
 
       const teamKey = isHome ? 'home' : 'away';
       const teamLineup = data.lineUp?.[teamKey] || data.results?.[teamKey]?.players || [];
@@ -565,17 +558,16 @@ export async function syncData(payloads?: ScrapePayloads) {
     }> = [];
 
     for (const { matchId, data } of matchDataList) {
-      const homeClubId = data.homeTeam?.club?.id;
-      const homeTeamId = data.homeTeam?.id;
-      const homeName = data.homeTeam?.club?.name || data.homeTeam?.name || '';
-      const isHome = homeClubId === 649
-        || (homeTeamId != null && getAllTeamIds().includes(homeTeamId))
-        || homeName.includes('Podbrezová');
+      const isHome = isOurTeam({
+        clubId: data.homeTeam?.club?.id,
+        teamId: data.homeTeam?.id,
+        name: data.homeTeam?.club?.name || data.homeTeam?.name,
+      });
 
       const dateStr = data.details?.date || data.startDate || null;
       const date = dateStr ? parseApiDate(dateStr) : null;
 
-      const matchedTeamId = isHome ? homeTeamId : (data.awayTeam?.id || undefined);
+      const matchedTeamId = isHome ? data.homeTeam?.id : (data.awayTeam?.id || undefined);
       const matchedLeagueId = (data as unknown as { leagueId?: number }).leagueId;
       const config = getSeasonAndLeagueConfig(matchedTeamId, matchedLeagueId, data.league?.name);
 
@@ -629,7 +621,7 @@ export async function syncData(payloads?: ScrapePayloads) {
             const clean = p.clean || 0;
             const total = p.total || 0;
             const faults = p.faults || 0;
-            const avg = p.average || (total > 0 ? Math.round((total / 4) * 10) / 10 : 0);
+            const avg = p.average || computeAverage(total);
             playerResultsList.push({
               userId,
               full,

@@ -287,7 +287,7 @@
       ],
       "bonuses": [
         {
-          "title": "Celkem nad 700",
+          "title": "Celkem 700 a více",
           "amount": "40 €",
           "note": "30 € z týmové banky + 10 € od trenéra."
         }
@@ -298,14 +298,14 @@
       "description": "Trenér neplatí žádné pokuty. Tyto částky vyplácí týmu a hráčům.",
       "bonuses": [
         {
-          "title": "Tým nad 3800",
+          "title": "Tým 3800 a více",
           "amount": "10 €",
-          "note": "Celkový nához týmu je vyšší než 3800."
+          "note": "Celkový nához týmu je 3800 nebo více."
         },
         {
-          "title": "Tým nad 3900",
+          "title": "Tým 3900 a více",
           "amount": "15 €",
-          "note": "Nahrazuje 10 € za 3800, nesčítá se."
+          "note": "Od 3900 nahrazuje 10 € za 3800, nesčítá se."
         },
         {
           "title": "Tým bez chyby",
@@ -313,9 +313,9 @@
           "note": "Celý tým odehraje zápas bez jediné chyby a hrálo aspoň 6 hráčů."
         },
         {
-          "title": "Hráč nad 700",
+          "title": "Hráč 700 a více",
           "amount": "10 €",
-          "note": "Za každého hráče, který v zápase nahraje více než 700."
+          "note": "Za každého hráče, který v zápase nahraje 700 nebo více."
         }
       ]
     },

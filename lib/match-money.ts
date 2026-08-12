@@ -234,6 +234,12 @@ async function applyTrainerUpdates(
   });
 }
 
+/**
+ * Writes money and recalculates, but never invalidates: it runs from `scripts/match-money.ts`,
+ * outside Next, where `updateSyncedData()` throws. The caller owns invalidation — the CLI
+ * calls `requestSyncedDataRevalidation()`, and an in-app caller must call `updateSyncedData()`
+ * or the bank total keeps serving week-old numbers.
+ */
 export async function applyMatchMoneyUpdates(
   matchId: number,
   updates: MatchMoneyUpdates,

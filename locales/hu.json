@@ -287,7 +287,7 @@
       ],
       "bonuses": [
         {
-          "title": "Összesen 700 felett",
+          "title": "Összesen 700-tól",
           "amount": "40 €",
           "note": "30 € a csapatkasszából + 10 € az edzőtől."
         }
@@ -298,14 +298,14 @@
       "description": "Az edző nem fizet büntetést. Ezeket az összegeket ő fizeti ki a csapatnak és a játékosoknak.",
       "bonuses": [
         {
-          "title": "Csapat 3800 felett",
+          "title": "Csapat 3800-tól",
           "amount": "10 €",
-          "note": "A csapat összeredménye több mint 3800."
+          "note": "A csapat összeredménye 3800 vagy több."
         },
         {
-          "title": "Csapat 3900 felett",
+          "title": "Csapat 3900-tól",
           "amount": "15 €",
-          "note": "A 3800-ért járó 10 € helyett, nem adódik hozzá."
+          "note": "3900-tól a 3800-ért járó 10 € helyett, nem adódik hozzá."
         },
         {
           "title": "Csapat hiba nélkül",
@@ -313,9 +313,9 @@
           "note": "Az egész csapat egyetlen hiba nélkül játszik, és legalább 6 játékos lépett pályára."
         },
         {
-          "title": "Játékos 700 felett",
+          "title": "Játékos 700-tól",
           "amount": "10 €",
-          "note": "Minden játékosért, aki a meccsen 700-nál többet dob."
+          "note": "Minden játékosért, aki a meccsen 700-at vagy többet dob."
         }
       ]
     },

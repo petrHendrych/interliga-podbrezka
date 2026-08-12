@@ -1,4 +1,5 @@
 import { DEFAULT_SEASON_ID } from './season-config';
+import { normalizeMatchList } from './sync-transform';
 
 const BASE_URL = 'https://api.vysledky.kolky.sk';
 
@@ -149,8 +150,5 @@ export async function getPlayerDetail(playerId: number) {
 
 export async function getMatchList(teamId: number): Promise<MatchListItem[]> {
   const data = await fetchLeagueApi<{ list?: MatchListItem[] } | MatchListItem[]>('/match/list', { id: teamId });
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return data.list || [];
+  return normalizeMatchList(data);
 }

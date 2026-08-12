@@ -8,76 +8,20 @@ import { db } from './db';
 import { bankWithdrawals } from './db/schema';
 import { getSession } from './session';
 import { updateSyncedData } from './cache';
-import { getSeasonIdForDate } from './season-config';
-import { isWithdrawalCategory } from './withdrawal-categories';
-import { getStartOfBratislavaToday } from './home-helpers';
+import {
+  type WithdrawalError,
+  type WithdrawalInput,
+  validateWithdrawal,
+} from './validation/withdrawal';
 
 const WITHDRAWALS_PATH = '/[lang]/withdrawals';
 const HOME_PATH = '/[lang]';
 
-const MAX_WITHDRAWAL = 10_000;
-const MIN_DESCRIPTION_LENGTH = 3;
-const MAX_DESCRIPTION_LENGTH = 300;
-
-/** Error codes the client maps to a localized message; raw messages never reach it. */
-export type WithdrawalError =
-  | 'unauthorized'
-  | 'invalidAmount'
-  | 'invalidDescription'
-  | 'invalidCategory'
-  | 'invalidDate'
-  | 'notFound'
-  | 'unknown';
+export type { WithdrawalError, WithdrawalInput };
 
 export type WithdrawalResult =
   | { success: true; id: number }
   | { success: false; error: WithdrawalError };
-
-export interface WithdrawalInput {
-  /** Raw field value; parsed here so the client never has to. */
-  amount: string;
-  description: string;
-  category: string;
-  /** `YYYY-MM-DD` from the date picker. */
-  date: string;
-}
-
-interface ValidInput {
-  amount: number;
-  description: string;
-  category: string;
-  withdrawnAt: Date;
-  seasonId: number;
-}
-
-function validate(input: WithdrawalInput): WithdrawalError | ValidInput {
-  const amount = Number.parseFloat(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_WITHDRAWAL) return 'invalidAmount';
-
-  const description = input.description.trim();
-  if (description.length < MIN_DESCRIPTION_LENGTH
-    || description.length > MAX_DESCRIPTION_LENGTH) {
-    return 'invalidDescription';
-  }
-
-  if (!isWithdrawalCategory(input.category)) return 'invalidCategory';
-
-  // Midday UTC keeps the stored day stable across the Bratislava offset.
-  const withdrawnAt = new Date(`${input.date}T12:00:00Z`);
-  if (!input.date || Number.isNaN(withdrawnAt.getTime())) return 'invalidDate';
-  if (input.date > getStartOfBratislavaToday().toISOString().slice(0, 10)) return 'invalidDate';
-
-  const seasonId = getSeasonIdForDate(withdrawnAt);
-  if (seasonId === null) return 'invalidDate';
-
-  return {
-    amount: Math.round(amount * 100) / 100,
-    description,
-    category: input.category,
-    withdrawnAt,
-    seasonId,
-  };
-}
 
 export async function createWithdrawal(input: WithdrawalInput): Promise<WithdrawalResult> {
   const session = await getSession();
@@ -85,7 +29,7 @@ export async function createWithdrawal(input: WithdrawalInput): Promise<Withdraw
     return { success: false, error: 'unauthorized' };
   }
 
-  const validated = validate(input);
+  const validated = validateWithdrawal(input);
   if (typeof validated === 'string') {
     return { success: false, error: validated };
   }

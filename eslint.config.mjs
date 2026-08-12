@@ -53,6 +53,19 @@ const eslintConfig = [
       ],
     },
   },
+  {
+    files: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "vitest.config.ts",
+      "vitest.setup.dom.ts",
+      "test/**/*.ts",
+      "test/**/*.tsx",
+    ],
+    rules: {
+      "import/no-extraneous-dependencies": ["error", { devDependencies: true }],
+    },
+  },
 ];
 
 export default eslintConfig;

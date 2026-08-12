@@ -145,7 +145,7 @@ function idList(ids: number[]) {
   return sql.unsafe(ids.map(Number).join(', '));
 }
 
-function isAllLeagues(leagueKey?: string) {
+export function isAllLeagues(leagueKey?: string) {
   return !leagueKey || leagueKey === 'all';
 }
 
@@ -155,21 +155,21 @@ function isAllLeagues(leagueKey?: string) {
  * than to the league that happened to host the fifth faultless game — league-filtered sums
  * therefore leave it out, and the player detail page surfaces it on its own line.
  */
-function fineAmount(leagueKey?: string) {
+export function fineAmount(leagueKey?: string) {
   return isAllLeagues(leagueKey)
     ? sql`(COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0))`
     : sql`COALESCE(mpr.calculated_fine, 0)`;
 }
 
 /** Withdrawals carry no league, so a league-filtered balance leaves them out. */
-function withdrawalTotal(seasonId: number, leagueKey?: string) {
+export function withdrawalTotal(seasonId: number, leagueKey?: string) {
   return isAllLeagues(leagueKey)
     ? sql`(SELECT COALESCE(SUM(bw.amount), 0) FROM bank_withdrawals bw WHERE bw.season_id = ${seasonId})`
     : sql`0::numeric`;
 }
 
 /** Narrows to one league; expects the `matches` table aliased as `m`. */
-function leagueCondition(leagueKey?: string) {
+export function leagueCondition(leagueKey?: string) {
   if (leagueKey === 'interliga') {
     return sql`AND (m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)}) OR m.league_name ILIKE '%interliga%')`;
   }
