@@ -189,6 +189,14 @@ export function trainerElitePlayerBonus(rows: PlayerRow[]): number | null {
   return elite > 0 ? elite * TRAINER_ELITE_PLAYER_BONUS : null;
 }
 
+/**
+ * Trainer payments are fanned out over `role = 'trainer' AND is_approved` in sync.ts, so
+ * approving one leaves every played match without their rows until a recalculation runs.
+ */
+export function approvalAffectsTrainerPayments(role: string): boolean {
+  return role === 'trainer';
+}
+
 /** Amounts owed to **each** approved trainer for one match; the fan-out is the SQL's job. */
 export function deriveTrainerPayments(
   match: MatchContext,

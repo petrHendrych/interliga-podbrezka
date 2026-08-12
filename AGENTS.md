@@ -279,6 +279,8 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
 - The SQL is not unit testable, so its thresholds and formulas are mirrored by pure functions in `lib/money-rules.ts`, which is what the tests exercise. SQL and mirror change in the same commit — see the Testing Rules.
+- Trainer payments are fanned out over `role = 'trainer' AND is_approved`, so approving a trainer must recalculate: their rows for matches already played do not exist until it runs. `approveUser()` does this; anything else that flips `is_approved` or a role must too.
+- `applyMatchMoneyUpdates()` (`lib/match-money.ts`) recalculates but deliberately never invalidates — it runs from `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws. The caller owns invalidation: the CLI calls `requestSyncedDataRevalidation()`, an in-app caller must call `updateSyncedData()`.
 
 ### Bank Withdrawals
 - `bank_withdrawals` is hand-entered money leaving the bank (food, gear, travel), never derived from match data, so `recalculateDerivedFinancials()` neither writes nor reads it.
@@ -304,6 +306,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 
 ### Auth & Admin
 - Password-reset and similar flows always report success, to prevent e-mail enumeration.
+- Every admin action returns `{ success, error }` with a code the client maps to a localized string — none of them throws. A thrown error reaches the admin as an opaque Next digest, with no way to render the reason.
 - Scraped placeholder users have no e-mail — they exist only so match results have something to hang off. Everything with an e-mail is a real, registered account.
 - `match_player_results` and `trainer_payments` both FK to `users` without cascade, so children go first on delete, and a player with any results cannot simply be removed.
 

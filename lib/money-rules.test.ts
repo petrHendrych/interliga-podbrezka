@@ -7,6 +7,7 @@ import {
 import {
   type MatchContext,
   type PlayerRow,
+  approvalAffectsTrainerPayments,
   derivePlayers,
   deriveTrainerPayments,
   faultFine,
@@ -283,6 +284,16 @@ describe('trainer: elite players', () => {
       player({ userId: 'b', total: 800 }),
       player({ userId: 'c', total: 750 }),
     ])).toBe(30);
+  });
+});
+
+describe('approvalAffectsTrainerPayments', () => {
+  it('is true for a trainer, whose payments only exist once approved', () => {
+    expect(approvalAffectsTrainerPayments('trainer')).toBe(true);
+  });
+
+  it.each(['player', 'admin'])('is false for a %s', (role) => {
+    expect(approvalAffectsTrainerPayments(role)).toBe(false);
   });
 });
 

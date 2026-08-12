@@ -8,6 +8,8 @@ import { db } from './db';
 import { matchPlayerResults, trainerPayments, users } from './db/schema';
 import { getSession } from './session';
 import { updateSyncedData } from './cache';
+import { recalculateDerivedFinancials } from './sync';
+import { approvalAffectsTrainerPayments } from './money-rules';
 
 const USERS_PATH = '/[lang]/admin/users';
 
@@ -24,21 +26,35 @@ export type AdminActionResult =
   | { success: true }
   | { success: false; error: AdminActionError };
 
-export async function approveUser(userId: string) {
+export async function approveUser(userId: string): Promise<AdminActionResult> {
   const session = await getSession();
   if (session?.user.role !== 'admin') {
-    throw new Error('Unauthorized');
+    return { success: false, error: 'unauthorized' };
   }
 
   try {
-    await db
+    const [approved] = await db
       .update(users)
       .set({ isApproved: true })
-      .where(eq(users.id, userId));
+      .where(eq(users.id, userId))
+      .returning({ role: users.role });
+
+    if (!approved) {
+      return { success: false, error: 'notFound' };
+    }
+
+    // A trainer earns from every match already played, but their payment rows only exist
+    // once the recalculation sees them approved.
+    if (approvalAffectsTrainerPayments(approved.role)) {
+      await recalculateDerivedFinancials();
+    }
+
+    updateSyncedData();
     revalidatePath(USERS_PATH, 'page');
+    return { success: true };
   } catch (error) {
     console.error('Failed to approve user:', error);
-    throw new Error('Failed to approve user');
+    return { success: false, error: 'unknown' };
   }
 }
 

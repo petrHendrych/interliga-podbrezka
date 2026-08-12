@@ -1,14 +1,13 @@
 import { desc, sql } from 'drizzle-orm';
 import {
-  Bot, CircleUserRound, Link2, Mail, UserRoundCheck,
+  Bot, CircleUserRound, Link2, Mail,
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { matchPlayerResults, users as usersTable } from '@/lib/db/schema';
-import { Button } from '@/components/ui/button';
-import { approveUser } from '@/lib/admin-actions';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import type { Dictionary } from '@/lib/i18n/types';
+import { ApproveUserButton } from './ApproveUserButton';
 import { DeleteUserButton } from './DeleteUserButton';
 import { LinkPlayerDialog, type LinkCandidate } from './LinkPlayerDialog';
 
@@ -171,12 +170,11 @@ export default async function AdminUsersPage({
                   )}
 
                   <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                    <form action={approveUser.bind(null, user.id)}>
-                      <Button type="submit" size="sm">
-                        <UserRoundCheck />
-                        {t.approve}
-                      </Button>
-                    </form>
+                    <ApproveUserButton
+                      userId={user.id}
+                      label={t.approve}
+                      translations={{ errors: t.errors }}
+                    />
                     <DeleteUserButton
                       userId={user.id}
                       label={t.reject}
