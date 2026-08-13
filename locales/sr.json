@@ -365,5 +365,18 @@
       "notFound": "Podizanje nije pronađeno.",
       "unknown": "Došlo je do greške, pokušaj ponovo."
     }
+  },
+  "pwa": {
+    "installTitle": "Instaliraj aplikaciju",
+    "installDescription": "Dodaj Interligu na početni ekran telefona i otvaraj je kao običnu aplikaciju.",
+    "installButton": "Instaliraj",
+    "dismiss": "Ne sada",
+    "iosInstructionsTitle": "Na iPhone-u to radiš ovako",
+    "iosInstructionsStep1": "Dodirni dugme Podeli u donjoj traci Safarija.",
+    "iosInstructionsStep2": "Izaberi „Dodaj na početni ekran“ i potvrdi.",
+    "offlineTitle": "Nisi na mreži",
+    "offlineDescription": "Stranica nije mogla da se učita. Proveri vezu i pokušaj ponovo.",
+    "retry": "Pokušaj ponovo",
+    "offlineBanner": "Nisi na mreži. Zahtevi na čekanju biće završeni kada se veza vrati."
   }
 }

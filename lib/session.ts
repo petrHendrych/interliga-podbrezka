@@ -1,10 +1,9 @@
 import { cookies } from 'next/headers';
 import { encrypt, decrypt, type UserPayload } from './auth';
-
-const SESSION_COOKIE_NAME = 'session';
+import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from './session-config';
 
 export async function setSession(user: UserPayload) {
-  const expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
+  const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
   const session = await encrypt({ user, expires });
 
   const cookieStore = await cookies();
@@ -26,5 +25,12 @@ export async function getSession() {
 
 export async function clearSession() {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, '', { expires: new Date(0) });
+  // The attributes must match the ones setSession wrote, or the browser keeps the old cookie.
+  cookieStore.set(SESSION_COOKIE_NAME, '', {
+    expires: new Date(0),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
 }

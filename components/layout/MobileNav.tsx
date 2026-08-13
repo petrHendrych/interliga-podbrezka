@@ -11,6 +11,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { signOut } from '@/lib/auth-actions';
+import { clearServiceWorkerCaches } from '@/lib/pwa/clear-service-worker-caches';
 import { Locale } from '@/lib/i18n/config';
 import { LANGUAGES, changeLanguage } from '@/lib/i18n/languages';
 import { useSyncData } from '@/lib/hooks/useSyncData';
@@ -231,6 +232,7 @@ export function MobileNav({
               <button
                 type="button"
                 onClick={async () => {
+                  clearServiceWorkerCaches();
                   await signOut(lang);
                 }}
                 className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20 font-medium transition-colors w-full"

@@ -73,7 +73,7 @@ export default async function OpengraphImage({
             height: 4,
             margin: '40px 0 32px',
             borderRadius: 2,
-            background: 'linear-gradient(to right, #ed5350, rgba(237, 83, 80, 0))',
+            background: 'linear-gradient(to right, #4ade80, rgba(74, 222, 128, 0))',
           }}
         />
         <div style={{ fontSize: 34, fontWeight: 600, color: '#99a1af' }}>

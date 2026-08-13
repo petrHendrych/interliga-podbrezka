@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import {
+  afterEach, describe, expect, it, vi,
+} from 'vitest';
 import { NextRequest } from 'next/server';
-import { encrypt } from '@/lib/auth';
+import { decrypt, encrypt } from '@/lib/auth';
+import { SESSION_COOKIE_NAME, SESSION_REFRESH_AFTER_SECONDS } from '@/lib/session-config';
 import { proxy } from '@/proxy';
 
 const expires = new Date('2026-08-12T12:00:00Z');
@@ -28,6 +31,22 @@ describe('public routes', () => {
   it('lets sign-in and the OG image through without a session', async () => {
     expect((await proxy(request('/sk/sign-in'))).headers.get('location')).toBeNull();
     expect((await proxy(request('/sk/opengraph-image'))).headers.get('location')).toBeNull();
+  });
+
+  it('lets the offline page through without a session, in every locale', async () => {
+    // The service worker precaches it before the first sign-in, and an expired session must
+    // not turn the offline fallback into a sign-in redirect that also fails offline.
+    await Promise.all(
+      ['sk', 'cs', 'hu', 'sr'].map(async (locale) => {
+        const res = await proxy(request(`/${locale}/offline`));
+        expect(res.headers.get('location')).toBeNull();
+      }),
+    );
+  });
+
+  it('still adds the locale to a bare /offline', async () => {
+    const res = await proxy(request('/offline'));
+    expect(location(res).pathname).toBe('/sk/offline');
   });
 });
 
@@ -96,5 +115,32 @@ describe('admin guard', () => {
     // locale redirect above, these build a fresh URL instead of cloning `nextUrl`.
     const res = await proxy(request('/sk/rules?season=12'));
     expect(location(res).search).toBe('');
+  });
+});
+
+describe('rolling session', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('leaves a fresh session alone', async () => {
+    const res = await proxy(request('/sk/rules', { session: await sessionCookie('player') }));
+    expect(res.cookies.get(SESSION_COOKIE_NAME)).toBeUndefined();
+  });
+
+  it('re-issues the cookie once the token is past the halfway mark', async () => {
+    const cookie = await sessionCookie('player');
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + (SESSION_REFRESH_AFTER_SECONDS + 60) * 1000);
+
+    const res = await proxy(request('/sk/rules', { session: cookie }));
+    const refreshed = res.cookies.get(SESSION_COOKIE_NAME);
+
+    expect(refreshed?.value).toBeTruthy();
+    expect(refreshed?.value).not.toBe(cookie);
+    expect(refreshed?.httpOnly).toBe(true);
+    expect(refreshed?.sameSite).toBe('lax');
+    expect(refreshed?.path).toBe('/');
+    expect(await decrypt(refreshed!.value)).toMatchObject({ user: { id: 'u1', role: 'player' } });
   });
 });

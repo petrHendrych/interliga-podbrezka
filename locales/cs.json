@@ -365,5 +365,18 @@
       "notFound": "Výběr se nenašel.",
       "unknown": "Někde se stala chyba, zkus to znovu."
     }
+  },
+  "pwa": {
+    "installTitle": "Nainstaluj si aplikaci",
+    "installDescription": "Přidej si Interligu na plochu telefonu a otevírej ji jako běžnou aplikaci.",
+    "installButton": "Nainstalovat",
+    "dismiss": "Teď ne",
+    "iosInstructionsTitle": "Na iPhonu to uděláš takto",
+    "iosInstructionsStep1": "Klepni na tlačítko Sdílet ve spodní liště Safari.",
+    "iosInstructionsStep2": "Vyber „Přidat na plochu“ a potvrď.",
+    "offlineTitle": "Jsi offline",
+    "offlineDescription": "Stránku se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.",
+    "retry": "Zkusit znovu",
+    "offlineBanner": "Jsi offline. Čekající požadavky se dokončí po obnovení připojení."
   }
 }

@@ -1,9 +1,12 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Montserrat } from 'next/font/google';
 import '../globals.css';
 import { Header } from '@/components/layout/Header';
 import { BackgroundDots } from '@/components/layout/BackgroundDots';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
+import { OfflineBanner } from '@/components/pwa/OfflineBanner';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
@@ -23,6 +26,18 @@ const montserrat = Montserrat({
   subsets: ['latin'],
 });
 
+// The two colours are the sRGB twins of the `--background` values in app/globals.css; there is
+// no way to hand an oklch() to the browser's theme-color, so they are kept in sync by hand.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f4f5f7' },
+    { media: '(prefers-color-scheme: dark)', color: '#020618' },
+  ],
+  viewportFit: 'cover',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -35,6 +50,14 @@ export async function generateMetadata({
     metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
     title: dict.home.pageTitle,
     description: dict.home.pageDescription,
+    // Set explicitly rather than relying on Next picking up app/manifest.ts: the root layout
+    // sits one segment deeper, at app/[lang]/layout.tsx.
+    manifest: '/manifest.webmanifest',
+    appleWebApp: {
+      capable: true,
+      title: 'Interliga',
+      statusBarStyle: 'black-translucent',
+    },
     openGraph: {
       type: 'website',
       siteName: 'Interliga Podbrezová',
@@ -60,6 +83,7 @@ export default async function RootLayout({
 }>) {
   const { lang: langParam } = await params;
   const lang = langParam as Locale;
+  const dict = await getDictionary(lang);
 
   return (
     <html
@@ -75,8 +99,11 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <BackgroundDots />
+          <ServiceWorkerRegistrar />
           <Header lang={lang} />
-          <main className="flex flex-1 flex-col">{children}</main>
+          <OfflineBanner message={dict.pwa.offlineBanner} />
+          <InstallPrompt translations={dict.pwa} />
+          <main className="flex flex-1 flex-col pb-[var(--app-safe-bottom)]">{children}</main>
         </ThemeProvider>
       </body>
     </html>
