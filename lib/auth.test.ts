@@ -3,6 +3,7 @@ import { SignJWT } from 'jose';
 import {
   decrypt, encrypt, hashPassword, verifyPassword,
 } from '@/lib/auth';
+import { SESSION_MAX_AGE_SECONDS } from '@/lib/session-config';
 
 const user = { id: 'u1', role: 'admin', name: 'Ján Novák' };
 const expires = new Date('2026-08-12T12:00:00Z');
@@ -31,12 +32,20 @@ describe('session tokens', () => {
     expect(await decrypt(token)).toMatchObject({ user });
   });
 
-  it('expires the token after two hours regardless of the cookie expiry', async () => {
+  it('expires the token after the shared max age regardless of the cookie expiry', async () => {
     const token = await encrypt({ user, expires: new Date('2030-01-01T00:00:00Z') });
     const [, payload] = token.split('.');
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
 
-    expect(claims.exp - claims.iat).toBe(2 * 60 * 60);
+    expect(claims.exp - claims.iat).toBe(SESSION_MAX_AGE_SECONDS);
+  });
+
+  it('surfaces exp and iat so the proxy can decide whether to refresh', async () => {
+    const session = await decrypt(await encrypt({ user, expires }));
+
+    expect(session?.exp).toBeTypeOf('number');
+    expect(session?.iat).toBeTypeOf('number');
+    expect(session!.exp! - session!.iat!).toBe(SESSION_MAX_AGE_SECONDS);
   });
 
   it('returns null for a tampered, malformed or foreign-signed token', async () => {

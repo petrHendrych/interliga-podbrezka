@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { signOut } from '@/lib/auth-actions';
+import { clearServiceWorkerCaches } from '@/lib/pwa/clear-service-worker-caches';
 import { Locale } from '@/lib/i18n/config';
 import { useSyncData } from '@/lib/hooks/useSyncData';
 import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
@@ -119,6 +120,7 @@ export function UserDropdown({
           <DropdownMenuItem
             className="gap-2 cursor-pointer py-2 text-destructive focus:text-destructive focus:bg-destructive/10"
             onClick={async () => {
+              clearServiceWorkerCaches();
               await signOut(lang);
             }}
           >

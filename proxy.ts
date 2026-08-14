@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { match as matchLocale } from '@formatjs/intl-localematcher';
 import Negotiator from 'negotiator';
-import { decrypt } from './lib/auth';
+import { decrypt, encrypt, type SessionPayload } from './lib/auth';
 import { i18n } from './lib/i18n/config';
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+  SESSION_REFRESH_AFTER_SECONDS,
+} from './lib/session-config';
 
 function getLocale(request: NextRequest): string {
   // 1. Check if locale is already in cookies
@@ -30,8 +35,29 @@ function getLocale(request: NextRequest): string {
 
 // The OG image is fetched by unauthenticated crawlers, so it must stay open or
 // link previews render the sign-in redirect instead of the image.
-const publicRoutes = ['/sign-in', '/sign-up', '/opengraph-image'];
+// The offline page is precached by the service worker, possibly before the first sign-in, and
+// an expired session must not turn the offline fallback into a sign-in redirect that also fails.
+const publicRoutes = ['/sign-in', '/sign-up', '/opengraph-image', '/offline'];
 const publicApiPrefixes = ['/api/cron/'];
+
+// Re-issued only once the token is past the halfway mark, so a Set-Cookie is not attached to
+// every single response. The attributes must match the ones setSession() writes.
+async function refreshSessionCookie(response: NextResponse, session: SessionPayload) {
+  const expiresAt = session.exp;
+  if (!expiresAt) return;
+
+  const secondsLeft = expiresAt - Math.floor(Date.now() / 1000);
+  if (secondsLeft > SESSION_REFRESH_AFTER_SECONDS) return;
+
+  const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+  response.cookies.set(SESSION_COOKIE_NAME, await encrypt({ user: session.user, expires }), {
+    expires,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+}
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -72,7 +98,7 @@ export async function proxy(req: NextRequest) {
   }
 
   // 2. Check for session
-  const cookie = req.cookies.get('session')?.value;
+  const cookie = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = cookie ? await decrypt(cookie) : null;
 
   // 3. Redirect to sign-in if no valid session
@@ -86,7 +112,9 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}`, req.nextUrl));
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  await refreshSessionCookie(response, session);
+  return response;
 }
 
 export const config = {

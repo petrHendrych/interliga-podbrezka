@@ -17,6 +17,8 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "eslint.config.mjs",
+      // Browser service worker: plain JS outside the TS project, with worker globals.
+      "public/sw.js",
     ],
   },
   ...compat.extends("airbnb", "airbnb-typescript"),
@@ -61,6 +63,7 @@ const eslintConfig = [
       "vitest.setup.dom.ts",
       "test/**/*.ts",
       "test/**/*.tsx",
+      "scripts/**/*.ts",
     ],
     rules: {
       "import/no-extraneous-dependencies": ["error", { devDependencies: true }],

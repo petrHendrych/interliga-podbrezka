@@ -142,7 +142,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
         </div>
 
         {/* Pinned under the header so switching season/league never moves the control. */}
-        <div className="sticky top-16 z-30 -mx-4 mt-8 mb-8 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="sticky top-[calc(var(--app-header-height)+var(--app-safe-top))] z-30 -mx-4 mt-8 mb-8 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60">
           <SeasonLeagueFilter
             seasons={SEASONS_CONFIG}
             selectedSeasonId={selectedSeasonId}

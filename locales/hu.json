@@ -365,5 +365,18 @@
       "notFound": "A kivét nem található.",
       "unknown": "Hiba történt, próbáld újra."
     }
+  },
+  "pwa": {
+    "installTitle": "Telepítsd az alkalmazást",
+    "installDescription": "Tedd ki az Interligát a telefon kezdőképernyőjére, és nyisd meg úgy, mint bármelyik alkalmazást.",
+    "installButton": "Telepítés",
+    "dismiss": "Most nem",
+    "iosInstructionsTitle": "iPhone-on így csináld",
+    "iosInstructionsStep1": "Koppints a Megosztás gombra a Safari alsó sávjában.",
+    "iosInstructionsStep2": "Válaszd a „Főképernyőhöz adás” lehetőséget, majd erősítsd meg.",
+    "offlineTitle": "Nincs internetkapcsolat",
+    "offlineDescription": "Az oldalt nem sikerült betölteni. Ellenőrizd a kapcsolatot, és próbáld újra.",
+    "retry": "Újra",
+    "offlineBanner": "Nincs internetkapcsolat. A függőben lévő kérések a kapcsolat helyreállása után befejeződnek."
   }
 }
