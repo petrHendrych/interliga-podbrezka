@@ -377,6 +377,78 @@
     "offlineTitle": "Si offline",
     "offlineDescription": "Nepodarilo sa načítať stránku. Skontroluj pripojenie a skús to znova.",
     "retry": "Skúsiť znova",
-    "offlineBanner": "Si offline. Čakajúce požiadavky sa dokončia po obnovení pripojenia."
+    "offlineBanner": "Si offline. Čakajúce požiadavky sa dokončia po obnovení pripojenia.",
+    "notificationsEnable": "Zapnúť upozornenia",
+    "notificationsDisable": "Vypnúť upozornenia",
+    "notificationsBlocked": "Upozornenia sú zablokované v nastaveniach prehliadača",
+    "notifyUsers": "Poslať upozornenie",
+    "notifyConfirmTitle": "Poslať upozornenie hráčom?",
+    "notifyConfirmDescription": "Všetkým, ktorí majú zapnuté upozornenia, príde správa, že financie boli aktualizované.",
+    "notifySending": "Odosielam…",
+    "notifySent": "Upozornenie odoslané.",
+    "notifyErrors": {
+      "unauthorized": "Na túto akciu nemáš oprávnenie.",
+      "saveFailed": "Upozornenia sa nepodarilo zapnúť, skús to znova.",
+      "sendFailed": "Upozornenie sa nepodarilo odoslať, skús to znova."
+    }
+  },
+  "push": {
+    "events": {
+      "matchResult": {
+        "title": "Nový výsledok",
+        "body": "Podbrezová {ourScore} : {opponentScore} {opponent}"
+      },
+      "matchResults": {
+        "title": "Nové výsledky",
+        "body": "Pribudlo {matches}. Pozri si ich v aplikácii."
+      },
+      "bonusEarned": {
+        "title": "Máš bonus!",
+        "body": "Za výkon ti pribudlo {amount} €. Gratulujem!"
+      },
+      "fineAdded": {
+        "title": "Nová pokuta",
+        "body": "Pribudlo ti {amount} €. Spolu dlhuješ {total} €."
+      },
+      "streakWarning": {
+        "title": "Pozor na sériu",
+        "body": "Máš {streak} zápasy v rade bez chyby. Každý ďalší čistý zápas ťa bude stáť {amount} € do banky."
+      },
+      "debtReminder": {
+        "title": "Nezabudni na dlh",
+        "body": "Do domáceho zápasu ostávajú {days} dni. Dlhuješ {amount} € do banky."
+      },
+      "moneyUpdated": {
+        "title": "Aktualizované financie",
+        "body": "Pokuty a bonusy boli aktualizované. Skontroluj si svoj stav."
+      },
+      "bankWithdrawal": {
+        "title": "Výber z banky",
+        "body": "Z tímovej banky odišlo {amount} € — {category}."
+      },
+      "userAwaitingApproval": {
+        "title": "Nová registrácia",
+        "body": "{name} čaká na schválenie."
+      },
+      "scrapeFailed": {
+        "title": "Synchronizácia zlyhala",
+        "body": "Sťahovanie výsledkov skončilo chybou. Skontroluj logy."
+      },
+      "scrapeStuck": {
+        "title": "Synchronizácia sa zasekla",
+        "body": "Beh sa nedokončil už {hours} h. Spusti ju znova."
+      },
+      "unsettledMatch": {
+        "title": "Nevyrovnaný zápas",
+        "body": "Zápas s {opponent} má stále nezaplatených {amount} €."
+      }
+    },
+    "counts": {
+      "newResults": {
+        "one": "{count} nový zápas",
+        "few": "{count} nové zápasy",
+        "other": "{count} nových zápasov"
+      }
+    }
   }
 }

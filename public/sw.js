@@ -80,3 +80,58 @@ self.addEventListener('message', (event) => {
   if (event.data?.type !== 'CLEAR_CACHES') return;
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))));
 });
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {};
+  }
+
+  event.waitUntil(self.registration.showNotification(payload.title || 'Interliga Podbrezová', {
+    body: payload.body || '',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    // One tag per event, so a repeat replaces the old notification instead of stacking.
+    tag: payload.tag || 'ilp-data',
+    data: { url: payload.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/';
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const existing = windows.find((client) => 'focus' in client);
+
+    if (!existing) {
+      await self.clients.openWindow(target);
+      return;
+    }
+
+    await existing.focus();
+    if ('navigate' in existing) {
+      await existing.navigate(target);
+    }
+  })());
+});
+
+// Push services rotate endpoints; without re-registering the subscription silently dies.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    const subscription = event.newSubscription
+      || await self.registration.pushManager.subscribe(event.oldSubscription.options);
+
+    await fetch('/api/push/resubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        oldEndpoint: event.oldSubscription?.endpoint,
+        subscription: subscription.toJSON(),
+      }),
+    });
+  })());
+});

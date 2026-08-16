@@ -377,6 +377,78 @@
     "offlineTitle": "Nincs internetkapcsolat",
     "offlineDescription": "Az oldalt nem sikerült betölteni. Ellenőrizd a kapcsolatot, és próbáld újra.",
     "retry": "Újra",
-    "offlineBanner": "Nincs internetkapcsolat. A függőben lévő kérések a kapcsolat helyreállása után befejeződnek."
+    "offlineBanner": "Nincs internetkapcsolat. A függőben lévő kérések a kapcsolat helyreállása után befejeződnek.",
+    "notificationsEnable": "Értesítések bekapcsolása",
+    "notificationsDisable": "Értesítések kikapcsolása",
+    "notificationsBlocked": "Az értesítések le vannak tiltva a böngésző beállításaiban",
+    "notifyUsers": "Értesítés küldése",
+    "notifyConfirmTitle": "Küldesz értesítést a játékosoknak?",
+    "notifyConfirmDescription": "Mindenki, akinél be van kapcsolva az értesítés, üzenetet kap arról, hogy a pénzügyek frissültek.",
+    "notifySending": "Küldés…",
+    "notifySent": "Az értesítés elment.",
+    "notifyErrors": {
+      "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
+      "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra.",
+      "sendFailed": "Az értesítést nem sikerült elküldeni, próbáld újra."
+    }
+  },
+  "push": {
+    "events": {
+      "matchResult": {
+        "title": "Új eredmény",
+        "body": "Podbrezová {ourScore} : {opponentScore} {opponent}"
+      },
+      "matchResults": {
+        "title": "Új eredmények",
+        "body": "{matches} érkezett. Nézd meg az alkalmazásban."
+      },
+      "bonusEarned": {
+        "title": "Bónuszt kaptál!",
+        "body": "A teljesítményedért {amount} € jár. Gratulálok!"
+      },
+      "fineAdded": {
+        "title": "Új büntetés",
+        "body": "{amount} € jött hozzá. Összesen {total} €-val tartozol."
+      },
+      "streakWarning": {
+        "title": "Figyelj a sorozatra",
+        "body": "{streak} hibátlan meccsed van egymás után. Minden további tiszta meccs {amount} €-ba kerül a kasszába."
+      },
+      "debtReminder": {
+        "title": "Ne feledkezz meg a tartozásról",
+        "body": "{days} nap múlva hazai meccs. {amount} €-val tartozol a kasszának."
+      },
+      "moneyUpdated": {
+        "title": "Frissült pénzügyek",
+        "body": "A büntetések és bónuszok frissültek. Ellenőrizd az egyenleged."
+      },
+      "bankWithdrawal": {
+        "title": "Kivét a kasszából",
+        "body": "A csapatkasszából {amount} € ment el — {category}."
+      },
+      "userAwaitingApproval": {
+        "title": "Új regisztráció",
+        "body": "{name} jóváhagyásra vár."
+      },
+      "scrapeFailed": {
+        "title": "A szinkronizálás hibára futott",
+        "body": "Az eredmények letöltése hibával állt le. Nézd meg a naplót."
+      },
+      "scrapeStuck": {
+        "title": "A szinkronizálás elakadt",
+        "body": "A futás már {hours} órája nem fejeződött be. Indítsd újra."
+      },
+      "unsettledMatch": {
+        "title": "Rendezetlen meccs",
+        "body": "A(z) {opponent} elleni meccsen még {amount} € kifizetetlen."
+      }
+    },
+    "counts": {
+      "newResults": {
+        "one": "{count} új mérkőzés",
+        "few": "{count} új mérkőzés",
+        "other": "{count} új mérkőzés"
+      }
+    }
   }
 }

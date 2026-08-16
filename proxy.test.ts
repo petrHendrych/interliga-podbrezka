@@ -28,6 +28,16 @@ describe('public routes', () => {
     expect(res.headers.get('location')).toBeNull();
   });
 
+  it('never sends an API route through the locale redirect', async () => {
+    // These carry no locale segment; a redirect to /sk/api/... would 404 the caller instead
+    // of running the handler. Each route authenticates itself.
+    await Promise.all(
+      ['/api/revalidate', '/api/push/notify', '/api/push/resubscribe'].map(async (path) => {
+        expect((await proxy(request(path))).headers.get('location')).toBeNull();
+      }),
+    );
+  });
+
   it('lets sign-in and the OG image through without a session', async () => {
     expect((await proxy(request('/sk/sign-in'))).headers.get('location')).toBeNull();
     expect((await proxy(request('/sk/opengraph-image'))).headers.get('location')).toBeNull();

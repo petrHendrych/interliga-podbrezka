@@ -38,7 +38,10 @@ function getLocale(request: NextRequest): string {
 // The offline page is precached by the service worker, possibly before the first sign-in, and
 // an expired session must not turn the offline fallback into a sign-in redirect that also fails.
 const publicRoutes = ['/sign-in', '/sign-up', '/opengraph-image', '/offline'];
-const publicApiPrefixes = ['/api/cron/'];
+// API routes carry no locale segment, so without this the proxy redirects them to
+// /sk/api/... instead of running them. Each one authenticates itself, with the cron
+// secret or a session.
+const publicApiPrefixes = ['/api/cron/', '/api/revalidate', '/api/push/'];
 
 // Re-issued only once the token is past the halfway mark, so a Set-Cookie is not attached to
 // every single response. The attributes must match the ones setSession() writes.

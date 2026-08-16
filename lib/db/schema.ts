@@ -122,6 +122,30 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: serial('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // The browser rotates this, so it is the identity of a device, not the row id.
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  lang: text('lang').notNull().default('sk'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_push_subscriptions_endpoint').on(table.endpoint),
+  index('idx_push_subscriptions_user').on(table.userId),
+]);
+
+export const pushLog = pgTable('push_log', {
+  id: serial('id').primaryKey(),
+  event: text('event').notNull(),
+  // What the notification is about: a match id, a payday date, a user id.
+  dedupeKey: text('dedupe_key').notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_push_log_event_key').on(table.event, table.dedupeKey),
+]);
+
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
 export type Match = InferSelectModel<typeof matches>;
@@ -138,3 +162,7 @@ export type SystemStatus = InferSelectModel<typeof systemStatus>;
 export type NewSystemStatus = InferInsertModel<typeof systemStatus>;
 export type PasswordResetToken = InferSelectModel<typeof passwordResetTokens>;
 export type NewPasswordResetToken = InferInsertModel<typeof passwordResetTokens>;
+export type PushSubscription = InferSelectModel<typeof pushSubscriptions>;
+export type NewPushSubscription = InferInsertModel<typeof pushSubscriptions>;
+export type PushLogEntry = InferSelectModel<typeof pushLog>;
+export type NewPushLogEntry = InferInsertModel<typeof pushLog>;

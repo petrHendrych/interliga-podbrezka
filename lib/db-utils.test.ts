@@ -83,3 +83,19 @@ describe('leagueCondition', () => {
     expect(render(leagueCondition('all'))).toBe('');
   });
 });
+
+describe('the reminder queries', () => {
+  it('counts a debtor total the way the "all" filter does, success gathering included', () => {
+    // `getUnpaidDebtorsByUser()` calls `fineAmount()` with no league on purpose: the reminder
+    // asks what you owe the bank, not what you owe under one filter.
+    const amount = render(fineAmount());
+
+    expect(amount).toContain('calculated_fine');
+    expect(amount).toContain('streak_fine');
+  });
+
+  it('would drop the success gathering if a league were ever passed in', () => {
+    // Guards the mistake of "tidying" the call by threading a league key through it.
+    expect(render(fineAmount('interliga'))).not.toContain('streak_fine');
+  });
+});

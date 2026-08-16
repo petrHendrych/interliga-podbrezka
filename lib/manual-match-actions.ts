@@ -8,7 +8,8 @@ import { db, sql } from './db';
 import { matches, matchPlayerResults, trainerPayments } from './db/schema';
 import { getSession } from './session';
 import { updateSyncedData } from './cache';
-import { recalculateDerivedFinancials } from './sync';
+import { recalculateAndDiffPlayerMoney, recalculateDerivedFinancials } from './sync';
+import { sendPersonalMoneyPushes } from './push';
 import {
   MANUAL_MATCH_ID_BASE,
   getManualLeagues,
@@ -153,10 +154,11 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
         },
       });
 
-    await recalculateDerivedFinancials();
+    const personalPushes = await recalculateAndDiffPlayerMoney();
 
     updateSyncedData();
     revalidatePath(MATCHES_PATH, 'page');
+    await sendPersonalMoneyPushes(personalPushes);
     return { success: true, matchId };
   } catch (error) {
     console.error('Failed to save manual match:', error);
@@ -190,6 +192,7 @@ export async function deleteManualMatch(externalId: number): Promise<ManualMatch
       db.delete(matches).where(eq(matches.externalId, externalId)),
     ]);
 
+    // A deletion only ever lowers what people owe, so the diff finds nothing to announce.
     await recalculateDerivedFinancials();
 
     updateSyncedData();
