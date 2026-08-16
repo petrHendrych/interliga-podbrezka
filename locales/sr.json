@@ -236,7 +236,7 @@
       "dbError": "Greška u vezi sa bazom podataka",
       "notApproved": "Tvoj nalog čeka na odobrenje administratora.",
       "unauthorized": "Nisi prijavljen",
-      "unsupported": "Passkey nije dostupan na ovom uređaju",
+      "configError": "Passkey nije podešen za ovaj domen",
       "noChallenge": "Prijava je istekla, pokušaj ponovo",
       "verificationFailed": "Passkey nije mogao da se potvrdi",
       "alreadyRegistered": "Ovaj passkey je već registrovan",
@@ -484,7 +484,7 @@
     "errors": {
       "unauthorized": "Nisi prijavljen",
       "notApproved": "Tvoj nalog čeka na odobrenje administratora.",
-      "unsupported": "Passkey nije dostupan na ovom uređaju",
+      "configError": "Passkey nije podešen za ovaj domen",
       "noChallenge": "Prijava je istekla, pokušaj ponovo",
       "verificationFailed": "Passkey nije mogao da se potvrdi",
       "alreadyRegistered": "Ovaj passkey je već registrovan",

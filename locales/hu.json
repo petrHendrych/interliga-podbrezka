@@ -236,7 +236,7 @@
       "dbError": "Hiba az adatbázis-kapcsolatban",
       "notApproved": "A fiókod adminisztrátori jóváhagyásra vár.",
       "unauthorized": "Nem vagy bejelentkezve",
-      "unsupported": "A passkey ezen az eszközön nem érhető el",
+      "configError": "A passkey nincs beállítva ehhez a domainhez",
       "noChallenge": "A bejelentkezés lejárt, próbáld újra",
       "verificationFailed": "A passkey ellenőrzése nem sikerült",
       "alreadyRegistered": "Ez a passkey már regisztrálva van",
@@ -484,7 +484,7 @@
     "errors": {
       "unauthorized": "Nem vagy bejelentkezve",
       "notApproved": "A fiókod adminisztrátori jóváhagyásra vár.",
-      "unsupported": "A passkey ezen az eszközön nem érhető el",
+      "configError": "A passkey nincs beállítva ehhez a domainhez",
       "noChallenge": "A bejelentkezés lejárt, próbáld újra",
       "verificationFailed": "A passkey ellenőrzése nem sikerült",
       "alreadyRegistered": "Ez a passkey már regisztrálva van",

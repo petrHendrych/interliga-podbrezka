@@ -5,37 +5,52 @@ export const CHALLENGE_MAX_AGE_SECONDS = 5 * 60;
 
 export const MAX_PASSKEY_LABEL_LENGTH = 40;
 
-/**
- * The relying party id is the bare host: no scheme, no port. A passkey is bound to it, so a
- * credential created on the production domain is invisible on a preview deployment and on
- * localhost, and vice versa.
- */
-export function rpIdFromUrl(appUrl: string): string {
-  return new URL(appUrl).hostname;
-}
-
-/** The origin, in contrast, keeps the port — the authenticator signs the full origin. */
-export function originFromUrl(appUrl: string): string {
-  return new URL(appUrl).origin;
-}
-
 export interface RelyingParty {
   rpId: string;
   origin: string;
 }
 
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+/** Accepts either a bare host (`VERCEL_URL`) or a full URL (`NEXT_PUBLIC_APP_URL`). */
+export function hostFromSetting(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    return new URL(trimmed.includes('://') ? trimmed : `https://${trimmed}`).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Production is pinned to the configured URL, because a `Host` header is caller-controlled and
- * must never be allowed to choose the relying party. Localhost is the one exception: dev runs
- * on `http://localhost:3000` while `NEXT_PUBLIC_APP_URL` points at the deployed site, and a
- * relying party id that does not match the origin fails the ceremony outright.
+ * A relying party id is the bare host: no scheme, no port. A passkey is bound to it, so the same
+ * credential is invisible on any other domain, preview deployments included.
+ *
+ * The id has to describe the domain the browser is actually on, so it is read off the request
+ * — but a `Host` header is caller-controlled, and letting it choose the relying party would
+ * break the origin binding that makes WebAuthn phishing-proof. Hence the allow list: every host
+ * this deployment legitimately answers on, and nothing else. Returns null when the request
+ * arrives on a host nobody configured, because guessing would be worse than refusing.
  */
-export function resolveRelyingParty(appUrl: string, requestHost: string | null): RelyingParty {
-  const host = requestHost ?? '';
-  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) {
+export function resolveRelyingParty(
+  requestHost: string | null,
+  allowedHosts: string[],
+): RelyingParty | null {
+  const host = (requestHost ?? '').trim().toLowerCase();
+  if (!host) return null;
+
+  // Dev runs over plain HTTP, which WebAuthn allows for localhost and nowhere else.
+  if (LOCAL_HOST.test(host)) {
     return { rpId: host.split(':')[0], origin: `http://${host}` };
   }
-  return { rpId: rpIdFromUrl(appUrl), origin: originFromUrl(appUrl) };
+
+  const hostname = host.split(':')[0];
+  if (!allowedHosts.includes(hostname)) return null;
+
+  return { rpId: hostname, origin: `https://${hostname}` };
 }
 
 /** A first guess at what the user would call this device, so the add dialog is one tap. */

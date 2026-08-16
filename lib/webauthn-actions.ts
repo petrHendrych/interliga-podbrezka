@@ -25,6 +25,7 @@ import {
   CHALLENGE_COOKIE_NAME,
   CHALLENGE_MAX_AGE_SECONDS,
   RP_NAME,
+  hostFromSetting,
   resolveRelyingParty,
   type RelyingParty,
 } from './webauthn-config';
@@ -48,7 +49,7 @@ import { validatePasskeyLabel } from './validation/passkey';
 export type PasskeyActionError =
   | 'unauthorized'
   | 'notApproved'
-  | 'unsupported'
+  | 'configError'
   | 'noChallenge'
   | 'verificationFailed'
   | 'alreadyRegistered'
@@ -60,12 +61,22 @@ export type PasskeyActionResult<T = undefined> =
   | { success: true; data: T }
   | { success: false; error: PasskeyActionError };
 
+/**
+ * Only the domain users actually browse. `VERCEL_PROJECT_PRODUCTION_URL` is injected by the
+ * platform, so a deployment whose `NEXT_PUBLIC_APP_URL` nobody set still works; the
+ * per-deployment `VERCEL_URL` is deliberately left out, because this project ships from
+ * production only and an unbrowsed hostname has no business being a relying party.
+ */
 async function relyingParty(): Promise<RelyingParty | null> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) return null;
+  const allowedHosts = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  ]
+    .map(hostFromSetting)
+    .filter((host): host is string => host !== null);
 
   const headerList = await headers();
-  return resolveRelyingParty(appUrl, headerList.get('host'));
+  return resolveRelyingParty(headerList.get('host'), allowedHosts);
 }
 
 function resolveLocale(value: unknown): string {
@@ -115,7 +126,7 @@ Promise<PasskeyActionResult<PublicKeyCredentialCreationOptionsJSON>> {
   if (!session?.user.id) return { success: false, error: 'unauthorized' };
 
   const rp = await relyingParty();
-  if (!rp) return { success: false, error: 'unsupported' };
+  if (!rp) return { success: false, error: 'configError' };
 
   try {
     const [account] = await db
@@ -166,7 +177,7 @@ export async function finishPasskeyRegistration(
   if (validLabel === 'invalidLabel') return { success: false, error: 'invalidLabel' };
 
   const rp = await relyingParty();
-  if (!rp) return { success: false, error: 'unsupported' };
+  if (!rp) return { success: false, error: 'configError' };
 
   const stored = await readChallengeCookie('registration');
   if (!stored || stored.userId !== session.user.id) {
@@ -211,7 +222,7 @@ export async function finishPasskeyRegistration(
 export async function startPasskeyAuthentication():
 Promise<PasskeyActionResult<PublicKeyCredentialRequestOptionsJSON>> {
   const rp = await relyingParty();
-  if (!rp) return { success: false, error: 'unsupported' };
+  if (!rp) return { success: false, error: 'configError' };
 
   try {
     // Empty on purpose: the credential is discoverable, so the platform decides what to offer.
@@ -235,7 +246,7 @@ export async function finishPasskeyAuthentication(
   lang: unknown,
 ): Promise<PasskeyActionResult> {
   const rp = await relyingParty();
-  if (!rp) return { success: false, error: 'unsupported' };
+  if (!rp) return { success: false, error: 'configError' };
 
   const stored = await readChallengeCookie('authentication');
   if (!stored) return { success: false, error: 'noChallenge' };
