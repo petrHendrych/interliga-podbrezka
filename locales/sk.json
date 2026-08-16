@@ -236,7 +236,7 @@
       "dbError": "Chyba pripojenia k databáze",
       "notApproved": "Tvoj účet čaká na schválenie administrátorom.",
       "unauthorized": "Nie si prihlásený",
-      "unsupported": "Passkey nie je na tomto zariadení dostupný",
+      "configError": "Passkey nie je pre túto doménu nastavený",
       "noChallenge": "Prihlásenie vypršalo, skús to znova",
       "verificationFailed": "Passkey sa nepodarilo overiť",
       "alreadyRegistered": "Tento passkey už je zaregistrovaný",
@@ -484,7 +484,7 @@
     "errors": {
       "unauthorized": "Nie si prihlásený",
       "notApproved": "Tvoj účet čaká na schválenie administrátorom.",
-      "unsupported": "Passkey nie je na tomto zariadení dostupný",
+      "configError": "Passkey nie je pre túto doménu nastavený",
       "noChallenge": "Prihlásenie vypršalo, skús to znova",
       "verificationFailed": "Passkey sa nepodarilo overiť",
       "alreadyRegistered": "Tento passkey už je zaregistrovaný",
