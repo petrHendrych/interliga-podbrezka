@@ -1,0 +1,27 @@
+<!-- Flat white silhouette of the brand mark. Android keeps only the alpha channel of a
+     notification badge and repaints it, so the badge source carries shape and nothing else. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <mask id="ball-cut">
+      <rect width="64" height="64" fill="#fff" />
+      <circle cx="43" cy="44" r="16.8" fill="#000" />
+    </mask>
+    <mask id="euro-cut">
+      <rect width="64" height="64" fill="#fff" />
+      <!-- Thicker than the colour mark: at status bar size a 3px gap closes up into a blob. -->
+      <g stroke="#000" stroke-width="3.6" stroke-linecap="round" fill="none">
+        <path d="M49.43 38.17a8.25 8.25 0 1 0 0 11.66" />
+        <path d="M34.75 41.75h13" />
+        <path d="M34.75 46.75h13" />
+      </g>
+    </mask>
+  </defs>
+  <g transform="translate(32 32) scale(1.2) translate(-34.55 -34)">
+    <path
+      mask="url(#ball-cut)"
+      fill="#ffffff"
+      d="M22 9c3.5 0 6.4 3.6 6.4 8.5 0 4.4-1.8 4.9-1.8 8.5 0 5.6 5.6 7.2 5.6 14.2 0 5.8-2.9 6.6-2.9 10.2 0 2 1.6 2.4 1.6 4.2 0 1-.7 1.6-1.7 1.6H14.8c-1 0-1.7-.6-1.7-1.6 0-1.8 1.6-2.2 1.6-4.2 0-3.6-2.9-4.4-2.9-10.2 0-7 5.6-8.6 5.6-14.2 0-3.6-1.8-4.1-1.8-8.5C15.6 12.6 18.5 9 22 9Z"
+    />
+    <circle cx="43" cy="44" r="15" fill="#ffffff" mask="url(#euro-cut)" />
+  </g>
+</svg>

@@ -58,7 +58,8 @@
     "switchLanguage": "Promeni jezik",
     "toggleTheme": "Promeni temu",
     "rules": "Pravila kazni",
-    "withdrawals": "Podizanja iz banke"
+    "withdrawals": "Podizanja iz banke",
+    "settings": "Podešavanja"
   },
   "admin": {
     "users": {
@@ -233,8 +234,18 @@
       "genericError": "Došlo je do greške",
       "invalidCredentials": "Pogrešan email ili lozinka",
       "dbError": "Greška u vezi sa bazom podataka",
-      "notApproved": "Tvoj nalog čeka na odobrenje administratora."
-    }
+      "notApproved": "Tvoj nalog čeka na odobrenje administratora.",
+      "unauthorized": "Nisi prijavljen",
+      "unsupported": "Passkey nije dostupan na ovom uređaju",
+      "noChallenge": "Prijava je istekla, pokušaj ponovo",
+      "verificationFailed": "Passkey nije mogao da se potvrdi",
+      "alreadyRegistered": "Ovaj passkey je već registrovan",
+      "invalidLabel": "Unesi naziv uređaja (maks. 40 znakova)",
+      "notFound": "Passkey nije pronađen"
+    },
+    "passkeySignIn": "Prijavi se preko passkey-a",
+    "passkeySigningIn": "Prijavljujem...",
+    "passkeyDivider": "ili"
   },
   "rules": {
     "pageTitle": "Pravila kazni | Interliga Podbrezová",
@@ -449,6 +460,37 @@
         "few": "{count} nove utakmice",
         "other": "{count} novih utakmica"
       }
+    }
+  },
+  "settings": {
+    "title": "Podešavanja",
+    "description": "Olakšaj sebi prijavljivanje.",
+    "passkeysTitle": "Passkey-evi",
+    "passkeysDescription": "Prijavi se otiskom prsta ili licem umesto lozinkom. Lozinka ostaje.",
+    "addPasskey": "Dodaj passkey",
+    "addingPasskey": "Dodajem...",
+    "addTitle": "Dodaj passkey",
+    "addDescription": "Imenuj ovaj uređaj i potvrdi otiskom prsta ili licem.",
+    "labelLabel": "Naziv uređaja",
+    "labelPlaceholder": "Moj telefon",
+    "empty": "Još nemaš nijedan passkey.",
+    "unsupported": "Ovaj pregledač ne podržava passkey-eve.",
+    "created": "Dodat",
+    "lastUsed": "Poslednji put korišćen",
+    "neverUsed": "nikad",
+    "deleteLabel": "Izbriši",
+    "deleteTitle": "Izbrisati passkey?",
+    "deleteDescription": "Sa ovog uređaja više nećeš moći da se prijaviš passkey-em. Lozinka i dalje radi.",
+    "errors": {
+      "unauthorized": "Nisi prijavljen",
+      "notApproved": "Tvoj nalog čeka na odobrenje administratora.",
+      "unsupported": "Passkey nije dostupan na ovom uređaju",
+      "noChallenge": "Prijava je istekla, pokušaj ponovo",
+      "verificationFailed": "Passkey nije mogao da se potvrdi",
+      "alreadyRegistered": "Ovaj passkey je već registrovan",
+      "invalidLabel": "Unesi naziv uređaja (maks. 40 znakova)",
+      "notFound": "Passkey nije pronađen",
+      "dbError": "Greška u vezi sa bazom podataka"
     }
   }
 }

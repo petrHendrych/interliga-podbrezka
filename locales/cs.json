@@ -58,7 +58,8 @@
     "switchLanguage": "Změnit jazyk",
     "toggleTheme": "Přepnout téma",
     "rules": "Pravidla pokut",
-    "withdrawals": "Výběry z banky"
+    "withdrawals": "Výběry z banky",
+    "settings": "Nastavení"
   },
   "admin": {
     "users": {
@@ -233,8 +234,18 @@
       "genericError": "Někde se stala chyba",
       "invalidCredentials": "Nesprávný email nebo heslo",
       "dbError": "Chyba připojení k databázi",
-      "notApproved": "Tvůj účet čeká na schválení administrátorem."
-    }
+      "notApproved": "Tvůj účet čeká na schválení administrátorem.",
+      "unauthorized": "Nejsi přihlášený",
+      "unsupported": "Passkey není na tomto zařízení dostupný",
+      "noChallenge": "Přihlášení vypršelo, zkus to znovu",
+      "verificationFailed": "Passkey se nepodařilo ověřit",
+      "alreadyRegistered": "Tento passkey už je zaregistrovaný",
+      "invalidLabel": "Zadej název zařízení (max. 40 znaků)",
+      "notFound": "Passkey nebyl nalezen"
+    },
+    "passkeySignIn": "Přihlásit se přes passkey",
+    "passkeySigningIn": "Přihlašuji...",
+    "passkeyDivider": "nebo"
   },
   "rules": {
     "pageTitle": "Pravidla pokut | Interliga Podbrezová",
@@ -449,6 +460,37 @@
         "few": "{count} nové zápasy",
         "other": "{count} nových zápasů"
       }
+    }
+  },
+  "settings": {
+    "title": "Nastavení",
+    "description": "Zjednoduš si přihlašování.",
+    "passkeysTitle": "Passkeys",
+    "passkeysDescription": "Přihlas se otiskem prstu nebo obličejem místo hesla. Heslo zůstává zachováno.",
+    "addPasskey": "Přidat passkey",
+    "addingPasskey": "Přidávám...",
+    "addTitle": "Přidat passkey",
+    "addDescription": "Pojmenuj toto zařízení a potvrď otiskem prstu nebo obličejem.",
+    "labelLabel": "Název zařízení",
+    "labelPlaceholder": "Můj telefon",
+    "empty": "Zatím nemáš žádný passkey.",
+    "unsupported": "Tento prohlížeč passkeys nepodporuje.",
+    "created": "Přidán",
+    "lastUsed": "Naposledy použit",
+    "neverUsed": "nikdy",
+    "deleteLabel": "Odstranit",
+    "deleteTitle": "Odstranit passkey?",
+    "deleteDescription": "Z tohoto zařízení se už nebudeš moci přihlásit přes passkey. Heslo bude fungovat dál.",
+    "errors": {
+      "unauthorized": "Nejsi přihlášený",
+      "notApproved": "Tvůj účet čeká na schválení administrátorem.",
+      "unsupported": "Passkey není na tomto zařízení dostupný",
+      "noChallenge": "Přihlášení vypršelo, zkus to znovu",
+      "verificationFailed": "Passkey se nepodařilo ověřit",
+      "alreadyRegistered": "Tento passkey už je zaregistrovaný",
+      "invalidLabel": "Zadej název zařízení (max. 40 znaků)",
+      "notFound": "Passkey nebyl nalezen",
+      "dbError": "Chyba připojení k databázi"
     }
   }
 }

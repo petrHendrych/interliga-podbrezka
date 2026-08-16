@@ -16,6 +16,7 @@ export async function Header({ lang }: { lang: Locale }) {
   const translations = {
     rules: dict.common.rules,
     withdrawals: dict.common.withdrawals,
+    settings: dict.common.settings,
     manageUsers: dict.common.manageUsers,
     manualMatches: dict.common.manualMatches,
     syncData: dict.common.syncData,
@@ -67,6 +68,7 @@ export async function Header({ lang }: { lang: Locale }) {
               translations={{
                 rules: dict.common.rules,
                 withdrawals: dict.common.withdrawals,
+                settings: dict.common.settings,
                 manageUsers: dict.common.manageUsers,
                 manualMatches: dict.common.manualMatches,
                 syncData: dict.common.syncData,

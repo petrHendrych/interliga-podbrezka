@@ -58,7 +58,8 @@
     "switchLanguage": "Nyelvváltás",
     "toggleTheme": "Téma váltása",
     "rules": "Büntetések szabályai",
-    "withdrawals": "Kivétek a kasszából"
+    "withdrawals": "Kivétek a kasszából",
+    "settings": "Beállítások"
   },
   "admin": {
     "users": {
@@ -233,8 +234,18 @@
       "genericError": "Hiba történt",
       "invalidCredentials": "Helytelen email vagy jelszó",
       "dbError": "Hiba az adatbázis-kapcsolatban",
-      "notApproved": "A fiókod adminisztrátori jóváhagyásra vár."
-    }
+      "notApproved": "A fiókod adminisztrátori jóváhagyásra vár.",
+      "unauthorized": "Nem vagy bejelentkezve",
+      "unsupported": "A passkey ezen az eszközön nem érhető el",
+      "noChallenge": "A bejelentkezés lejárt, próbáld újra",
+      "verificationFailed": "A passkey ellenőrzése nem sikerült",
+      "alreadyRegistered": "Ez a passkey már regisztrálva van",
+      "invalidLabel": "Add meg az eszköz nevét (max. 40 karakter)",
+      "notFound": "A passkey nem található"
+    },
+    "passkeySignIn": "Belépés passkey-jel",
+    "passkeySigningIn": "Belépés...",
+    "passkeyDivider": "vagy"
   },
   "rules": {
     "pageTitle": "Büntetések szabályai | Interliga Podbrezová",
@@ -449,6 +460,37 @@
         "few": "{count} új mérkőzés",
         "other": "{count} új mérkőzés"
       }
+    }
+  },
+  "settings": {
+    "title": "Beállítások",
+    "description": "Tedd kényelmesebbé a bejelentkezést.",
+    "passkeysTitle": "Passkey-ek",
+    "passkeysDescription": "Jelszó helyett ujjlenyomattal vagy arccal lépj be. A jelszó megmarad.",
+    "addPasskey": "Passkey hozzáadása",
+    "addingPasskey": "Hozzáadás...",
+    "addTitle": "Passkey hozzáadása",
+    "addDescription": "Nevezd el az eszközt, majd erősítsd meg ujjlenyomattal vagy arccal.",
+    "labelLabel": "Eszköz neve",
+    "labelPlaceholder": "A telefonom",
+    "empty": "Még nincs passkey-ed.",
+    "unsupported": "Ez a böngésző nem támogatja a passkey-eket.",
+    "created": "Hozzáadva",
+    "lastUsed": "Utoljára használva",
+    "neverUsed": "soha",
+    "deleteLabel": "Törlés",
+    "deleteTitle": "Törlöd a passkey-t?",
+    "deleteDescription": "Erről az eszközről többé nem tudsz passkey-jel belépni. A jelszó továbbra is működik.",
+    "errors": {
+      "unauthorized": "Nem vagy bejelentkezve",
+      "notApproved": "A fiókod adminisztrátori jóváhagyásra vár.",
+      "unsupported": "A passkey ezen az eszközön nem érhető el",
+      "noChallenge": "A bejelentkezés lejárt, próbáld újra",
+      "verificationFailed": "A passkey ellenőrzése nem sikerült",
+      "alreadyRegistered": "Ez a passkey már regisztrálva van",
+      "invalidLabel": "Add meg az eszköz nevét (max. 40 karakter)",
+      "notFound": "A passkey nem található",
+      "dbError": "Hiba az adatbázis-kapcsolatban"
     }
   }
 }

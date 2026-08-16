@@ -16,6 +16,10 @@ vi.mock('react', async () => {
 });
 
 vi.mock('@/lib/auth-actions', () => ({ signIn: vi.fn() }));
+vi.mock('@/lib/webauthn-actions', () => ({
+  startPasskeyAuthentication: vi.fn(),
+  finishPasskeyAuthentication: vi.fn(),
+}));
 
 function renderForm(actionState: { error?: string } | null) {
   state.current = actionState;
