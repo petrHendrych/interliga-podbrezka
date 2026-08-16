@@ -41,9 +41,11 @@ JSON
 writes nothing. `apply` returns `{ changes, recalculated, sheet }`: `changes` is a
 human-readable before/after list, `sheet` is the state after the write.
 
-`apply` also accepts `--notify`, which pushes one "money updated" notification to
-every subscribed user. Pass it on the **last** apply of an editing session only —
-one notification per session, never one per write.
+`apply` also accepts `--notify`. It tells the affected players what changed —
+whoever gained a fine or a bonus gets their own notification with the amount. If
+the write moved nobody's total (marking fines paid, for instance), everyone gets
+one "finances updated" notification instead. Pass it on the **last** apply of an
+editing session only — one notification per session, never one per write.
 
 ## Workflow
 

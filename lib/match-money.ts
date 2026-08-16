@@ -1,7 +1,8 @@
 import { eq, and, inArray } from 'drizzle-orm';
 import { db } from './db';
 import { matches, matchPlayerResults, trainerPayments } from './db/schema';
-import { recalculateDerivedFinancials } from './sync';
+import { recalculateAndDiffPlayerMoney } from './sync';
+import type { PersonalPush } from './push-digest';
 import { getMatchPlayers, type MatchPlayerResult } from './special-misses';
 import { getMatchTrainerPayments, type TrainerPayment } from './trainer-payments';
 
@@ -58,6 +59,8 @@ export interface ApplyResult {
   changes: AppliedChange[];
   recalculated: boolean;
   sheet: MatchSheet;
+  /** Whose own money moved, for the caller to deliver — see the note on the function below. */
+  personalPushes: PersonalPush[];
 }
 
 export class MatchMoneyError extends Error {}
@@ -235,10 +238,11 @@ async function applyTrainerUpdates(
 }
 
 /**
- * Writes money and recalculates, but never invalidates: it runs from `scripts/match-money.ts`,
- * outside Next, where `updateSyncedData()` throws. The caller owns invalidation — the CLI
- * calls `requestSyncedDataRevalidation()`, and an in-app caller must call `updateSyncedData()`
- * or the bank total keeps serving week-old numbers.
+ * Writes money and recalculates, but neither invalidates nor notifies: it runs from
+ * `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws and `lib/push.ts`
+ * cannot even be imported. The caller owns both — the CLI calls
+ * `requestSyncedDataRevalidation()` and posts `personalPushes` back over HTTP, an in-app
+ * caller calls `updateSyncedData()` and `sendPersonalMoneyPushes()`.
  */
 export async function applyMatchMoneyUpdates(
   matchId: number,
@@ -259,13 +263,14 @@ export async function applyMatchMoneyUpdates(
 
   // Fines, streaks and trainer rows all derive from the miss counts, so one pass
   // after every write beats recalculating per player.
-  if (playerResult.missesChanged) {
-    await recalculateDerivedFinancials();
-  }
+  const personalPushes = playerResult.missesChanged
+    ? await recalculateAndDiffPlayerMoney()
+    : [];
 
   return {
     changes: [...playerResult.changes, ...trainerChanges],
     recalculated: playerResult.missesChanged,
     sheet: await getMatchSheet(matchId),
+    personalPushes,
   };
 }
