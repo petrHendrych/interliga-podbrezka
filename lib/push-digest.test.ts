@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dailyDedupeKey,
   derivePersonalPushes,
+  parsePersonalPushes,
   findStuckScrape,
   SCRAPE_STUCK_AFTER_MS,
   STREAK_WARNING_AT,
@@ -255,5 +256,66 @@ describe('derivePersonalPushes', () => {
     );
 
     expect(pushes[0].params).toEqual({ amount: 7, total: 7.1 });
+  });
+});
+
+describe('parsePersonalPushes', () => {
+  const valid = { userId: PLAYER, event: 'fineAdded', params: { amount: 7, total: 19 } };
+
+  it('accepts a well-formed batch unchanged', () => {
+    expect(parsePersonalPushes([valid])).toEqual([valid]);
+  });
+
+  it.each([[null], [undefined], ['[]'], [{}], [42]])(
+    'returns null for %o, so the caller can try another payload shape',
+    (value) => {
+      expect(parsePersonalPushes(value)).toBeNull();
+    },
+  );
+
+  it('reads an empty batch as a batch, not as a different payload', () => {
+    expect(parsePersonalPushes([])).toEqual([]);
+  });
+
+  it('refuses an event outside the three money notifications', () => {
+    // Otherwise anyone holding the cron secret could address any notification to anyone.
+    const forged = { ...valid, event: 'scrapeFailed' };
+
+    expect(parsePersonalPushes([forged])).toEqual([]);
+  });
+
+  it.each([
+    ['a missing user', { event: 'fineAdded', params: {} }],
+    ['an empty user', { userId: '', event: 'fineAdded', params: {} }],
+    ['a non-string user', { userId: 7, event: 'fineAdded', params: {} }],
+    ['a null entry', null],
+    ['a bare string', 'fineAdded'],
+  ])('drops an entry with %s', (_label, entry) => {
+    expect(parsePersonalPushes([entry])).toEqual([]);
+  });
+
+  it('keeps the good entries when one in the batch is junk', () => {
+    expect(parsePersonalPushes([valid, { userId: '', event: 'fineAdded' }])).toEqual([valid]);
+  });
+
+  it('strips params that are not strings or numbers', () => {
+    // A nested object would reach interpolate() and render as "[object Object]".
+    const messy = {
+      userId: PLAYER,
+      event: 'bonusEarned',
+      params: {
+        amount: 40, nested: { a: 1 }, list: [1], nothing: null, ok: 'yes',
+      },
+    };
+
+    expect(parsePersonalPushes([messy])).toEqual([
+      { userId: PLAYER, event: 'bonusEarned', params: { amount: 40, ok: 'yes' } },
+    ]);
+  });
+
+  it('tolerates missing params rather than dropping the notification', () => {
+    expect(parsePersonalPushes([{ userId: PLAYER, event: 'streakWarning' }])).toEqual([
+      { userId: PLAYER, event: 'streakWarning', params: {} },
+    ]);
   });
 });
