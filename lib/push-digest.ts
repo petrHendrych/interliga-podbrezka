@@ -134,6 +134,39 @@ export function derivePersonalPushes(
   });
 }
 
+const PERSONAL_PUSH_EVENTS: PersonalPushEvent[] = ['bonusEarned', 'fineAdded', 'streakWarning'];
+
+/**
+ * Validates notifications that arrived over HTTP from the CLI. Returns null when the payload
+ * is not a personal-push batch at all, so the caller can fall through to another shape.
+ *
+ * The values land inside a notification, so nothing here is taken on trust: only the three
+ * money events are accepted, and params are flattened to strings and numbers rather than
+ * passed through — a nested object would reach `interpolate()` as "[object Object]".
+ */
+export function parsePersonalPushes(value: unknown): PersonalPush[] | null {
+  if (!Array.isArray(value)) return null;
+
+  const parsed = value.flatMap((entry): PersonalPush[] => {
+    if (!entry || typeof entry !== 'object') return [];
+    const { userId, event, params } = entry as Record<string, unknown>;
+
+    if (typeof userId !== 'string' || userId.length === 0) return [];
+    if (!PERSONAL_PUSH_EVENTS.includes(event as PersonalPushEvent)) return [];
+
+    const safeParams: Record<string, string | number> = {};
+    Object.entries(params && typeof params === 'object' ? params : {}).forEach(([key, param]) => {
+      if (typeof param === 'string' || typeof param === 'number') {
+        safeParams[key] = param;
+      }
+    });
+
+    return [{ userId, event: event as PersonalPushEvent, params: safeParams }];
+  });
+
+  return parsed;
+}
+
 export type ResultSummary =
   | { kind: 'single'; opponent: string; ourScore: number; opponentScore: number }
   | { kind: 'many'; count: number };
