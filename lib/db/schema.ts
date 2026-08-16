@@ -136,6 +136,25 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   index('idx_push_subscriptions_user').on(table.userId),
 ]);
 
+export const webauthnCredentials = pgTable('webauthn_credentials', {
+  id: serial('id').primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // base64url; this is the authenticator's identity, not the row id.
+  credentialId: text('credential_id').notNull(),
+  publicKey: text('public_key').notNull(),
+  counter: bigint('counter', { mode: 'number' }).notNull().default(0),
+  // Comma-joined AuthenticatorTransport list, passed back so the platform knows where to look.
+  transports: text('transports'),
+  deviceType: text('device_type'),
+  backedUp: boolean('backed_up').default(false),
+  label: text('label').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+}, (table) => [
+  uniqueIndex('idx_webauthn_credentials_credential_id').on(table.credentialId),
+  index('idx_webauthn_credentials_user').on(table.userId),
+]);
+
 export const pushLog = pgTable('push_log', {
   id: serial('id').primaryKey(),
   event: text('event').notNull(),
@@ -145,6 +164,9 @@ export const pushLog = pgTable('push_log', {
 }, (table) => [
   uniqueIndex('idx_push_log_event_key').on(table.event, table.dedupeKey),
 ]);
+
+export type WebauthnCredential = InferSelectModel<typeof webauthnCredentials>;
+export type NewWebauthnCredential = InferInsertModel<typeof webauthnCredentials>;
 
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;

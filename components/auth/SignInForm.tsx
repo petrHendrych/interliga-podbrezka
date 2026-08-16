@@ -4,6 +4,7 @@ import React, { useActionState } from 'react';
 import Link from 'next/link';
 import { signIn } from '@/lib/auth-actions';
 import { Button } from '@/components/ui/button';
+import { PasskeySignInButton } from '@/components/auth/PasskeySignInButton';
 import { Dictionary } from '@/lib/i18n/types';
 
 interface SignInFormProps {
@@ -20,6 +21,15 @@ export default function SignInForm({ lang, dict }: SignInFormProps) {
         <h2 className="text-2xl font-semibold">{dict.signInTitle}</h2>
         <p className="text-sm text-muted-foreground">{dict.signInDescription}</p>
       </div>
+      <PasskeySignInButton
+        lang={lang}
+        translations={{
+          passkeySignIn: dict.passkeySignIn,
+          passkeySigningIn: dict.passkeySigningIn,
+          passkeyDivider: dict.passkeyDivider,
+          errors: dict.errors,
+        }}
+      />
       <form action={action} className="space-y-4">
         {/* Lets the action redirect back into the current locale instead of a slug-less path. */}
         <input type="hidden" name="lang" value={lang} />

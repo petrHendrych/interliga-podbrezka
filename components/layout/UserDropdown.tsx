@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen, Wallet, Bell,
+  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen, Wallet, Bell, KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +36,7 @@ interface UserDropdownProps {
   translations: {
     rules: string;
     withdrawals: string;
+    settings: string;
     manageUsers: string;
     manualMatches: string;
     syncData: string;
@@ -98,6 +99,15 @@ export function UserDropdown({
             >
               <Wallet className="size-4 text-muted-foreground" />
               <span>{translations.withdrawals}</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-2 cursor-pointer py-2">
+            <Link
+              href={`/${lang}/settings`}
+              className="flex items-center gap-2 w-full"
+            >
+              <KeyRound className="size-4 text-muted-foreground" />
+              <span>{translations.settings}</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2 cursor-pointer py-2">
