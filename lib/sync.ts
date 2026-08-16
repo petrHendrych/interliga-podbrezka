@@ -267,9 +267,10 @@ async function readPlayerMoneySnapshot(): Promise<PlayerMoneySnapshot[]> {
 }
 
 /**
- * Recalculates, then reports who gained a fine, a bonus or a streak worth chasing. Returns
- * the notifications instead of sending them: this runs from `scripts/` too, outside Next,
- * where `lib/push.ts` cannot be imported at all.
+ * Recalculates, then reports who gained a fine or a bonus, and who is one clean game away
+ * from the success gathering starting to cost them. Returns the notifications instead of
+ * sending them: this runs from `scripts/` too, outside Next, where `lib/push.ts` cannot be
+ * imported at all.
  */
 export async function recalculateAndDiffPlayerMoney(): Promise<PersonalPush[]> {
   const before = await readPlayerMoneySnapshot();
