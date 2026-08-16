@@ -4,6 +4,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 
 const BRAND_MARK = path.join(process.cwd(), 'assets', 'brand-mark.svg');
+const BRAND_MARK_MONO = path.join(process.cwd(), 'assets', 'brand-mark-mono.svg');
 const THEMED_ICON = path.join(process.cwd(), 'app', 'icon.svg');
 const APP_DIR = path.join(process.cwd(), 'app');
 const OUTPUT_DIR = path.join(process.cwd(), 'public', 'icons');
@@ -24,6 +25,12 @@ const OUTPUTS = [
 
 const FAVICON_SIZES = [16, 32, 48];
 
+// The status bar notification badge. Android throws the colours away, keeps the alpha channel
+// and repaints it white, so an opaque square icon arrives as a solid block -- it has to be a
+// transparent silhouette. 96px is the density-independent 24dp icon at xxxhdpi, and the padding
+// is the breathing room the system itself does not add.
+const BADGE = { file: 'badge-96.png', size: 96, padding: 0.08 };
+
 async function onBackground(source: Buffer, size: number, padding: number) {
   const markSize = Math.round(size * (1 - 2 * padding));
   const offset = Math.round((size - markSize) / 2);
@@ -32,6 +39,26 @@ async function onBackground(source: Buffer, size: number, padding: number) {
   return sharp({
     create: {
       width: size, height: size, channels: 4, background: BACKGROUND,
+    },
+  })
+    .composite([{ input: mark, top: offset, left: offset }])
+    .png()
+    .toBuffer();
+}
+
+async function onTransparent(source: Buffer, size: number, padding: number) {
+  const markSize = Math.round(size * (1 - 2 * padding));
+  const offset = Math.round((size - markSize) / 2);
+  const mark = await sharp(source).resize(markSize, markSize).png().toBuffer();
+
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: {
+        r: 0, g: 0, b: 0, alpha: 0,
+      },
     },
   })
     .composite([{ input: mark, top: offset, left: offset }])
@@ -88,6 +115,13 @@ async function main() {
       console.log(`wrote public/icons/${file} (${size}x${size})`);
     }),
   );
+
+  const monoMark = await readFile(BRAND_MARK_MONO);
+  await writeFile(
+    path.join(OUTPUT_DIR, BADGE.file),
+    await onTransparent(monoMark, BADGE.size, BADGE.padding),
+  );
+  console.log(`wrote public/icons/${BADGE.file} (${BADGE.size}x${BADGE.size})`);
 
   await writeFile(path.join(APP_DIR, 'apple-icon.png'), await onBackground(brandMark, 180, 0.06));
   console.log('wrote app/apple-icon.png (180x180)');

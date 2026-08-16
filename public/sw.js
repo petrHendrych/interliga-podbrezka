@@ -1,10 +1,15 @@
 // Bump on every change to PRECACHE below, otherwise `activate` keeps the old entries alive.
-const CACHE = 'ilp-static-v1';
+const CACHE = 'ilp-static-v2';
 
 const LOCALES = ['sk', 'cs', 'hu', 'sr'];
 const DEFAULT_LOCALE = 'sk';
 const OFFLINE_URLS = LOCALES.map((locale) => `/${locale}/offline`);
-const PRECACHE = [...OFFLINE_URLS, '/icons/icon-192.png', '/icons/icon-512.png'];
+const PRECACHE = [
+  ...OFFLINE_URLS,
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/badge-96.png',
+];
 
 // Content-hashed bundles and static images only. Authenticated HTML is never stored: the app
 // shows one player's fines and balances, and a shared phone would hand them to the next user.
@@ -92,7 +97,9 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(payload.title || 'Interliga Podbrezová', {
     body: payload.body || '',
     icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    // The status bar icon on Android. Only the alpha channel survives, so this must be the
+    // transparent silhouette -- pointing it at the opaque app icon paints a solid square.
+    badge: '/icons/badge-96.png',
     // One tag per event, so a repeat replaces the old notification instead of stacking.
     tag: payload.tag || 'ilp-data',
     data: { url: payload.url || '/' },
