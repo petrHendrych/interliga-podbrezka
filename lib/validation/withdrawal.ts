@@ -1,6 +1,6 @@
 import { getStartOfBratislavaToday } from '@/lib/dates';
 import { getSeasonIdForDate } from '@/lib/season-config';
-import { isWithdrawalCategory } from '@/lib/withdrawal-categories';
+import { isWithdrawalCategory, type WithdrawalCategory } from '@/lib/withdrawal-categories';
 
 export const MAX_WITHDRAWAL = 10_000;
 export const MIN_DESCRIPTION_LENGTH = 3;
@@ -28,7 +28,8 @@ export interface WithdrawalInput {
 export interface ValidWithdrawal {
   amount: number;
   description: string;
-  category: string;
+  /** Narrowed by `isWithdrawalCategory` below, so callers can index the label map with it. */
+  category: WithdrawalCategory;
   withdrawnAt: Date;
   seasonId: number;
 }

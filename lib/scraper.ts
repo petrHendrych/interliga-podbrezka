@@ -15,18 +15,30 @@ import {
   releaseLock,
 } from './db-utils';
 import { syncData, type ScrapePayloads } from './sync';
+import type { NewMatchResult, PersonalPush } from './push-digest';
 import { getAllTeamIds, SEASONS_CONFIG } from './season-config';
+
+export interface ScrapeOutcome {
+  /** False when another run held the lock, so the caller announces nothing. */
+  ran: boolean;
+  newResults: NewMatchResult[];
+  personalPushes: PersonalPush[];
+}
+
+const SKIPPED: ScrapeOutcome = { ran: false, newResults: [], personalPushes: [] };
 
 /**
  * Main scraping job that fetches data from the external API and persists it to Neon DB.
  */
-export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
+export async function runScrapingJob(
+  source: 'cron' | 'manual' = 'manual',
+): Promise<ScrapeOutcome> {
   console.log(`Starting ${source} scraping job...`);
 
   const lockAcquired = await tryAcquireLock('scraping_job');
   if (!lockAcquired) {
     console.warn(`Scraping job already running (source: ${source}). Skipping this run.`);
-    return;
+    return SKIPPED;
   }
 
   try {
@@ -150,8 +162,9 @@ export async function runScrapingJob(source: 'cron' | 'manual' = 'manual') {
     }
 
     console.log(`Scraping job (${source}) completed successfully. Triggering data sync...`);
-    await syncData(payloads);
+    const { newResults, personalPushes } = await syncData(payloads);
     console.log(`All jobs (${source}) completed.`);
+    return { ran: true, newResults, personalPushes };
   } catch (error) {
     console.error(`Scraping job (${source}) failed:`, error);
     throw error;

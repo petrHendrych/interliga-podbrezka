@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { runScrapingJob } from '@/lib/scraper';
 import { revalidateSyncedData } from '@/lib/cache';
+import { notifyAdmins, sendMatchResultsPush, sendPersonalMoneyPushes } from '@/lib/push';
+import { dailyDedupeKey } from '@/lib/push-digest';
 
 /**
  * API Route to trigger the scraping job via Vercel Cron.
@@ -39,18 +41,26 @@ export async function GET(request: Request) {
 
   try {
     // Run the scraping job
-    await runScrapingJob('cron');
+    const outcome = await runScrapingJob('cron');
 
     // Cached reads live for a week, so the sync has to drop them explicitly.
     revalidateSyncedData();
 
+    // Silence when the scrape found nothing new — which is most weeks.
+    await sendMatchResultsPush(outcome.newResults);
+    await sendPersonalMoneyPushes(outcome.personalPushes);
+
     return NextResponse.json({
       success: true,
       message: 'Scraping job completed successfully',
+      newResults: outcome.newResults.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Error during cron scraping job:', error);
+
+    // The 500 below goes to Vercel's cron log, which nobody reads. Once a day is enough.
+    await notifyAdmins('scrapeFailed', {}, dailyDedupeKey(new Date()));
 
     return NextResponse.json({
       success: false,

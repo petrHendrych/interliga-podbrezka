@@ -41,6 +41,10 @@ JSON
 writes nothing. `apply` returns `{ changes, recalculated, sheet }`: `changes` is a
 human-readable before/after list, `sheet` is the state after the write.
 
+`apply` also accepts `--notify`, which pushes one "money updated" notification to
+every subscribed user. Pass it on the **last** apply of an editing session only —
+one notification per session, never one per write.
+
 ## Workflow
 
 1. **Pick the match.** Run `list --limit 4` and offer the four newest played

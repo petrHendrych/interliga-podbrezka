@@ -377,6 +377,78 @@
     "offlineTitle": "Nisi na mreži",
     "offlineDescription": "Stranica nije mogla da se učita. Proveri vezu i pokušaj ponovo.",
     "retry": "Pokušaj ponovo",
-    "offlineBanner": "Nisi na mreži. Zahtevi na čekanju biće završeni kada se veza vrati."
+    "offlineBanner": "Nisi na mreži. Zahtevi na čekanju biće završeni kada se veza vrati.",
+    "notificationsEnable": "Uključi obaveštenja",
+    "notificationsDisable": "Isključi obaveštenja",
+    "notificationsBlocked": "Obaveštenja su blokirana u podešavanjima pregledača",
+    "notifyUsers": "Pošalji obaveštenje",
+    "notifyConfirmTitle": "Poslati obaveštenje igračima?",
+    "notifyConfirmDescription": "Svi koji imaju uključena obaveštenja dobiće poruku da su finansije ažurirane.",
+    "notifySending": "Šaljem…",
+    "notifySent": "Obaveštenje je poslato.",
+    "notifyErrors": {
+      "unauthorized": "Nemaš ovlašćenje za ovu akciju.",
+      "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo.",
+      "sendFailed": "Obaveštenje nije moguće poslati, pokušaj ponovo."
+    }
+  },
+  "push": {
+    "events": {
+      "matchResult": {
+        "title": "Novi rezultat",
+        "body": "Podbrezová {ourScore} : {opponentScore} {opponent}"
+      },
+      "matchResults": {
+        "title": "Novi rezultati",
+        "body": "Stiglo je {matches}. Pogledaj ih u aplikaciji."
+      },
+      "bonusEarned": {
+        "title": "Dobio si bonus!",
+        "body": "Za učinak ti je stiglo {amount} €. Čestitam!"
+      },
+      "fineAdded": {
+        "title": "Nova kazna",
+        "body": "Stiglo ti je {amount} €. Ukupno duguješ {total} €."
+      },
+      "streakWarning": {
+        "title": "Pazi na seriju",
+        "body": "Imaš {streak} utakmice zaredom bez greške. Svaka sledeća čista utakmica te košta {amount} € u banku."
+      },
+      "debtReminder": {
+        "title": "Ne zaboravi na dug",
+        "body": "Do domaće utakmice su {days} dana. Duguješ {amount} € banci."
+      },
+      "moneyUpdated": {
+        "title": "Ažurirane finansije",
+        "body": "Kazne i bonusi su ažurirani. Proveri svoje stanje."
+      },
+      "bankWithdrawal": {
+        "title": "Podizanje iz banke",
+        "body": "Iz timske banke je otišlo {amount} € — {category}."
+      },
+      "userAwaitingApproval": {
+        "title": "Nova registracija",
+        "body": "{name} čeka odobrenje."
+      },
+      "scrapeFailed": {
+        "title": "Sinhronizacija nije uspela",
+        "body": "Preuzimanje rezultata se završilo greškom. Proveri logove."
+      },
+      "scrapeStuck": {
+        "title": "Sinhronizacija je zaglavila",
+        "body": "Izvršavanje se nije završilo već {hours} h. Pokreni je ponovo."
+      },
+      "unsettledMatch": {
+        "title": "Nerešena utakmica",
+        "body": "Utakmica protiv {opponent} i dalje ima {amount} € neplaćenih."
+      }
+    },
+    "counts": {
+      "newResults": {
+        "one": "{count} nova utakmica",
+        "few": "{count} nove utakmice",
+        "other": "{count} novih utakmica"
+      }
+    }
   }
 }

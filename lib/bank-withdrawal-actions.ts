@@ -8,6 +8,7 @@ import { db } from './db';
 import { bankWithdrawals } from './db/schema';
 import { getSession } from './session';
 import { updateSyncedData } from './cache';
+import { sendPushToAll } from './push';
 import {
   type WithdrawalError,
   type WithdrawalInput,
@@ -50,6 +51,14 @@ export async function createWithdrawal(input: WithdrawalInput): Promise<Withdraw
     updateSyncedData();
     revalidatePath(WITHDRAWALS_PATH, 'page');
     revalidatePath(HOME_PATH, 'page');
+
+    // Money leaving the shared pot is exactly what the squad should hear about unprompted.
+    // The category label is resolved per reader, so each locale gets its own wording.
+    await sendPushToAll('bankWithdrawal', (_locale, dictionary) => ({
+      amount: validated.amount.toFixed(2),
+      category: dictionary.withdrawals.categories[validated.category],
+    }));
+
     return { success: true, id: created.id };
   } catch (error) {
     console.error('Failed to create bank withdrawal:', error);

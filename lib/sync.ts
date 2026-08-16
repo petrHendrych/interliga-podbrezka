@@ -1,8 +1,11 @@
 /* eslint-disable no-console */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-continue */
-import { eq, sql } from 'drizzle-orm';
-import { db } from './db';
+import {
+  eq, inArray, isNotNull, sql,
+} from 'drizzle-orm';
+// `sql` here is Drizzle's fragment builder, so the Neon client needs its own name.
+import { db, sql as neonSql } from './db';
 import {
   matches,
   users,
@@ -17,6 +20,12 @@ import {
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
 import { MatchListItem, parseApiDate } from './api';
+import {
+  derivePersonalPushes,
+  type NewMatchResult,
+  type PersonalPush,
+  type PlayerMoneySnapshot,
+} from './push-digest';
 import {
   type SnapshotRow,
   computeAverage,
@@ -220,6 +229,56 @@ export async function recalculateDerivedFinancials() {
   `);
 }
 
+/**
+ * Every player's outstanding money and current streak, read either side of a recalculation so
+ * the diff can tell who has something new to hear about. Unpaid only: a settled row is money
+ * that already changed hands and must never resurface as a notification.
+ */
+async function readPlayerMoneySnapshot(): Promise<PlayerMoneySnapshot[]> {
+  const rows = await neonSql`
+    SELECT
+      mpr.user_id::text AS user_id,
+      COALESCE(SUM(
+        CASE WHEN NOT mpr.is_paid
+          THEN COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0)
+          ELSE 0 END
+      ), 0)::numeric AS unpaid_fines,
+      COALESCE(SUM(
+        CASE WHEN NOT mpr.is_bonus_paid THEN COALESCE(mpr.bonus_received, 0) ELSE 0 END
+      ), 0)::numeric AS unpaid_bonus,
+      COALESCE((
+        SELECT latest.faultless_streak
+        FROM match_player_results latest
+        JOIN matches lm ON latest.match_id = lm.external_id
+        WHERE latest.user_id = mpr.user_id
+        ORDER BY lm.date DESC NULLS LAST
+        LIMIT 1
+      ), 0) AS faultless_streak
+    FROM match_player_results mpr
+    GROUP BY mpr.user_id
+  `;
+
+  return rows.map((row) => ({
+    userId: String(row.user_id),
+    unpaidFines: Number(row.unpaid_fines || 0),
+    unpaidBonus: Number(row.unpaid_bonus || 0),
+    faultlessStreak: Number(row.faultless_streak || 0),
+  }));
+}
+
+/**
+ * Recalculates, then reports who gained a fine, a bonus or a streak worth chasing. Returns
+ * the notifications instead of sending them: this runs from `scripts/` too, outside Next,
+ * where `lib/push.ts` cannot be imported at all.
+ */
+export async function recalculateAndDiffPlayerMoney(): Promise<PersonalPush[]> {
+  const before = await readPlayerMoneySnapshot();
+  await recalculateDerivedFinancials();
+  const after = await readPlayerMoneySnapshot();
+
+  return derivePersonalPushes(before, after);
+}
+
 export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknown>) {
   const playerSnapshots: SnapshotRow[] = payload
     ? toSnapshotRows(payload)
@@ -379,10 +438,28 @@ export async function syncAllPlayerResultsSnapshots(payload?: Map<number, unknow
   }
 }
 
-export async function syncData(payloads?: ScrapePayloads) {
+/** Ids of every match that already carries a score, so a sync can tell what it just added. */
+async function readScoredMatchIds(): Promise<Set<number>> {
+  const rows = await db
+    .select({ externalId: matches.externalId })
+    .from(matches)
+    .where(isNotNull(matches.teamTotalScore));
+
+  return new Set(rows.map((row) => row.externalId));
+}
+
+export interface SyncOutcome {
+  /** Matches that had no score before this run and have one now. */
+  newResults: NewMatchResult[];
+  /** Players whose own money or streak moved, one notification each at most. */
+  personalPushes: PersonalPush[];
+}
+
+export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> {
   console.log(`Starting data sync from ${payloads ? 'scrape payloads' : 'scraped_data'}...`);
 
   try {
+    const scoredBefore = await readScoredMatchIds();
     const matchSnapshots: SnapshotRow[] = payloads
       ? toSnapshotRows(payloads.matchDetails)
       : await db
@@ -693,9 +770,21 @@ export async function syncData(payloads?: ScrapePayloads) {
     await syncAllPlayerResultsSnapshots(payloads?.playerResults);
 
     console.log('Recalculating fines, bonuses and trainer payments...');
-    await recalculateDerivedFinancials();
+    const personalPushes = await recalculateAndDiffPlayerMoney();
 
-    console.log('Data sync completed successfully.');
+    const newResultIds = [...await readScoredMatchIds()].filter((id) => !scoredBefore.has(id));
+    const newResults = newResultIds.length === 0 ? [] : await db
+      .select({
+        externalId: matches.externalId,
+        opponent: matches.opponent,
+        teamTotalScore: matches.teamTotalScore,
+        opponentTotalScore: matches.opponentTotalScore,
+      })
+      .from(matches)
+      .where(inArray(matches.externalId, newResultIds));
+
+    console.log(`Data sync completed successfully. ${newResults.length} new result(s).`);
+    return { newResults, personalPushes };
   } catch (error) {
     console.error('Data sync failed:', error);
     throw error;

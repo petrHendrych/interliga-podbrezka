@@ -8,6 +8,7 @@ import { users } from './db/schema';
 import { hashPassword, verifyPassword } from './auth';
 import { setSession, clearSession } from './session';
 import { i18n } from './i18n/config';
+import { notifyAdmins } from './push';
 
 type ActionState = {
   error?: string;
@@ -48,6 +49,11 @@ export async function signUp(prevState: ActionState, formData: FormData): Promis
     console.error('Sign up error:', error);
     return { error: 'genericError' };
   }
+
+  // An unapproved trainer earns nothing until someone approves them, so the approval must not
+  // wait for an admin to think of opening the users page. The sender swallows its own
+  // failures, so a broken push can never turn a successful sign-up into an error.
+  await notifyAdmins('userAwaitingApproval', { name });
 
   return { success: true };
 }

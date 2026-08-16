@@ -7,7 +7,10 @@ dotenv.config({ path: '.env.local', quiet: true });
 const USAGE = `Usage:
   npx tsx scripts/match-money.ts list [--limit N] [--unpaid-only]
   npx tsx scripts/match-money.ts sheet --match-id <id>
-  npx tsx scripts/match-money.ts apply --match-id <id> [--dry-run]   # payload JSON on stdin
+  npx tsx scripts/match-money.ts apply --match-id <id> [--dry-run] [--notify]   # payload JSON on stdin
+
+--notify pushes one "money updated" notification to every subscribed user. Pass it on the
+last apply of an editing session, not on each one.
 
 apply payload:
   {
@@ -101,6 +104,12 @@ async function runApply(args: string[]): Promise<void> {
   const result = await applyMatchMoneyUpdates(matchId, payload);
   const { requestSyncedDataRevalidation } = await import('../lib/revalidate-client');
   await requestSyncedDataRevalidation();
+
+  if (args.includes('--notify')) {
+    const { requestPushBroadcast } = await import('../lib/push-client');
+    await requestPushBroadcast('moneyUpdated');
+  }
+
   console.log(JSON.stringify(result, null, 2));
 }
 

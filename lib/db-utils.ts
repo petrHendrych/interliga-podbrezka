@@ -12,6 +12,7 @@ import {
 } from './season-config';
 import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
+import type { Fixture } from './payday';
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
   if (data === undefined) {
@@ -87,6 +88,23 @@ export async function tryAcquireLock(
     console.error(`Failed to acquire lock for ${jobName}:`, error);
     return false;
   }
+}
+
+/** Reads a job lock without touching it, so the cron can spot a run that died mid-flight. */
+export async function getJobLock(
+  jobName: string,
+): Promise<{ value: string | null; updatedAt: Date | null } | null> {
+  const rows = await db
+    .select({ value: systemStatus.value, updatedAt: systemStatus.updatedAt })
+    .from(systemStatus)
+    .where(eq(systemStatus.name, `lock:${jobName}`));
+
+  if (rows.length === 0) return null;
+
+  return {
+    value: rows[0].value,
+    updatedAt: rows[0].updatedAt ? new Date(rows[0].updatedAt) : null,
+  };
 }
 
 export async function releaseLock(jobName: string): Promise<void> {
@@ -562,6 +580,95 @@ export interface TeamBankBalance {
 export interface UnpaidDebtor {
   name: string;
   amount: number;
+}
+
+export interface UnpaidDebtorAccount {
+  userId: string;
+  amount: number;
+}
+
+/**
+ * The same debt as `getUnpaidDebtors()`, keyed by account rather than by display name so a
+ * notification can be addressed. All-time and league-wide: the reminder asks what you owe
+ * the bank, not what you owe it under one filter — which is also why `fineAmount()` is called
+ * without a league and therefore counts the success gathering.
+ */
+export async function getUnpaidDebtorsByUser(): Promise<UnpaidDebtorAccount[]> {
+  const rows = await sql`
+    SELECT user_id::text AS user_id, SUM(amount)::numeric AS amount
+    FROM (
+      SELECT mpr.user_id AS user_id, ${fineAmount()} AS amount
+      FROM match_player_results mpr
+      WHERE mpr.is_paid = false
+
+      UNION ALL
+
+      SELECT tp.user_id AS user_id, tp.amount AS amount
+      FROM trainer_payments tp
+      WHERE tp.is_paid = false
+    ) debts
+    GROUP BY user_id
+    HAVING SUM(amount) > 0
+    ORDER BY SUM(amount) DESC
+  `;
+
+  return rows.map((r) => ({
+    userId: String(r.user_id),
+    amount: Number(r.amount || 0),
+  }));
+}
+
+/** Fixtures still ahead of us, for `nextHomeMatchDate()` to pick the payday out of. */
+export async function getUpcomingFixtures(from: Date): Promise<Fixture[]> {
+  const rows = await sql`
+    SELECT date, is_home, team_total_score
+    FROM matches
+    WHERE date >= ${from.toISOString()}
+      AND team_total_score IS NULL
+    ORDER BY date ASC
+  `;
+
+  return rows.map((r) => ({
+    date: r.date ? new Date(String(r.date)) : null,
+    isHome: r.is_home === null ? null : Boolean(r.is_home),
+    teamTotalScore: r.team_total_score === null ? null : Number(r.team_total_score),
+  }));
+}
+
+export interface UnsettledMatch {
+  externalId: number;
+  opponent: string | null;
+  date: Date | null;
+  unpaid: number;
+}
+
+/**
+ * Played matches whose fines nobody has settled yet. A match whose misses were never entered
+ * looks exactly like this, which is the point: the nag catches both.
+ */
+export async function getUnsettledMatches(playedBefore: Date): Promise<UnsettledMatch[]> {
+  const rows = await sql`
+    SELECT
+      m.external_id,
+      m.opponent,
+      m.date,
+      SUM(${fineAmount()})::numeric AS unpaid
+    FROM matches m
+    JOIN match_player_results mpr ON mpr.match_id = m.external_id
+    WHERE m.team_total_score IS NOT NULL
+      AND m.date < ${playedBefore.toISOString()}
+      AND mpr.is_paid = false
+    GROUP BY m.external_id, m.opponent, m.date
+    HAVING SUM(${fineAmount()}) > 0
+    ORDER BY m.date ASC
+  `;
+
+  return rows.map((r) => ({
+    externalId: Number(r.external_id),
+    opponent: r.opponent ? String(r.opponent) : null,
+    date: r.date ? new Date(String(r.date)) : null,
+    unpaid: Number(r.unpaid || 0),
+  }));
 }
 
 /** Everyone still owing money to the bank: players' fines plus trainers' payments. */
