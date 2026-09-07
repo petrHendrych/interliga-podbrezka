@@ -306,8 +306,8 @@
     },
     "trainer": {
       "title": "Trener",
-      "description": "Trener ne plaća nikakve kazne. Ove iznose on isplaćuje timu i igračima.",
-      "bonuses": [
+      "description": "Ove sume trener isplaćuje timu i igračima. Sam ne dobija nikakav bonus.",
+      "fines": [
         {
           "title": "Tim 3800 i više",
           "amount": "10 €",

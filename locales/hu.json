@@ -306,8 +306,8 @@
     },
     "trainer": {
       "title": "Edző",
-      "description": "Az edző nem fizet büntetést. Ezeket az összegeket ő fizeti ki a csapatnak és a játékosoknak.",
-      "bonuses": [
+      "description": "Ezeket az összegeket az edző fizeti a csapatnak és a játékosoknak. Ő maga bónuszt nem kap.",
+      "fines": [
         {
           "title": "Csapat 3800-tól",
           "amount": "10 €",

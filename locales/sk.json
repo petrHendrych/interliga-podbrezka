@@ -306,8 +306,8 @@
     },
     "trainer": {
       "title": "Tréner",
-      "description": "Tréner neplatí žiadne pokuty. Tieto sumy vypláca tímu a hráčom.",
-      "bonuses": [
+      "description": "Tieto sumy tréner vypláca tímu a hráčom. Sám žiadny bonus nedostáva.",
+      "fines": [
         {
           "title": "Tím 3800 a viac",
           "amount": "10 €",
