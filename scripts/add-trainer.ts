@@ -15,7 +15,7 @@ async function main() {
     ON trainer_payments (match_id, user_id, condition_type);
   `;
 
-  const trainerName = 'Miloš Ponajavić';
+  const trainerName = 'Miloš Ponjavić';
 
   const existing = await db
     .select()
