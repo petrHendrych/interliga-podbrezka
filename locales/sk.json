@@ -18,6 +18,7 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
+    "count4000": "4000+",
     "zeroMisses": "0 chyb",
     "trainerLabel": "tréner",
     "matchesPlayed": {
@@ -317,6 +318,11 @@
           "title": "Tím 3900 a viac",
           "amount": "15 €",
           "note": "Od 3900 nahrádza 10 € za 3800, nesčítava sa."
+        },
+        {
+          "title": "Tím 4000 a viac",
+          "amount": "20 €",
+          "note": "Od 4000 nahrádza 15 € za 3900, nesčítava sa."
         },
         {
           "title": "Tím bez chyby",

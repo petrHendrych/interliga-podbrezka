@@ -206,6 +206,7 @@ export interface DBTrainerStats {
   name: string;
   count3800: number;
   count3900: number;
+  count4000: number;
   zeroMisses: number;
   totalPaid: string;
 }
@@ -222,6 +223,7 @@ export async function getTrainersWithStats(
       u.name,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 10 THEN 1 END)::int as count3800,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 15 THEN 1 END)::int as count3900,
+      COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 20 THEN 1 END)::int as count4000,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'zero_faults' THEN 1 END)::int as "zeroMisses",
       (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN tp.amount ELSE 0 END), 0)::text || ' €') as "totalPaid"
     FROM users u

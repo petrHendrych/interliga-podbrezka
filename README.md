@@ -21,6 +21,7 @@ Project is deployed on Vercel with URL: https://interliga-podbrezka.vercel.app/.
 **There are also some special cases for trainer:**
 - team plays over 3800 total -> 10€
 - team plays over 3900 total -> 15€
+- team plays over 4000 total -> 20€
 - team plays without fault -> 10€
 
 **We have a single bonus also:**

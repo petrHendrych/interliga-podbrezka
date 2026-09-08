@@ -18,6 +18,7 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
+    "count4000": "4000+",
     "zeroMisses": "0 grešaka",
     "trainerLabel": "trener",
     "matchesPlayed": {
@@ -317,6 +318,11 @@
           "title": "Tim 3900 i više",
           "amount": "15 €",
           "note": "Od 3900 zamenjuje 10 € za 3800, ne sabira se."
+        },
+        {
+          "title": "Tim 4000 i više",
+          "amount": "20 €",
+          "note": "Od 4000 zamenjuje 15 € za 3900, ne sabira se."
         },
         {
           "title": "Tim bez greške",

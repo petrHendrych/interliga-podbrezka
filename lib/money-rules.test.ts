@@ -237,6 +237,9 @@ describe('trainer: team performance', () => {
     [3899, 10],
     [3900, 15],
     [3901, 15],
+    [3999, 15],
+    [4000, 20],
+    [4001, 20],
   ])('a team total of %i pays %s €', (teamTotal, expected) => {
     expect(trainerScoreBonus(teamTotal)).toBe(expected);
   });
@@ -308,6 +311,17 @@ describe('deriveTrainerPayments', () => {
       { conditionType: 'score_bonus', amount: 15 },
       { conditionType: 'zero_faults', amount: 10 },
       { conditionType: 'elite_player', amount: 60 },
+    ]);
+  });
+
+  it('carries the 4000 tier through as a single 20 € score bonus', () => {
+    const rows = Array.from({ length: 6 }, (_, i) => player({
+      userId: `p${i}`, total: 680, faults: 0,
+    }));
+
+    expect(deriveTrainerPayments({ teamTotalScore: 4000, isHome: true }, rows)).toEqual([
+      { conditionType: 'score_bonus', amount: 20 },
+      { conditionType: 'zero_faults', amount: 10 },
     ]);
   });
 

@@ -23,8 +23,10 @@ export const STREAK_FINE = 10;
 
 export const TRAINER_SCORE_LIMIT = 3800;
 export const TRAINER_SCORE_HIGH_LIMIT = 3900;
+export const TRAINER_SCORE_TOP_LIMIT = 4000;
 export const TRAINER_SCORE_BONUS = 10;
 export const TRAINER_SCORE_HIGH_BONUS = 15;
+export const TRAINER_SCORE_TOP_BONUS = 20;
 export const TRAINER_ZERO_FAULTS_BONUS = 10;
 export const TRAINER_ZERO_FAULTS_MIN_PLAYERS = 6;
 export const TRAINER_ELITE_PLAYER_BONUS = 10;
@@ -164,9 +166,10 @@ export function derivePlayers(
   }));
 }
 
-/** `score_bonus` in the `spec` CTE: 15 replaces 10 from 3900 on, it never stacks. */
+/** `score_bonus` in the `spec` CTE: each tier replaces the one below it, they never stack. */
 export function trainerScoreBonus(teamTotalScore: number | null | undefined): number | null {
   if (typeof teamTotalScore !== 'number') return null;
+  if (teamTotalScore >= TRAINER_SCORE_TOP_LIMIT) return TRAINER_SCORE_TOP_BONUS;
   if (teamTotalScore >= TRAINER_SCORE_HIGH_LIMIT) return TRAINER_SCORE_HIGH_BONUS;
   if (teamTotalScore >= TRAINER_SCORE_LIMIT) return TRAINER_SCORE_BONUS;
   return null;

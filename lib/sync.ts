@@ -179,7 +179,8 @@ export async function recalculateDerivedFinancials() {
     ),
     spec AS (
       SELECT match_id, 'score_bonus' AS condition_type,
-             CASE WHEN team_total_score >= 3900 THEN 15
+             CASE WHEN team_total_score >= 4000 THEN 20
+                  WHEN team_total_score >= 3900 THEN 15
                   WHEN team_total_score >= 3800 THEN 10 END AS amount
       FROM agg
       UNION ALL

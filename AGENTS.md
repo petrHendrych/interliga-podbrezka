@@ -84,7 +84,7 @@ When working in plan mode, the plan must be detailed and written to a file — n
 
 Rules for calculating gatherings (fines) and bonuses for each role. The fine thresholds are
 strict — a player on exactly 600 or a team on exactly 3700 is not penalised — while the bonus
-thresholds are inclusive: exactly 700 / 3800 / 3900 already earns the bonus.
+thresholds are inclusive: exactly 700 / 3800 / 3900 / 4000 already earns the bonus.
 `recalculateDerivedFinancials()` in `lib/sync.ts` is the only implementation; this section
 describes it, so the two change together.
 
@@ -123,6 +123,7 @@ trainers each owe the full amount.
 - **Team Performance** (`score_bonus`):
   - Team Total 3800 or more: 10€
   - Team Total 3900 or more: 15€ (replaces the 3800 bonus, not cumulative).
+  - Team Total 4000 or more: 20€ (replaces the 3900 bonus, not cumulative).
 - **Zero Faults Bonus** (`zero_faults`): 10€ when the team's fault total is 0 and at least
   6 players actually played (`total > 0`). If no player row carries a fault count at all,
   the sum is NULL and no bonus is created.
@@ -208,9 +209,9 @@ at, and above the boundary:
 
 - Player total `599 / 600 / 601` (under-600 fine, strict) and `699 / 700 / 701` (40€ bonus,
   inclusive from 700).
-- Team total `3699 / 3700 / 3701` (2€ per player, strict), and `3799 / 3800` / `3899 / 3900`
-  for the trainer `score_bonus`, which starts at each limit and where 15€ replaces 10€ rather
-  than stacking.
+- Team total `3699 / 3700 / 3701` (2€ per player, strict), and `3799 / 3800` / `3899 / 3900` /
+  `3999 / 4000` for the trainer `score_bonus`, which starts at each limit and where the higher
+  tier replaces the lower one rather than stacking.
 - Faults `0, 1, 2, 3, n` against `(n * (n + 1)) / 2`.
 - `special_faults_count` at 5€ each, summed from `full_faults_count` and
   `second_to_last_faults_count`.
