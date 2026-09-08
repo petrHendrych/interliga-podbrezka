@@ -18,6 +18,7 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
+    "count4000": "4000+",
     "zeroMisses": "0 hiba",
     "trainerLabel": "edző",
     "matchesPlayed": {
@@ -38,7 +39,7 @@
       "bonusesTotal": "Bónuszok összesen",
       "bonusesToPay": "Kifizetésre vár",
       "topDonator": "Legnagyobb adományozó",
-      "belowLimit": "Limit alatt (3750)",
+      "belowLimit": "Limit alatt (3700)",
       "nextPickup": "Következő pénzfelvétel: {date}",
       "withdrawals": "Kivétek"
     }
@@ -190,7 +191,7 @@
       "faults": "{count} hiba",
       "worstPlayer": "leggyengébb játékos",
       "under600": "600 alatt",
-      "teamUnder3750": "csapat 3750 alatt",
+      "teamUnderLimit": "csapat 3700 alatt",
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",
@@ -279,9 +280,9 @@
           "note": "Minden teliből vétett hibáért és minden kihagyott utolsó előtti dobásért."
         },
         {
-          "title": "Csapat 3750 alatt",
-          "amount": "10 €",
-          "note": "Minden játékosnak, aki a meccsen játszott. Az Interliga hazai meccseire és a tornákra vonatkozik, itthon és idegenben is. Pontosan 3750 még rendben van, csak az az alatti számít."
+          "title": "Csapat 3700 alatt",
+          "amount": "2 €",
+          "note": "Minden játékosnak, aki a meccsen játszott. Csak a hazai meccsekre vonatkozik: az Interliga hazai meccseire és a hazai tornákra. Pontosan 3700 még rendben van, csak az az alatti számít."
         },
         {
           "title": "Hibátlan meccsek",
@@ -306,8 +307,8 @@
     },
     "trainer": {
       "title": "Edző",
-      "description": "Az edző nem fizet büntetést. Ezeket az összegeket ő fizeti ki a csapatnak és a játékosoknak.",
-      "bonuses": [
+      "description": "Ezeket az összegeket az edző fizeti a csapatnak és a játékosoknak. Ő maga bónuszt nem kap.",
+      "fines": [
         {
           "title": "Csapat 3800-tól",
           "amount": "10 €",
@@ -317,6 +318,11 @@
           "title": "Csapat 3900-tól",
           "amount": "15 €",
           "note": "3900-tól a 3800-ért járó 10 € helyett, nem adódik hozzá."
+        },
+        {
+          "title": "Csapat 4000-től",
+          "amount": "20 €",
+          "note": "4000-től a 3900-ért járó 15 € helyett, nem adódik hozzá."
         },
         {
           "title": "Csapat hiba nélkül",
@@ -335,7 +341,8 @@
       "items": [
         "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert minden versenyen át számoljuk.",
         "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
-        "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg."
+        "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg.",
+        "A dress code ismételt be nem tartása vagy a mobil túlzott használata a meccs alatt 10 € különleges büntetés."
       ]
     }
   },

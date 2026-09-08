@@ -72,7 +72,7 @@ export default async function RulesPage({ params }: PageProps) {
           <p className={SECTION_HINT}>{t.trainer.description}</p>
         </div>
 
-        <RuleList label={t.bonusesLabel} tone="bonus" items={t.trainer.bonuses} />
+        <RuleList label={t.finesLabel} tone="fine" items={t.trainer.fines} />
       </div>
 
       <div className={SECTION}>

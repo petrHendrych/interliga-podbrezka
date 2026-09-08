@@ -41,6 +41,7 @@ export interface PlayerWithStats extends PlayerDetail {
 export interface TrainerStats {
   count3800: number;
   count3900: number;
+  count4000: number;
   zeroMisses: number;
   totalPaid: string;
 }
@@ -124,7 +125,7 @@ export function collectBelowLimit(
     .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
     .map((m) => ({
       id: m.id,
-      name: m.isHome ? m.awayName : m.homeName,
+      name: m.awayName,
       score: m.teamTotalScore,
     }));
 }
@@ -244,6 +245,7 @@ async function fetchHomeDataInternal(
     stats: {
       count3800: t.count3800,
       count3900: t.count3900,
+      count4000: t.count4000,
       zeroMisses: t.zeroMisses,
       totalPaid: t.totalPaid,
     },

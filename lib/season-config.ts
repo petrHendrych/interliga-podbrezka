@@ -82,8 +82,8 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
 
 export const DEFAULT_SEASON_ID = 13;
 
-/** Interliga home matches under this team total fine every player who played. */
-export const TEAM_SCORE_LIMIT = 3750;
+/** Home matches under this team total fine every player who played. */
+export const TEAM_SCORE_LIMIT = 3700;
 
 /** Manually entered matches get ids above this, so the range says "not scraped". */
 export const MANUAL_MATCH_ID_BASE = 900_000_000;

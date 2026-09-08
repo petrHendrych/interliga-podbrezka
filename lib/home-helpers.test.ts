@@ -52,21 +52,28 @@ describe('collectBelowLimit', () => {
     expect(collectBelowLimit([match()], 'pohar')).toBeNull();
   });
 
-  it('lists home Interliga and tournament matches below the limit', () => {
+  it('lists home Interliga and home tournament matches below the limit', () => {
     const matches = [
       match({ id: 1, teamTotalScore: 3600 }),
       match({ id: 2, teamTotalScore: 3800 }),
-      match({
-        id: 3, teamTotalScore: 3400, leagueId: tournamentId, isHome: false,
-      }),
+      match({ id: 3, teamTotalScore: 3400, leagueId: tournamentId }),
     ];
 
     expect(collectBelowLimit(matches, 'all')?.map((m) => m.id)).toEqual([1, 3]);
   });
 
-  it('ignores away Interliga matches, which are exempt', () => {
-    const matches = [match({ isHome: false, teamTotalScore: 3000 })];
-    expect(collectBelowLimit(matches, 'all')).toBeNull();
+  it('ignores a team total of exactly the limit', () => {
+    expect(collectBelowLimit([match({ teamTotalScore: 3700 })], 'all')).toEqual([]);
+  });
+
+  it('ignores away matches, which are exempt', () => {
+    const away = [
+      match({ isHome: false, teamTotalScore: 3000 }),
+      match({
+        id: 2, isHome: false, leagueId: tournamentId, teamTotalScore: 3000,
+      }),
+    ];
+    expect(collectBelowLimit(away, 'all')).toBeNull();
   });
 
   it('ignores an unplayed match with a zero team total', () => {
@@ -81,8 +88,6 @@ describe('collectBelowLimit', () => {
 
   it('names the opponent, not our own team', () => {
     expect(collectBelowLimit([match()], 'all')?.[0].name).toBe('Rakovice');
-    expect(collectBelowLimit([match({ isHome: false, leagueId: tournamentId })], 'all')?.[0].name)
-      .toBe('ŠKK Podbrezová');
   });
 });
 

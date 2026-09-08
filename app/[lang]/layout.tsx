@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { BackgroundDots } from '@/components/layout/BackgroundDots';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
+import { LiveDataRefresher } from '@/components/pwa/LiveDataRefresher';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { Locale } from '@/lib/i18n/config';
@@ -100,6 +101,7 @@ export default async function RootLayout({
         >
           <BackgroundDots />
           <ServiceWorkerRegistrar />
+          <LiveDataRefresher />
           <Header lang={lang} />
           <OfflineBanner message={dict.pwa.offlineBanner} />
           <InstallPrompt translations={dict.pwa} />

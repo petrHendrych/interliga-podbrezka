@@ -206,6 +206,7 @@ export interface DBTrainerStats {
   name: string;
   count3800: number;
   count3900: number;
+  count4000: number;
   zeroMisses: number;
   totalPaid: string;
 }
@@ -222,6 +223,7 @@ export async function getTrainersWithStats(
       u.name,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 10 THEN 1 END)::int as count3800,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 15 THEN 1 END)::int as count3900,
+      COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 20 THEN 1 END)::int as count4000,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'zero_faults' THEN 1 END)::int as "zeroMisses",
       (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN tp.amount ELSE 0 END), 0)::text || ' €') as "totalPaid"
     FROM users u
@@ -262,7 +264,7 @@ export interface PlayerMatchResult {
   avg: number;
   isWorstPlayer: boolean;
   isUnder600: boolean;
-  isTeamUnder3750: boolean;
+  isTeamUnderLimit: boolean;
   fullFaultsCount: number;
   secondToLastFaultsCount: number;
   specialFaultsCount: number;
@@ -453,7 +455,7 @@ export async function getPlayerMatchResultsByExternalId(
       mpr.avg,
       mpr.is_worst_player,
       mpr.is_under_600,
-      mpr.is_team_under_3750,
+      mpr.is_team_under_limit,
       COALESCE(mpr.full_faults_count, 0) as full_faults_count,
       COALESCE(mpr.second_to_last_faults_count, 0) as second_to_last_faults_count,
       COALESCE(mpr.special_faults_count, 0) as special_faults_count,
@@ -488,7 +490,7 @@ export async function getPlayerMatchResultsByExternalId(
       avg: Number(r.avg || 0),
       isWorstPlayer: Boolean(r.is_worst_player),
       isUnder600: Boolean(r.is_under_600),
-      isTeamUnder3750: Boolean(r.is_team_under_3750),
+      isTeamUnderLimit: Boolean(r.is_team_under_limit),
       fullFaultsCount: Number(r.full_faults_count || 0),
       secondToLastFaultsCount: Number(r.second_to_last_faults_count || 0),
       specialFaultsCount: Number(r.special_faults_count || 0),

@@ -18,6 +18,7 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
+    "count4000": "4000+",
     "zeroMisses": "0 chyb",
     "trainerLabel": "tréner",
     "matchesPlayed": {
@@ -38,7 +39,7 @@
       "bonusesTotal": "Bonusy celkom",
       "bonusesToPay": "Treba vyplatiť",
       "topDonator": "Najväčší darca",
-      "belowLimit": "Pod limit (3750)",
+      "belowLimit": "Pod limit (3700)",
       "nextPickup": "Najbližší výber peňazí: {date}",
       "withdrawals": "Výbery"
     }
@@ -190,7 +191,7 @@
       "faults": "{count} chýb",
       "worstPlayer": "najhorší hráč",
       "under600": "pod 600",
-      "teamUnder3750": "tím pod 3750",
+      "teamUnderLimit": "tím pod 3700",
       "fullFaults": "{count}x chyba do plných",
       "secondToLastFaults": "{count}x predposledný hod",
       "specialFaults": "{count}x špeciálna chyba",
@@ -279,9 +280,9 @@
           "note": "Za každú chybu do plných a za každý vynechaný predposledný hod."
         },
         {
-          "title": "Tím pod 3750",
-          "amount": "10 €",
-          "note": "Pre každého hráča, ktorý v zápase hral. Platí pre domáce zápasy Interligy a pre turnaje doma aj vonku. Presne 3750 je v pohode, trestá sa až menej."
+          "title": "Tím pod 3700",
+          "amount": "2 €",
+          "note": "Pre každého hráča, ktorý v zápase hral. Platí len pre domáce zápasy Interligy a domáce turnaje. Presne 3700 je v pohode, trestá sa až menej."
         },
         {
           "title": "Zápasy bez chyby",
@@ -306,8 +307,8 @@
     },
     "trainer": {
       "title": "Tréner",
-      "description": "Tréner neplatí žiadne pokuty. Tieto sumy vypláca tímu a hráčom.",
-      "bonuses": [
+      "description": "Tieto sumy tréner vypláca tímu a hráčom. Sám žiadny bonus nedostáva.",
+      "fines": [
         {
           "title": "Tím 3800 a viac",
           "amount": "10 €",
@@ -317,6 +318,11 @@
           "title": "Tím 3900 a viac",
           "amount": "15 €",
           "note": "Od 3900 nahrádza 10 € za 3800, nesčítava sa."
+        },
+        {
+          "title": "Tím 4000 a viac",
+          "amount": "20 €",
+          "note": "Od 4000 nahrádza 15 € za 3900, nesčítava sa."
         },
         {
           "title": "Tím bez chyby",
@@ -335,7 +341,8 @@
       "items": [
         "Pokuta za zápasy bez chyby je vedená zvlášť. V sumách za jednotlivé súťaže ju nenájdeš, lebo sa počíta naprieč všetkými.",
         "Špeciálne chyby označuje admin ručne po zápase.",
-        "Zaplatené pokuty a bonusy sa spätným prepočtom už nemenia."
+        "Zaplatené pokuty a bonusy sa spätným prepočtom už nemenia.",
+        "Opakované nedodržanie dress codu alebo nadmerné používanie mobilu počas zápasu je špeciálna pokuta 10 €."
       ]
     }
   },

@@ -63,7 +63,7 @@ human-readable before/after list, `sheet` is the state after the write.
 
 - Special misses are the only fields a human enters: **fault into playing full**
   and **missing the 2nd-to-last throw**, 5€ each. Everything else — sequential
-  fault fines, worst-in-team, under-600, under-3750, the 5-game faultless streak,
+  fault fines, worst-in-team, under-600, under-3700, the 5-game faultless streak,
   the >700 bonus, and every trainer payment row — is derived and recalculated
   automatically. Never ask the user for those numbers.
 - Trainer payment condition types in the database are `score_bonus`,

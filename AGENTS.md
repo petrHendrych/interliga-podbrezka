@@ -83,8 +83,8 @@ When working in plan mode, the plan must be detailed and written to a file — n
 # Money Calculation Rules
 
 Rules for calculating gatherings (fines) and bonuses for each role. The fine thresholds are
-strict — a player on exactly 600 or a team on exactly 3750 is not penalised — while the bonus
-thresholds are inclusive: exactly 700 / 3800 / 3900 already earns the bonus.
+strict — a player on exactly 600 or a team on exactly 3700 is not penalised — while the bonus
+thresholds are inclusive: exactly 700 / 3800 / 3900 / 4000 already earns the bonus.
 `recalculateDerivedFinancials()` in `lib/sync.ts` is the only implementation; this section
 describes it, so the two change together.
 
@@ -93,10 +93,10 @@ describes it, so the two change together.
 - **Total < 600**: 1€ per game. Only for players who actually played (`total > 0`).
 - **Worst in Team**: 1€ per game — the lowest total among players with `total > 0`. On a tie
   every player on that minimum pays; there is no tie-break.
-- **Team under 3750**: 10€ per player who played (`total > 0`) when the team total is below
-  `TEAM_SCORE_LIMIT`. Applies to **home Interliga matches** and to **tournaments home and
-  away** (`TOURNAMENT_LEAGUE_IDS` — World Cup, Champions League). Away Interliga and the
-  Slovak Cup are exempt.
+- **Team under 3700**: 2€ per player who played (`total > 0`) when the team total is below
+  `TEAM_SCORE_LIMIT`. Applies **only at home**: home Interliga matches and home tournaments
+  (`TOURNAMENT_LEAGUE_IDS` — World Cup, Champions League). Every away match and the Slovak
+  Cup are exempt.
 - **Faults (Sequential Fine)**: Sum of numeric order of faults. Formula: `(n * (n + 1)) / 2`.
   - 1 fault = 1€
   - 2 faults = 1€ + 2€ = 3€
@@ -123,6 +123,7 @@ trainers each owe the full amount.
 - **Team Performance** (`score_bonus`):
   - Team Total 3800 or more: 10€
   - Team Total 3900 or more: 15€ (replaces the 3800 bonus, not cumulative).
+  - Team Total 4000 or more: 20€ (replaces the 3900 bonus, not cumulative).
 - **Zero Faults Bonus** (`zero_faults`): 10€ when the team's fault total is 0 and at least
   6 players actually played (`total > 0`). If no player row carries a fault count at all,
   the sum is NULL and no bonus is created.
@@ -208,18 +209,19 @@ at, and above the boundary:
 
 - Player total `599 / 600 / 601` (under-600 fine, strict) and `699 / 700 / 701` (40€ bonus,
   inclusive from 700).
-- Team total `3749 / 3750 / 3751` (10€ per player, strict), and `3799 / 3800` / `3899 / 3900`
-  for the trainer `score_bonus`, which starts at each limit and where 15€ replaces 10€ rather
-  than stacking.
+- Team total `3699 / 3700 / 3701` (2€ per player, strict), and `3799 / 3800` / `3899 / 3900` /
+  `3999 / 4000` for the trainer `score_bonus`, which starts at each limit and where the higher
+  tier replaces the lower one rather than stacking.
 - Faults `0, 1, 2, 3, n` against `(n * (n + 1)) / 2`.
 - `special_faults_count` at 5€ each, summed from `full_faults_count` and
   `second_to_last_faults_count`.
 - Faultless streak `4 / 5 / 6` — `streak_fine` is 10€ from the 5th consecutive game on, lands
   in `streak_fine` and never in `calculated_fine`.
 - Worst-in-team **including a tie**: every player on the minimum pays, no tie-break.
-- Players with `total = 0` are excluded from under-600, worst-in-team, and the under-3750 fine.
-- League scope for the under-3750 fine: home Interliga (penalised), away Interliga (exempt),
-  tournament home and away (both penalised), Slovak Cup (exempt).
+- Players with `total = 0` are excluded from under-600, worst-in-team, and the under-limit fine.
+- League scope for the under-3700 fine: home Interliga (penalised), away Interliga (exempt),
+  home tournament (penalised), away tournament (exempt), Slovak Cup (exempt), and a match
+  whose `is_home` is NULL (exempt).
 - Trainer `zero_faults`: 10€ at 0 team faults with ≥ 6 players who played; no bonus at 5
   players; no bonus when the fault sum is NULL. Both approved trainers get the full set.
 - Trainer `elite_player`: one row per match with `amount = count * 10`.
@@ -272,13 +274,13 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Manually entered matches get external ids `>= 900_000_000` (`MANUAL_MATCH_ID_BASE`), so the id range alone says "not scraped".
 - `POHAR_LEAGUE_IDS` keeps the retired id `366` ("Finále") because rows in the database still carry it.
 - Manual leagues are excluded from every scrape-side lookup, so a scrape can never stamp a tournament id onto a match.
-- `TEAM_SCORE_LIMIT = 3750`. Interliga **home** matches and tournaments (home and away alike) are penalised under it; away Interliga and the Slovak Cup are not.
+- `TEAM_SCORE_LIMIT = 3700`. Only **home** matches are penalised under it — Interliga and tournaments alike; every away match and the Slovak Cup are not.
 
 ### Matching Our Team
 - Match our team by **team id only**, never by club name. Name matching also catches B-team, youth, and women's fixtures — it once pulled ~1250 foreign fixtures into `matches` and mislabelled them as our Slovenský pohár season.
 
 ### Derived Money Fields
-- `recalculateDerivedFinancials()` in `lib/sync.ts` is the single writer of every derived money field: `calculated_fine`, `streak_fine`, `bonus_received`, `is_worst_player`, `is_under_600`, `is_team_under_3750`, `faultless_streak`, and the `trainer_payments` rows. Sync upserts write raw scores only; admin actions and manual-match edits call the recalculation afterwards. Never compute these inline.
+- `recalculateDerivedFinancials()` in `lib/sync.ts` is the single writer of every derived money field: `calculated_fine`, `streak_fine`, `bonus_received`, `is_worst_player`, `is_under_600`, `is_team_under_limit`, `faultless_streak`, and the `trainer_payments` rows. Sync upserts write raw scores only; admin actions and manual-match edits call the recalculation afterwards. Never compute these inline.
 - Faultless streaks are counted across **all** seasons, so the streak query is never filtered by season or league.
 - The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.

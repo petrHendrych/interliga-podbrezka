@@ -18,6 +18,7 @@
     "max": "Max",
     "count3800": "3800+",
     "count3900": "3900+",
+    "count4000": "4000+",
     "zeroMisses": "0 grešaka",
     "trainerLabel": "trener",
     "matchesPlayed": {
@@ -38,7 +39,7 @@
       "bonusesTotal": "Bonusi ukupno",
       "bonusesToPay": "Treba isplatiti",
       "topDonator": "Najveći donator",
-      "belowLimit": "Ispod limita (3750)",
+      "belowLimit": "Ispod limita (3700)",
       "nextPickup": "Sledeće podizanje novca: {date}",
       "withdrawals": "Podizanja"
     }
@@ -190,7 +191,7 @@
       "faults": "{count} grešaka",
       "worstPlayer": "najslabiji igrač",
       "under600": "ispod 600",
-      "teamUnder3750": "tim ispod 3750",
+      "teamUnderLimit": "tim ispod 3700",
       "fullFaults": "{count}x greška u pune",
       "secondToLastFaults": "{count}x pretposlednji hitac",
       "specialFaults": "{count}x specijalna greška",
@@ -279,9 +280,9 @@
           "note": "Za svaku grešku u pune i za svako propušteno pretposlednje bacanje."
         },
         {
-          "title": "Tim ispod 3750",
-          "amount": "10 €",
-          "note": "Za svakog igrača koji je igrao na meču. Važi za domaće mečeve Interlige i za turnire, i kod kuće i u gostima. Tačno 3750 je u redu, kažnjava se tek manje."
+          "title": "Tim ispod 3700",
+          "amount": "2 €",
+          "note": "Za svakog igrača koji je igrao na meču. Važi samo za domaće mečeve Interlige i domaće turnire. Tačno 3700 je u redu, kažnjava se tek manje."
         },
         {
           "title": "Mečevi bez greške",
@@ -306,8 +307,8 @@
     },
     "trainer": {
       "title": "Trener",
-      "description": "Trener ne plaća nikakve kazne. Ove iznose on isplaćuje timu i igračima.",
-      "bonuses": [
+      "description": "Ove sume trener isplaćuje timu i igračima. Sam ne dobija nikakav bonus.",
+      "fines": [
         {
           "title": "Tim 3800 i više",
           "amount": "10 €",
@@ -317,6 +318,11 @@
           "title": "Tim 3900 i više",
           "amount": "15 €",
           "note": "Od 3900 zamenjuje 10 € za 3800, ne sabira se."
+        },
+        {
+          "title": "Tim 4000 i više",
+          "amount": "20 €",
+          "note": "Od 4000 zamenjuje 15 € za 3900, ne sabira se."
         },
         {
           "title": "Tim bez greške",
@@ -335,7 +341,8 @@
       "items": [
         "Kazna za mečeve bez greške vodi se posebno. Nećeš je naći u iznosima po takmičenjima jer se računa kroz sva.",
         "Posebne greške admin označava ručno, posle meča.",
-        "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju."
+        "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju.",
+        "Ponovljeno nepoštovanje dress code-a ili preterano korišćenje mobilnog telefona tokom meča je posebna kazna od 10 €."
       ]
     }
   },
