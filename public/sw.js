@@ -81,6 +81,13 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+// A push only fires when the data behind it already changed, so every open window is told to
+// refetch. An installed PWA has no pull-to-refresh and would otherwise show the old amounts.
+async function postDataUpdated() {
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  windows.forEach((client) => client.postMessage({ type: 'DATA_UPDATED' }));
+}
+
 self.addEventListener('message', (event) => {
   if (event.data?.type !== 'CLEAR_CACHES') return;
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))));
@@ -94,7 +101,7 @@ self.addEventListener('push', (event) => {
     payload = {};
   }
 
-  event.waitUntil(self.registration.showNotification(payload.title || 'Interliga Podbrezová', {
+  const notification = self.registration.showNotification(payload.title || 'Interliga Podbrezová', {
     body: payload.body || '',
     icon: '/icons/icon-192.png',
     // The status bar icon on Android. Only the alpha channel survives, so this must be the
@@ -103,7 +110,9 @@ self.addEventListener('push', (event) => {
     // One tag per event, so a repeat replaces the old notification instead of stacking.
     tag: payload.tag || 'ilp-data',
     data: { url: payload.url || '/' },
-  }));
+  });
+
+  event.waitUntil(Promise.all([notification, postDataUpdated()]));
 });
 
 self.addEventListener('notificationclick', (event) => {
