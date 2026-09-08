@@ -341,7 +341,8 @@
       "items": [
         "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert minden versenyen át számoljuk.",
         "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
-        "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg."
+        "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg.",
+        "A dress code ismételt be nem tartása vagy a mobil túlzott használata a meccs alatt 10 € különleges büntetés."
       ]
     }
   },

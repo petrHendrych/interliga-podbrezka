@@ -341,7 +341,8 @@
       "items": [
         "Pokuta za zápasy bez chyby je vedená zvlášť. V sumách za jednotlivé súťaže ju nenájdeš, lebo sa počíta naprieč všetkými.",
         "Špeciálne chyby označuje admin ručne po zápase.",
-        "Zaplatené pokuty a bonusy sa spätným prepočtom už nemenia."
+        "Zaplatené pokuty a bonusy sa spätným prepočtom už nemenia.",
+        "Opakované nedodržanie dress codu alebo nadmerné používanie mobilu počas zápasu je špeciálna pokuta 10 €."
       ]
     }
   },
