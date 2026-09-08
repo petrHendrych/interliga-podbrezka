@@ -35,6 +35,7 @@ export function PlayerAvatar({
           alt={name}
           width={RENDER_SIZE}
           height={RENDER_SIZE}
+          loading="eager"
           className="aspect-square size-full rounded-2xl object-cover"
         />
       ) : (
