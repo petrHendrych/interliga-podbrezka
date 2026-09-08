@@ -16,7 +16,7 @@ export const BONUS_TOTAL_LIMIT = 700;
 export const PLAYER_BONUS = 40;
 export const WORST_PLAYER_FINE = 1;
 export const UNDER_600_FINE = 1;
-export const TEAM_UNDER_LIMIT_FINE = 10;
+export const TEAM_UNDER_LIMIT_FINE = 2;
 export const SPECIAL_FAULT_FINE = 5;
 export const STREAK_LENGTH = 5;
 export const STREAK_FINE = 10;
@@ -46,7 +46,7 @@ export interface MatchContext {
 export interface PlayerDerived {
   isWorstPlayer: boolean;
   isUnder600: boolean;
-  isTeamUnder3750: boolean;
+  isTeamUnderLimit: boolean;
   calculatedFine: number;
   streakFine: number;
   bonusReceived: number;
@@ -81,9 +81,9 @@ function isTournament(match: MatchContext): boolean {
     && TOURNAMENT_LEAGUE_IDS.includes(match.leagueId);
 }
 
-/** The `team_under_3750` league scope in sync.ts: home Interliga, or a tournament either way. */
+/** The `team_under_limit` league scope in sync.ts: a home Interliga match or a home tournament. */
 export function isUnderLimitEligible(match: MatchContext): boolean {
-  return (isInterliga(match) && Boolean(match.isHome)) || isTournament(match);
+  return Boolean(match.isHome) && (isInterliga(match) || isTournament(match));
 }
 
 export function isTeamUnderLimit(match: MatchContext): boolean {
@@ -144,18 +144,18 @@ export function derivePlayers(
     const played = row.total > 0;
     const isWorstPlayer = played && row.total === minTotal;
     const isUnder600 = played && row.total < UNDER_600_LIMIT;
-    const isTeamUnder3750 = played && teamUnderLimit;
+    const underLimit = played && teamUnderLimit;
     const streak = streakByUser[row.userId] ?? 0;
 
     const derived: PlayerDerived = {
       isWorstPlayer,
       isUnder600,
-      isTeamUnder3750,
+      isTeamUnderLimit: underLimit,
       calculatedFine: faultFine(row.faults)
         + (isWorstPlayer ? WORST_PLAYER_FINE : 0)
         + (isUnder600 ? UNDER_600_FINE : 0)
         + specialFaultFine(row.specialFaultsCount)
-        + (isTeamUnder3750 ? TEAM_UNDER_LIMIT_FINE : 0),
+        + (underLimit ? TEAM_UNDER_LIMIT_FINE : 0),
       streakFine: streakFineFor(streak),
       bonusReceived: playerBonus(row.total),
     };

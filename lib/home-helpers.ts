@@ -124,7 +124,7 @@ export function collectBelowLimit(
     .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
     .map((m) => ({
       id: m.id,
-      name: m.isHome ? m.awayName : m.homeName,
+      name: m.awayName,
       score: m.teamTotalScore,
     }));
 }

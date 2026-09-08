@@ -38,7 +38,7 @@
       "bonusesTotal": "Bónuszok összesen",
       "bonusesToPay": "Kifizetésre vár",
       "topDonator": "Legnagyobb adományozó",
-      "belowLimit": "Limit alatt (3750)",
+      "belowLimit": "Limit alatt (3700)",
       "nextPickup": "Következő pénzfelvétel: {date}",
       "withdrawals": "Kivétek"
     }
@@ -190,7 +190,7 @@
       "faults": "{count} hiba",
       "worstPlayer": "leggyengébb játékos",
       "under600": "600 alatt",
-      "teamUnder3750": "csapat 3750 alatt",
+      "teamUnderLimit": "csapat 3700 alatt",
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",
@@ -279,9 +279,9 @@
           "note": "Minden teliből vétett hibáért és minden kihagyott utolsó előtti dobásért."
         },
         {
-          "title": "Csapat 3750 alatt",
-          "amount": "10 €",
-          "note": "Minden játékosnak, aki a meccsen játszott. Az Interliga hazai meccseire és a tornákra vonatkozik, itthon és idegenben is. Pontosan 3750 még rendben van, csak az az alatti számít."
+          "title": "Csapat 3700 alatt",
+          "amount": "2 €",
+          "note": "Minden játékosnak, aki a meccsen játszott. Csak a hazai meccsekre vonatkozik: az Interliga hazai meccseire és a hazai tornákra. Pontosan 3700 még rendben van, csak az az alatti számít."
         },
         {
           "title": "Hibátlan meccsek",

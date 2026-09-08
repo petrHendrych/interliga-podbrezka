@@ -125,16 +125,16 @@ describe('worst in team', () => {
   });
 });
 
-describe('team total under 3750', () => {
+describe('team total under the limit', () => {
   it.each([
-    [3749, true, 10],
-    [3750, false, 0],
-    [3751, false, 0],
+    [3699, true, 2],
+    [3700, false, 0],
+    [3701, false, 0],
   ])('a team total of %i fines each player: %s (%i €)', (teamTotal, flagged, fine) => {
     const rows = [player({ userId: 'a', total: 900 }), player({ userId: 'b', total: 950 })];
     const derived = derivePlayers(homeInterliga(teamTotal), rows).get('b')!;
 
-    expect(derived.isTeamUnder3750).toBe(flagged);
+    expect(derived.isTeamUnderLimit).toBe(flagged);
     expect(derived.calculatedFine).toBe(fine);
   });
 
@@ -142,9 +142,9 @@ describe('team total under 3750', () => {
     const rows = [player({ userId: 'a', total: 0 }), player({ userId: 'b', total: 900 })];
     const derived = derivePlayers(homeInterliga(3000), rows);
 
-    expect(derived.get('a')!.isTeamUnder3750).toBe(false);
+    expect(derived.get('a')!.isTeamUnderLimit).toBe(false);
     expect(derived.get('a')!.calculatedFine).toBe(0);
-    expect(derived.get('b')!.isTeamUnder3750).toBe(true);
+    expect(derived.get('b')!.isTeamUnderLimit).toBe(true);
   });
 
   describe('league scope', () => {
@@ -153,9 +153,10 @@ describe('team total under 3750', () => {
       ['home Interliga by league name', { isHome: true, leagueName: 'Interliga sever' }, true],
       ['away Interliga', { isHome: false, leagueId: interligaId }, false],
       ['tournament at home', { isHome: true, leagueId: tournamentId }, true],
-      ['tournament away', { isHome: false, leagueId: tournamentId }, true],
+      ['tournament away', { isHome: false, leagueId: tournamentId }, false],
       ['Slovak Cup', { isHome: true, leagueId: poharId }, false],
       ['retired Finále id 366', { isHome: true, leagueId: 366 }, false],
+      ['Interliga with an unknown side', { isHome: null, leagueId: interligaId }, false],
     ])('%s is penalised: %s', (_label, match, expected) => {
       expect(isUnderLimitEligible(match)).toBe(expected);
       expect(isTeamUnderLimit({ ...match, teamTotalScore: 3000 })).toBe(expected);
@@ -177,8 +178,8 @@ describe('calculated fine composition', () => {
     ];
     const derived = derivePlayers(homeInterliga(3000), rows, { a: 0 }).get('a')!;
 
-    // 3 (faults) + 1 (worst) + 1 (under 600) + 5 (special fault) + 10 (team under limit)
-    expect(derived.calculatedFine).toBe(20);
+    // 3 (faults) + 1 (worst) + 1 (under 600) + 5 (special fault) + 2 (team under limit)
+    expect(derived.calculatedFine).toBe(12);
   });
 
   it('keeps the success gathering out of calculatedFine', () => {

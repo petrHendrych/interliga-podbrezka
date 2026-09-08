@@ -19,6 +19,7 @@ import {
   TEAM_SCORE_LIMIT,
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
+import { TEAM_UNDER_LIMIT_FINE } from './money-rules';
 import { MatchListItem, parseApiDate } from './api';
 import {
   derivePersonalPushes,
@@ -124,19 +125,14 @@ export async function recalculateDerivedFinancials() {
              COALESCE(
                m.team_total_score < ${TEAM_SCORE_LIMIT}
                AND mpr.total > 0
+               AND m.is_home
                AND (
-                 (
-                   m.is_home
-                   AND (
-                     m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)})
-                     OR m.league_name ILIKE '%interliga%'
-                   )
-                 )
-                 -- Tournaments are penalised home and away alike.
+                 m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)})
+                 OR m.league_name ILIKE '%interliga%'
                  OR m.league_id IN (${idList(TOURNAMENT_LEAGUE_IDS)})
                ),
                false
-             ) AS team_under_3750,
+             ) AS team_under_limit,
              SUM(CASE WHEN COALESCE(mpr.faults, 0) <> 0 THEN 1 ELSE 0 END) OVER (
                PARTITION BY mpr.user_id
                ORDER BY COALESCE(m.date, '1970-01-01'), mpr.match_id
@@ -158,14 +154,14 @@ export async function recalculateDerivedFinancials() {
     UPDATE match_player_results mpr
     SET is_worst_player     = (s.total = s.min_total AND s.total > 0),
         is_under_600        = (s.total < 600 AND s.total > 0),
-        is_team_under_3750  = s.team_under_3750,
+        is_team_under_limit = s.team_under_limit,
         faultless_streak    = s.streak,
         bonus_received      = CASE WHEN s.total >= 700 THEN 40 ELSE 0 END,
         calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
                             + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
                             + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
                             + s.sfc * 5
-                            + CASE WHEN s.team_under_3750 THEN 10 ELSE 0 END,
+                            + CASE WHEN s.team_under_limit THEN ${TEAM_UNDER_LIMIT_FINE} ELSE 0 END,
         streak_fine         = CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
     FROM streaks s
     WHERE mpr.match_id = s.match_id AND mpr.user_id = s.user_id

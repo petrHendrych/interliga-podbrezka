@@ -21,7 +21,7 @@ function renderTooltip(overrides: Partial<MatchFineTooltipProps> = {}) {
       faults={0}
       isWorstPlayer={false}
       isUnder600={false}
-      isTeamUnder3750={false}
+      isTeamUnderLimit={false}
       fullFaultsCount={0}
       secondToLastFaultsCount={0}
       specialFaultsCount={0}
@@ -83,17 +83,17 @@ describe('paid state', () => {
 describe('the breakdown', () => {
   it('lists only the reasons that apply', async () => {
     renderTooltip({
-      calculatedFine: 12,
+      calculatedFine: 7,
       faults: 2,
       isWorstPlayer: true,
       isUnder600: true,
-      isTeamUnder3750: true,
+      isTeamUnderLimit: true,
     });
     const tooltip = await openTooltip();
 
     expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.worstPlayer);
     expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.under600);
-    expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.teamUnder3750);
+    expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.teamUnderLimit);
     expect(tooltip).not.toHaveTextContent(sk.playerDetail.noFine);
   });
 
@@ -103,7 +103,7 @@ describe('the breakdown', () => {
 
     expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.worstPlayer);
     expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.under600);
-    expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.teamUnder3750);
+    expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.teamUnderLimit);
   });
 
   it('names the specific special fault instead of the generic line', async () => {
