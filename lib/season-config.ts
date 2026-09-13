@@ -85,6 +85,18 @@ export const DEFAULT_SEASON_ID = 13;
 /** Home matches under this team total fine every player who played. */
 export const TEAM_SCORE_LIMIT = 3700;
 
+/**
+ * Money already in the bank when a season opened, left over from the one before. Hand-known,
+ * never derived from match rows — the previous season's balance is not recomputed.
+ */
+export const SEASON_OPENING_BALANCES: Record<number, number> = {
+  13: 204,
+};
+
+export function getSeasonOpeningBalance(seasonId: number): number {
+  return SEASON_OPENING_BALANCES[seasonId] ?? 0;
+}
+
 /** Manually entered matches get ids above this, so the range says "not scraped". */
 export const MANUAL_MATCH_ID_BASE = 900_000_000;
 

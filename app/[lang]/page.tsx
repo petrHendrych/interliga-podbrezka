@@ -125,6 +125,18 @@ export default async function Home({
           </p>
 
           <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-10 border-t border-foreground/10">
+            {bankBalance.openingBalance > 0 && (
+              <div className={`${BANK_ROW} sm:col-span-2`}>
+                <dt className={BANK_LABEL}>{dict.home.bank.previousSeason}</dt>
+                <dd className={`${BANK_VALUE} text-emerald-600 dark:text-emerald-400`}>
+                  +
+                  {bankBalance.openingBalance.toFixed(2)}
+                  {' '}
+                  €
+                </dd>
+              </div>
+            )}
+
             <div className={BANK_ROW}>
               <dt className={BANK_LABEL}>{dict.home.bank.unpaid}</dt>
               <dd className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>

@@ -42,7 +42,8 @@
       "topDonator": "Legnagyobb adományozó",
       "belowLimit": "Limit alatt (3700)",
       "nextPickup": "Következő pénzfelvétel: {date}",
-      "withdrawals": "Kivétek"
+      "withdrawals": "Kivétek",
+      "previousSeason": "Előző szezonból"
     }
   },
   "common": {

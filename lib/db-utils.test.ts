@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fineAmount, isAllLeagues, leagueCondition, withdrawalTotal,
+  fineAmount, isAllLeagues, leagueCondition, openingBalance, withdrawalTotal,
 } from '@/lib/db-utils';
 
 interface NeonFragment {
@@ -53,6 +53,20 @@ describe('withdrawalTotal', () => {
 
   it('contributes nothing to a league-filtered balance, having no league of its own', () => {
     expect(render(withdrawalTotal(12, 'pohar'))).toBe('0::numeric');
+  });
+});
+
+describe('openingBalance', () => {
+  it.each([
+    [13, undefined, '204::numeric'],
+    [13, 'all', '204::numeric'],
+    [13, 'interliga', '0::numeric'],
+    [13, 'pohar', '0::numeric'],
+    [13, 'turnaje', '0::numeric'],
+    [12, 'all', '0::numeric'],
+    [99, 'all', '0::numeric'],
+  ])('season %i under %o carries %s into the balance', (seasonId, leagueKey, expected) => {
+    expect(render(openingBalance(seasonId, leagueKey))).toBe(expected);
   });
 });
 

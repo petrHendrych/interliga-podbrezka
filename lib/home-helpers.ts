@@ -106,21 +106,18 @@ export function pickTopDonator(balances: PlayerSeasonBalance[]): TopDonator | nu
   };
 }
 
-/** Filters whose competition is subject to the rule, so the row belongs on screen at zero too. */
-const LIMIT_FILTER_KEYS = new Set<string>(['interliga', TOURNAMENT_FILTER_KEY]);
-
-/** Played matches under the limit, or null when the row does not belong on screen. */
+/** Played matches under the limit, or null when the competition is exempt from the rule. */
 export function collectBelowLimit(
   matches: MatchListItem[],
   leagueKey: string,
 ): BelowLimitMatch[] | null {
+  // The Slovak Cup is exempt, so claiming "0x" there would advertise a rule that never applies.
   if (leagueKey === 'pohar') return null;
 
   const played = matches.filter((m): m is MatchListItem & { teamTotalScore: number } => (
     isUnderLimitEligible(m)
     && typeof m.teamTotalScore === 'number' && m.teamTotalScore > 0
   ));
-  if (played.length === 0 && !LIMIT_FILTER_KEYS.has(leagueKey)) return null;
 
   return played
     .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
@@ -275,7 +272,7 @@ export const fetchHomeData = unstable_cache(
   ): Promise<FetchDataResult> => fetchHomeDataInternal(teamId, seasonId, leagueKey),
   // The key hashes only the arguments, so a changed `FetchDataResult` shape would keep
   // serving payloads missing the new fields. Bump the version whenever that shape changes.
-  ['home-data', 'v5'],
+  ['home-data', 'v7'],
   {
     revalidate: SYNCED_DATA_REVALIDATE_SECONDS,
     tags: ['home-data'],

@@ -42,7 +42,8 @@
       "topDonator": "Největší dárce",
       "belowLimit": "Pod limit (3700)",
       "nextPickup": "Nejbližší výběr peněz: {date}",
-      "withdrawals": "Výběry"
+      "withdrawals": "Výběry",
+      "previousSeason": "Z minulé sezóny"
     }
   },
   "common": {

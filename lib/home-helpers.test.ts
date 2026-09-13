@@ -73,17 +73,21 @@ describe('collectBelowLimit', () => {
         id: 2, isHome: false, leagueId: tournamentId, teamTotalScore: 3000,
       }),
     ];
-    expect(collectBelowLimit(away, 'all')).toBeNull();
+    expect(collectBelowLimit(away, 'all')).toEqual([]);
   });
 
   it('ignores an unplayed match with a zero team total', () => {
     expect(collectBelowLimit([match({ teamTotalScore: 0 })], 'interliga')).toEqual([]);
   });
 
-  it('keeps the empty row on screen for the filters the rule applies to', () => {
+  it('keeps the empty row on screen for every filter the rule applies to', () => {
     expect(collectBelowLimit([], 'interliga')).toEqual([]);
     expect(collectBelowLimit([], 'turnaje')).toEqual([]);
-    expect(collectBelowLimit([], 'all')).toBeNull();
+    expect(collectBelowLimit([], 'all')).toEqual([]);
+  });
+
+  it('still hides the row for the exempt Slovak Cup when nothing was played', () => {
+    expect(collectBelowLimit([], 'pohar')).toBeNull();
   });
 
   it('names the opponent, not our own team', () => {
