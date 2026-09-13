@@ -192,34 +192,36 @@ export default async function Home({
                 {' '}
                 €
                 {/* Awarded minus handed over, i.e. what the bank still owes. */}
-                <Tooltip
-                  content={(
-                    <div className={TOOLTIP_LIST}>
-                      <p className="font-semibold">{dict.home.bank.bonusesToPay}</p>
-                      {unpaidBonusReceivers.length > 0 && (
-                        <ul className="flex flex-col gap-1">
-                          {unpaidBonusReceivers.map((receiver) => (
-                            <li key={receiver.name} className={TOOLTIP_ROW}>
-                              <span className="truncate">{receiver.name}</span>
-                              <span className="shrink-0 font-semibold tabular-nums">
-                                {receiver.amount.toFixed(2)}
-                                {' '}
-                                €
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                >
-                  <span className={`ml-1.5 text-xs font-medium text-muted-foreground ${HINT}`}>
-                    (
-                    {(bankBalance.bonusesAwarded - bankBalance.bonusesPaid).toFixed(2)}
-                    {' '}
-                    €)
-                  </span>
-                </Tooltip>
+                {bankBalance.bonusesAwarded > bankBalance.bonusesPaid && (
+                  <Tooltip
+                    content={(
+                      <div className={TOOLTIP_LIST}>
+                        <p className="font-semibold">{dict.home.bank.bonusesToPay}</p>
+                        {unpaidBonusReceivers.length > 0 && (
+                          <ul className="flex flex-col gap-1">
+                            {unpaidBonusReceivers.map((receiver) => (
+                              <li key={receiver.name} className={TOOLTIP_ROW}>
+                                <span className="truncate">{receiver.name}</span>
+                                <span className="shrink-0 font-semibold tabular-nums">
+                                  {receiver.amount.toFixed(2)}
+                                  {' '}
+                                  €
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  >
+                    <span className={`ml-1.5 text-xs font-medium text-muted-foreground ${HINT}`}>
+                      (
+                      {(bankBalance.bonusesAwarded - bankBalance.bonusesPaid).toFixed(2)}
+                      {' '}
+                      €)
+                    </span>
+                  </Tooltip>
+                )}
               </dd>
             </div>
 
@@ -415,7 +417,7 @@ export default async function Home({
                           x
                         </span>
                       </div>
-                      <div className={`${STAT_TILE} col-span-2 sm:col-span-1`}>
+                      <div className={STAT_TILE}>
                         <span className={STAT_LABEL}>{dict.home.totalPaid}</span>
                         <span className={`${STAT_VALUE} font-semibold ${fineTone(trainer.stats.totalPaid)}`}>
                           {trainer.stats.totalPaid}
