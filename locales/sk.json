@@ -414,7 +414,8 @@
       "unauthorized": "Na túto akciu nemáš oprávnenie.",
       "saveFailed": "Upozornenia sa nepodarilo zapnúť, skús to znova.",
       "sendFailed": "Upozornenie sa nepodarilo odoslať, skús to znova."
-    }
+    },
+    "pullRefreshing": "Obnovujem…"
   },
   "push": {
     "events": {

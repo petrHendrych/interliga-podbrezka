@@ -414,7 +414,8 @@
       "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
       "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra.",
       "sendFailed": "Az értesítést nem sikerült elküldeni, próbáld újra."
-    }
+    },
+    "pullRefreshing": "Frissítés…"
   },
   "push": {
     "events": {

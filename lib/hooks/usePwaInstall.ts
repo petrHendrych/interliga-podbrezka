@@ -1,21 +1,10 @@
 import * as React from 'react';
+import { isStandaloneDisplay } from '../pwa/display-mode';
 
 export const INSTALL_DISMISSED_KEY = 'pwa-install-dismissed';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
-}
-
-// Safari sets this instead of matching the standalone display mode.
-interface NavigatorWithStandalone extends Navigator {
-  standalone?: boolean;
-}
-
-function readIsStandalone() {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches
-    || (navigator as NavigatorWithStandalone).standalone === true
-  );
 }
 
 /**
@@ -30,7 +19,7 @@ export function usePwaInstall() {
   const [isDismissed, setIsDismissed] = React.useState(true);
 
   React.useEffect(() => {
-    setIsStandalone(readIsStandalone());
+    setIsStandalone(isStandaloneDisplay());
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
     setIsDismissed(window.localStorage.getItem(INSTALL_DISMISSED_KEY) === 'true');
 

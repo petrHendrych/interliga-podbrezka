@@ -82,7 +82,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 // A push only fires when the data behind it already changed, so every open window is told to
-// refetch. An installed PWA has no pull-to-refresh and would otherwise show the old amounts.
+// refetch, and the amounts are current before anyone thinks to pull the page down.
 async function postDataUpdated() {
   const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   windows.forEach((client) => client.postMessage({ type: 'DATA_UPDATED' }));

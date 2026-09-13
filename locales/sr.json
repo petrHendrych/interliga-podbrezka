@@ -414,7 +414,8 @@
       "unauthorized": "Nemaš ovlašćenje za ovu akciju.",
       "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo.",
       "sendFailed": "Obaveštenje nije moguće poslati, pokušaj ponovo."
-    }
+    },
+    "pullRefreshing": "Osvežavam…"
   },
   "push": {
     "events": {
