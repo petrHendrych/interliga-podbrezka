@@ -129,6 +129,11 @@ trainers each owe the full amount.
   the sum is NULL and no bonus is created.
 - **Elite Player Bonus** (`elite_player`): 10€ for each player scoring 700 or more, stored as a
   single row per match with `amount = count * 10`.
+- **Clean Sweep** (`clean_sweep`): 10€ when the match ends **8:0 on match points** for
+  Podbrezová. Home and away count alike. Only the exact 8:0 qualifies, so a 6:0 sweep in the
+  Slovak Cup does not, and a manually entered tournament match — which carries no match
+  points at all — never can. The rule opens in season 13 (2026/2027)
+  (`CLEAN_SWEEP_FIRST_SEASON_ID`); the 8:0 wins of earlier seasons are not charged.
 
 ### Role: Admin
 **Responsibilities:**
@@ -287,6 +292,15 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - The SQL is not unit testable, so its thresholds and formulas are mirrored by pure functions in `lib/money-rules.ts`, which is what the tests exercise. SQL and mirror change in the same commit — see the Testing Rules.
 - Trainer payments are fanned out over `role = 'trainer' AND is_approved`, so approving a trainer must recalculate: their rows for matches already played do not exist until it runs. `approveUser()` does this; anything else that flips `is_approved` or a role must too.
 - `applyMatchMoneyUpdates()` (`lib/match-money.ts`) recalculates but deliberately never invalidates — it runs from `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws. The caller owns invalidation: the CLI calls `requestSyncedDataRevalidation()`, an in-app caller must call `updateSyncedData()`.
+
+### Match Points
+- `matches.team_match_points` / `opponent_match_points` hold the match-point result ("body"),
+  scraped only: `teamResult.{home,away}.teamPoints` on a `match_detail` payload and
+  `homeTeamPoints` / `awayTeamPoints` on a `match_list` one. Manually entered matches leave
+  them NULL, so every rule keyed on them is silently skipped there.
+- They are numeric, not integer: a drawn duel splits a point (`0.5` occurs in the cup).
+- Read them with `??`, never the `||` idiom used for the pin totals — `0` is the losing
+  side's real result and the `clean_sweep` rule is built on it.
 
 ### Bank Withdrawals
 - `bank_withdrawals` is hand-entered money leaving the bank (food, gear, travel), never derived from match data, so `recalculateDerivedFinancials()` neither writes nor reads it.

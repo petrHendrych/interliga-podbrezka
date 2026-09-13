@@ -43,6 +43,7 @@ export interface TrainerStats {
   count3900: number;
   count4000: number;
   zeroMisses: number;
+  cleanSweeps: number;
   totalPaid: string;
 }
 
@@ -247,6 +248,7 @@ async function fetchHomeDataInternal(
       count3900: t.count3900,
       count4000: t.count4000,
       zeroMisses: t.zeroMisses,
+      cleanSweeps: t.cleanSweeps,
       totalPaid: t.totalPaid,
     },
   }));

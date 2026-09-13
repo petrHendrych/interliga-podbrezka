@@ -30,6 +30,10 @@ export const TRAINER_SCORE_TOP_BONUS = 20;
 export const TRAINER_ZERO_FAULTS_BONUS = 10;
 export const TRAINER_ZERO_FAULTS_MIN_PLAYERS = 6;
 export const TRAINER_ELITE_PLAYER_BONUS = 10;
+export const CLEAN_SWEEP_TEAM_POINTS = 8;
+export const TRAINER_CLEAN_SWEEP_FINE = 10;
+/** The rule opens in 2026/2027; the 8:0 wins of earlier seasons are not charged. */
+export const CLEAN_SWEEP_FIRST_SEASON_ID = 13;
 
 export interface PlayerRow {
   userId: string;
@@ -43,6 +47,9 @@ export interface MatchContext {
   isHome?: boolean | null;
   leagueId?: number | null;
   leagueName?: string | null;
+  seasonId?: number | null;
+  teamMatchPoints?: number | null;
+  opponentMatchPoints?: number | null;
 }
 
 export interface PlayerDerived {
@@ -54,7 +61,7 @@ export interface PlayerDerived {
   bonusReceived: number;
 }
 
-export type TrainerConditionType = 'score_bonus' | 'zero_faults' | 'elite_player';
+export type TrainerConditionType = 'score_bonus' | 'zero_faults' | 'elite_player' | 'clean_sweep';
 
 export interface TrainerPaymentAmount {
   conditionType: TrainerConditionType;
@@ -192,6 +199,17 @@ export function trainerElitePlayerBonus(rows: PlayerRow[]): number | null {
   return elite > 0 ? elite * TRAINER_ELITE_PLAYER_BONUS : null;
 }
 
+/** `clean_sweep` in the `spec` CTE: 8:0 on match points, home or away, from season 13 on. */
+export function trainerCleanSweepFine(match: MatchContext): number | null {
+  if (typeof match.seasonId !== 'number' || match.seasonId < CLEAN_SWEEP_FIRST_SEASON_ID) {
+    return null;
+  }
+  if (match.teamMatchPoints !== CLEAN_SWEEP_TEAM_POINTS || match.opponentMatchPoints !== 0) {
+    return null;
+  }
+  return TRAINER_CLEAN_SWEEP_FINE;
+}
+
 /**
  * Trainer payments are fanned out over `role = 'trainer' AND is_approved` in sync.ts, so
  * approving one leaves every played match without their rows until a recalculation runs.
@@ -209,6 +227,7 @@ export function deriveTrainerPayments(
     ['score_bonus', trainerScoreBonus(match.teamTotalScore)],
     ['zero_faults', trainerZeroFaultsBonus(rows)],
     ['elite_player', trainerElitePlayerBonus(rows)],
+    ['clean_sweep', trainerCleanSweepFine(match)],
   ];
 
   return candidates

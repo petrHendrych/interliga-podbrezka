@@ -26,7 +26,7 @@ const STAT_TILE = 'rounded-lg bg-surface-2 px-2 py-1.5 sm:p-2 text-center flex f
 const STAT_LABEL = 'block text-[10px] leading-tight uppercase font-semibold tracking-wide text-muted-foreground';
 const STAT_VALUE = 'text-sm sm:text-base leading-tight tabular-nums';
 const STAT_GRID = 'col-start-2 row-start-2 grid w-full min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-4 gap-1.5 sm:gap-2';
-const TRAINER_STAT_GRID = 'col-start-2 row-start-2 grid w-full min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-5 gap-1.5 sm:gap-2';
+const TRAINER_STAT_GRID = 'col-start-2 row-start-2 grid w-full min-w-0 grid-cols-2 auto-rows-fr sm:grid-cols-6 gap-1.5 sm:gap-2';
 const PERSON_CARD = 'rounded-xl bg-surface p-4 sm:p-5 shadow-lift';
 const PERSON_BODY = 'grid grid-cols-[auto_1fr] items-stretch gap-x-3 gap-y-2 sm:gap-x-4';
 /**
@@ -393,6 +393,13 @@ export default async function Home({
                         <span className={STAT_LABEL}>{dict.home.zeroMisses}</span>
                         <span className={`${STAT_VALUE} font-semibold`}>
                           {trainer.stats.zeroMisses}
+                          x
+                        </span>
+                      </div>
+                      <div className={STAT_TILE}>
+                        <span className={STAT_LABEL}>{dict.home.cleanSweep}</span>
+                        <span className={`${STAT_VALUE} font-semibold`}>
+                          {trainer.stats.cleanSweeps}
                           x
                         </span>
                       </div>

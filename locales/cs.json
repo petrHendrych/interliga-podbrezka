@@ -20,6 +20,7 @@
     "count3900": "3900+",
     "count4000": "4000+",
     "zeroMisses": "0 chyb",
+    "cleanSweep": "8:0",
     "trainerLabel": "trenér",
     "matchesPlayed": {
       "one": "{count} zápas",
@@ -333,6 +334,11 @@
           "title": "Hráč 700 a více",
           "amount": "10 €",
           "note": "Za každého hráče, který v zápase nahraje 700 nebo více."
+        },
+        {
+          "title": "Výhra 8:0",
+          "amount": "10 €",
+          "note": "Tým vyhraje zápas 8:0 na body. Doma i venku."
         }
       ]
     },
