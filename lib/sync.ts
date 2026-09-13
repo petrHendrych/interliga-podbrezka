@@ -205,7 +205,10 @@ export async function recalculateDerivedFinancials() {
              CASE WHEN season_id >= ${CLEAN_SWEEP_FIRST_SEASON_ID}
                    AND team_match_points = ${CLEAN_SWEEP_TEAM_POINTS}
                    AND opponent_match_points = 0
-                  THEN ${TRAINER_CLEAN_SWEEP_FINE} END
+                  -- The driver binds parameters untyped, and an untyped one in a UNION output
+                  -- column resolves to text, which cannot match the bigint the other arms
+                  -- produce. The cast is what keeps the UNION legal.
+                  THEN ${TRAINER_CLEAN_SWEEP_FINE}::int END
       FROM agg
     )
     INSERT INTO trainer_payments (match_id, user_id, condition_type, amount)
