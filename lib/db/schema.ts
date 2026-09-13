@@ -36,6 +36,9 @@ export const matches = pgTable('matches', {
   location: text('location'),
   teamTotalScore: integer('team_total_score'),
   opponentTotalScore: integer('opponent_total_score'),
+  // Match points ("body"): 8 in Interliga, 6 in the cup, halved on a drawn duel.
+  teamMatchPoints: numeric('team_match_points', { mode: 'number' }),
+  opponentMatchPoints: numeric('opponent_match_points', { mode: 'number' }),
   seasonId: integer('season_id'),
   leagueName: text('league_name'),
   round: integer('round'),

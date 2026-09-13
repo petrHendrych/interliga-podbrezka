@@ -4,6 +4,7 @@ import {
   MANUAL_MATCH_ID_BASE,
   POHAR_LEAGUE_IDS,
   SEASONS_CONFIG,
+  SEASON_OPENING_BALANCES,
   TOURNAMENT_LEAGUE_IDS,
   getAllTeamIds,
   getLeagueByLeagueId,
@@ -13,6 +14,7 @@ import {
   getSeasonAndLeagueConfig,
   getSeasonConfig,
   getSeasonIdForDate,
+  getSeasonOpeningBalance,
   getTeamIdsForSeason,
   isManualMatchId,
 } from '@/lib/season-config';
@@ -106,5 +108,20 @@ describe('getSeasonAndLeagueConfig', () => {
   it('returns null when nothing matches', () => {
     expect(getSeasonAndLeagueConfig()).toBeNull();
     expect(getSeasonAndLeagueConfig(0, 0, 'Bundesliga')).toBeNull();
+  });
+});
+
+describe('getSeasonOpeningBalance', () => {
+  it('carries the leftover money of season 12 into season 13', () => {
+    expect(getSeasonOpeningBalance(13)).toBe(204);
+    expect(SEASON_OPENING_BALANCES[13]).toBe(204);
+  });
+
+  it('gives a configured season without a carry-over nothing', () => {
+    expect(getSeasonOpeningBalance(12)).toBe(0);
+  });
+
+  it('gives an unknown season nothing instead of throwing', () => {
+    expect(getSeasonOpeningBalance(999)).toBe(0);
   });
 });

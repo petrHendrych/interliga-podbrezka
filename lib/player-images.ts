@@ -12,6 +12,8 @@ const IMAGES_BY_EXTERNAL_ID: Record<number, string> = {
   169215: '/players/vesely.jpg',
   170511: '/players/hendrych.jpg',
   170512: '/players/gorecky.jpg',
+  171890: '/players/kozma.jpg',
+  19055: '/players/dubrava.jpg',
 };
 
 const IMAGES_BY_USER_ID: Record<string, string> = {

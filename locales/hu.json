@@ -20,6 +20,7 @@
     "count3900": "3900+",
     "count4000": "4000+",
     "zeroMisses": "0 hiba",
+    "cleanSweep": "8:0",
     "trainerLabel": "edző",
     "matchesPlayed": {
       "one": "{count} mérkőzés",
@@ -41,7 +42,8 @@
       "topDonator": "Legnagyobb adományozó",
       "belowLimit": "Limit alatt (3700)",
       "nextPickup": "Következő pénzfelvétel: {date}",
-      "withdrawals": "Kivétek"
+      "withdrawals": "Kivétek",
+      "previousSeason": "Előző szezonból"
     }
   },
   "common": {
@@ -333,6 +335,11 @@
           "title": "Játékos 700-tól",
           "amount": "10 €",
           "note": "Minden játékosért, aki a meccsen 700-at vagy többet dob."
+        },
+        {
+          "title": "8:0-s győzelem",
+          "amount": "10 €",
+          "note": "A csapat 8:0-ra nyeri a mérkőzést pontokban. Hazai és idegenbeli meccsen egyaránt."
         }
       ]
     },
@@ -408,7 +415,8 @@
       "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
       "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra.",
       "sendFailed": "Az értesítést nem sikerült elküldeni, próbáld újra."
-    }
+    },
+    "pullRefreshing": "Frissítés…"
   },
   "push": {
     "events": {

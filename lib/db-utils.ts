@@ -9,6 +9,7 @@ import {
   POHAR_LEAGUE_IDS,
   TOURNAMENT_FILTER_KEY,
   TOURNAMENT_LEAGUE_IDS,
+  getSeasonOpeningBalance,
 } from './season-config';
 import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
@@ -186,6 +187,13 @@ export function withdrawalTotal(seasonId: number, leagueKey?: string) {
     : sql`0::numeric`;
 }
 
+/** The carry-over has no league, like a withdrawal, so a league-filtered balance leaves it out. */
+export function openingBalance(seasonId: number, leagueKey?: string) {
+  return isAllLeagues(leagueKey)
+    ? sql`${getSeasonOpeningBalance(seasonId)}::numeric`
+    : sql`0::numeric`;
+}
+
 /** Narrows to one league; expects the `matches` table aliased as `m`. */
 export function leagueCondition(leagueKey?: string) {
   if (leagueKey === 'interliga') {
@@ -208,6 +216,7 @@ export interface DBTrainerStats {
   count3900: number;
   count4000: number;
   zeroMisses: number;
+  cleanSweeps: number;
   totalPaid: string;
 }
 
@@ -225,6 +234,7 @@ export async function getTrainersWithStats(
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 15 THEN 1 END)::int as count3900,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'score_bonus' AND tp.amount = 20 THEN 1 END)::int as count4000,
       COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'zero_faults' THEN 1 END)::int as "zeroMisses",
+      COUNT(CASE WHEN m.external_id IS NOT NULL AND tp.condition_type = 'clean_sweep' THEN 1 END)::int as "cleanSweeps",
       (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN tp.amount ELSE 0 END), 0)::text || ' €') as "totalPaid"
     FROM users u
     LEFT JOIN trainer_payments tp ON u.id = tp.user_id
@@ -577,6 +587,8 @@ export interface TeamBankBalance {
   bonusesAwarded: number;
   bonusesPaid: number;
   withdrawals: number;
+  /** Left over from the previous season; inside `total`, never inside `unpaid`. */
+  openingBalance: number;
 }
 
 export interface UnpaidDebtor {
@@ -783,18 +795,22 @@ export async function getTeamBankBalance(
     ),
     withdrawal_totals AS (
       SELECT ${withdrawalTotal(targetSeasonId, leagueKey)} as withdrawn
+    ),
+    opening_totals AS (
+      SELECT ${openingBalance(targetSeasonId, leagueKey)} as opening
     )
     SELECT
-      (COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0) - COALESCE(p.all_bonuses, 0)
-        - COALESCE(w.withdrawn, 0))::numeric as total,
+      (COALESCE(o.opening, 0) + COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0)
+        - COALESCE(p.all_bonuses, 0) - COALESCE(w.withdrawn, 0))::numeric as total,
       -- Unpaid answers who still owes the bank; a withdrawal is money already spent.
       (COALESCE(p.all_fines, 0) + COALESCE(t.all_payments, 0) - COALESCE(p.all_bonuses, 0)
         - (COALESCE(p.paid_fines, 0) + COALESCE(t.paid_payments, 0)
            - COALESCE(p.paid_bonuses, 0)))::numeric as unpaid,
       COALESCE(p.all_bonuses, 0)::numeric as bonuses_awarded,
       COALESCE(p.paid_bonuses, 0)::numeric as bonuses_paid,
-      COALESCE(w.withdrawn, 0)::numeric as withdrawals
-    FROM player_totals p, trainer_totals t, withdrawal_totals w
+      COALESCE(w.withdrawn, 0)::numeric as withdrawals,
+      COALESCE(o.opening, 0)::numeric as opening_balance
+    FROM player_totals p, trainer_totals t, withdrawal_totals w, opening_totals o
   `;
 
   return {
@@ -803,5 +819,6 @@ export async function getTeamBankBalance(
     bonusesAwarded: Number(result[0].bonuses_awarded || 0),
     bonusesPaid: Number(result[0].bonuses_paid || 0),
     withdrawals: Number(result[0].withdrawals || 0),
+    openingBalance: Number(result[0].opening_balance || 0),
   };
 }

@@ -129,6 +129,11 @@ trainers each owe the full amount.
   the sum is NULL and no bonus is created.
 - **Elite Player Bonus** (`elite_player`): 10€ for each player scoring 700 or more, stored as a
   single row per match with `amount = count * 10`.
+- **Clean Sweep** (`clean_sweep`): 10€ when the match ends **8:0 on match points** for
+  Podbrezová. Home and away count alike. Only the exact 8:0 qualifies, so a 6:0 sweep in the
+  Slovak Cup does not, and a manually entered tournament match — which carries no match
+  points at all — never can. The rule opens in season 13 (2026/2027)
+  (`CLEAN_SWEEP_FIRST_SEASON_ID`); the 8:0 wins of earlier seasons are not charged.
 
 ### Role: Admin
 **Responsibilities:**
@@ -288,12 +293,22 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Trainer payments are fanned out over `role = 'trainer' AND is_approved`, so approving a trainer must recalculate: their rows for matches already played do not exist until it runs. `approveUser()` does this; anything else that flips `is_approved` or a role must too.
 - `applyMatchMoneyUpdates()` (`lib/match-money.ts`) recalculates but deliberately never invalidates — it runs from `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws. The caller owns invalidation: the CLI calls `requestSyncedDataRevalidation()`, an in-app caller must call `updateSyncedData()`.
 
+### Match Points
+- `matches.team_match_points` / `opponent_match_points` hold the match-point result ("body"),
+  scraped only: `teamResult.{home,away}.teamPoints` on a `match_detail` payload and
+  `homeTeamPoints` / `awayTeamPoints` on a `match_list` one. Manually entered matches leave
+  them NULL, so every rule keyed on them is silently skipped there.
+- They are numeric, not integer: a drawn duel splits a point (`0.5` occurs in the cup).
+- Read them with `??`, never the `||` idiom used for the pin totals — `0` is the losing
+  side's real result and the `clean_sweep` rule is built on it.
+
 ### Bank Withdrawals
 - `bank_withdrawals` is hand-entered money leaving the bank (food, gear, travel), never derived from match data, so `recalculateDerivedFinancials()` neither writes nor reads it.
 - A withdrawal has a season (derived from its date by `getSeasonIdForDate()`) but no league, so it counts only under the "all" league filter — same rule as `streak_fine`. `withdrawalTotal()` in `lib/db-utils.ts` is the only place that decides this.
 - It lowers `TeamBankBalance.total` and never touches `unpaid`: unpaid answers who still owes the bank, a withdrawal is money already spent.
 - Writes go through `lib/bank-withdrawal-actions.ts` (admin only) and must call `updateSyncedData()`, because the bank total is served from the `home-data` cache.
 - The category list lives in `lib/withdrawal-categories.ts`, apart from `lib/bank-withdrawals.ts`, because the form is a client component and the query module is not importable from one.
+- A season's opening balance — money carried over from the season before — lives in `SEASON_OPENING_BALANCES` in `lib/season-config.ts`, never in the database, and is entered by hand once per season rather than recomputed from the previous season's rows. `openingBalance()` in `lib/db-utils.ts` adds it to `TeamBankBalance.total` only, never to `unpaid` (nobody owes it), and, having no league, it counts only under the "all" filter — same rule as `streak_fine` and withdrawals.
 
 ### Client/Server Boundary
 - A `'use client'` file must never import a module whose import graph reaches `lib/db.ts` — not even for a constant or a type-only symbol, because the import still pulls the module into the browser bundle. `lib/db.ts` throws `DATABASE_URL is not defined in environment variables` at module scope, and in the browser that variable is always undefined: it has no `NEXT_PUBLIC_` prefix, so Next never inlines it. The page then fails to render with an error that reads like a missing environment variable even though the server has it.

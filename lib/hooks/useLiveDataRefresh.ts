@@ -7,9 +7,9 @@ export const REFRESH_THROTTLE_MS = 5000;
 
 /**
  * An installed PWA resumed from the background keeps the router cache it was suspended with,
- * and standalone display mode has no pull-to-refresh, so without this the only way to see new
- * fines is to close and reopen the app. Refreshes on foreground, and immediately when the
- * service worker reports a push that changed the data.
+ * so without this the fines on screen are whatever they were when the app was suspended.
+ * Refreshes on foreground, and immediately when the service worker reports a push that changed
+ * the data, so the numbers are current without the user reaching for `usePullToRefresh`.
  */
 export function useLiveDataRefresh() {
   const router = useRouter();

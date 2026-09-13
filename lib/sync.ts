@@ -19,7 +19,12 @@ import {
   TEAM_SCORE_LIMIT,
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
-import { TEAM_UNDER_LIMIT_FINE } from './money-rules';
+import {
+  CLEAN_SWEEP_FIRST_SEASON_ID,
+  CLEAN_SWEEP_TEAM_POINTS,
+  TEAM_UNDER_LIMIT_FINE,
+  TRAINER_CLEAN_SWEEP_FINE,
+} from './money-rules';
 import { MatchListItem, parseApiDate } from './api';
 import {
   derivePersonalPushes,
@@ -69,6 +74,9 @@ export interface SyncMatchData {
       faults?: number;
       average?: number;
     }[];
+  };
+  teamResult?: {
+    [key: string]: { teamPoints?: number | null } | undefined;
   };
 }
 
@@ -169,13 +177,14 @@ export async function recalculateDerivedFinancials() {
 
   await db.execute(sql`
     WITH agg AS (
-      SELECT m.external_id AS match_id, m.team_total_score,
+      SELECT m.external_id AS match_id, m.team_total_score, m.season_id,
+             m.team_match_points, m.opponent_match_points,
              COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
              SUM(mpr.faults) AS team_faults,
              COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
       FROM matches m
       JOIN match_player_results mpr ON mpr.match_id = m.external_id
-      GROUP BY 1, 2
+      GROUP BY 1, 2, 3, 4, 5
     ),
     spec AS (
       SELECT match_id, 'score_bonus' AS condition_type,
@@ -190,6 +199,13 @@ export async function recalculateDerivedFinancials() {
       UNION ALL
       SELECT match_id, 'elite_player',
              CASE WHEN elite > 0 THEN elite * 10 END
+      FROM agg
+      UNION ALL
+      SELECT match_id, 'clean_sweep',
+             CASE WHEN season_id >= ${CLEAN_SWEEP_FIRST_SEASON_ID}
+                   AND team_match_points = ${CLEAN_SWEEP_TEAM_POINTS}
+                   AND opponent_match_points = 0
+                  THEN ${TRAINER_CLEAN_SWEEP_FINE} END
       FROM agg
     )
     INSERT INTO trainer_payments (match_id, user_id, condition_type, amount)
@@ -206,13 +222,14 @@ export async function recalculateDerivedFinancials() {
     DELETE FROM trainer_payments tp
     WHERE NOT tp.is_paid AND NOT EXISTS (
       WITH agg AS (
-        SELECT m.external_id AS match_id, m.team_total_score,
+        SELECT m.external_id AS match_id, m.team_total_score, m.season_id,
+               m.team_match_points, m.opponent_match_points,
                COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
                SUM(mpr.faults) AS team_faults,
                COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
         FROM matches m
         JOIN match_player_results mpr ON mpr.match_id = m.external_id
-        GROUP BY 1, 2
+        GROUP BY 1, 2, 3, 4, 5
       )
       SELECT 1 FROM agg
       WHERE agg.match_id = tp.match_id
@@ -220,6 +237,9 @@ export async function recalculateDerivedFinancials() {
               WHEN 'score_bonus'  THEN agg.team_total_score >= 3800
               WHEN 'zero_faults'  THEN agg.team_faults = 0 AND agg.active >= 6
               WHEN 'elite_player' THEN agg.elite > 0
+              WHEN 'clean_sweep'  THEN agg.season_id >= ${CLEAN_SWEEP_FIRST_SEASON_ID}
+                                       AND agg.team_match_points = ${CLEAN_SWEEP_TEAM_POINTS}
+                                       AND agg.opponent_match_points = 0
               ELSE true
             END
     )
@@ -538,6 +558,8 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
       location: string | null;
       teamTotalScore: number | null;
       opponentTotalScore: number | null;
+      teamMatchPoints: number | null;
+      opponentMatchPoints: number | null;
       seasonId: number | null;
       leagueName: string | null;
       round: number | null;
@@ -603,6 +625,10 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
                 : null;
             }
 
+            // Zero is a real result here, so these are read with `??`, never `||`.
+            const teamMatchPoints = (isHome ? m.homeTeamPoints : m.awayTeamPoints) ?? null;
+            const opponentMatchPoints = (isHome ? m.awayTeamPoints : m.homeTeamPoints) ?? null;
+
             matchesMapByExtId.set(matchId, {
               externalId: matchId,
               date,
@@ -611,6 +637,8 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
               location: mHallName,
               teamTotalScore,
               opponentTotalScore,
+              teamMatchPoints,
+              opponentMatchPoints,
               seasonId: config?.seasonId || null,
               leagueName: config?.leagueName || mLeagueName || null,
               round: m.round ? Number(m.round) : null,
@@ -669,6 +697,9 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
         || opponentLineup.reduce((sum, p) => sum + (p.total || 0), 0)
         || null;
 
+      const teamMatchPoints = data.teamResult?.[teamKey]?.teamPoints ?? null;
+      const opponentMatchPoints = data.teamResult?.[opponentKey]?.teamPoints ?? null;
+
       const existingMatch = matchesMapByExtId.get(matchId);
 
       matchesMapByExtId.set(matchId, {
@@ -679,6 +710,8 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
         location: location || existingMatch?.location || null,
         teamTotalScore: teamTotalScore || existingMatch?.teamTotalScore || null,
         opponentTotalScore: opponentTotalScore || existingMatch?.opponentTotalScore || null,
+        teamMatchPoints: teamMatchPoints ?? existingMatch?.teamMatchPoints ?? null,
+        opponentMatchPoints: opponentMatchPoints ?? existingMatch?.opponentMatchPoints ?? null,
         seasonId: seasonId || existingMatch?.seasonId || null,
         leagueName: leagueName || existingMatch?.leagueName || null,
         round: existingMatch?.round || null,
@@ -738,6 +771,8 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
             location: sql`COALESCE(EXCLUDED.location, matches.location)`,
             teamTotalScore: sql`COALESCE(EXCLUDED.team_total_score, matches.team_total_score)`,
             opponentTotalScore: sql`COALESCE(EXCLUDED.opponent_total_score, matches.opponent_total_score)`,
+            teamMatchPoints: sql`COALESCE(EXCLUDED.team_match_points, matches.team_match_points)`,
+            opponentMatchPoints: sql`COALESCE(EXCLUDED.opponent_match_points, matches.opponent_match_points)`,
             seasonId: sql`COALESCE(EXCLUDED.season_id, matches.season_id)`,
             leagueName: sql`COALESCE(EXCLUDED.league_name, matches.league_name)`,
             round: sql`COALESCE(EXCLUDED.round, matches.round)`,

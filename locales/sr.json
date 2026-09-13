@@ -20,6 +20,7 @@
     "count3900": "3900+",
     "count4000": "4000+",
     "zeroMisses": "0 grešaka",
+    "cleanSweep": "8:0",
     "trainerLabel": "trener",
     "matchesPlayed": {
       "one": "{count} utakmica",
@@ -41,7 +42,8 @@
       "topDonator": "Najveći donator",
       "belowLimit": "Ispod limita (3700)",
       "nextPickup": "Sledeće podizanje novca: {date}",
-      "withdrawals": "Podizanja"
+      "withdrawals": "Podizanja",
+      "previousSeason": "Iz prošle sezone"
     }
   },
   "common": {
@@ -333,6 +335,11 @@
           "title": "Igrač 700 i više",
           "amount": "10 €",
           "note": "Za svakog igrača koji na meču obori 700 ili više."
+        },
+        {
+          "title": "Pobeda 8:0",
+          "amount": "10 €",
+          "note": "Tim dobija meč 8:0 u bodovima. I kod kuće i u gostima."
         }
       ]
     },
@@ -408,7 +415,8 @@
       "unauthorized": "Nemaš ovlašćenje za ovu akciju.",
       "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo.",
       "sendFailed": "Obaveštenje nije moguće poslati, pokušaj ponovo."
-    }
+    },
+    "pullRefreshing": "Osvežavam…"
   },
   "push": {
     "events": {

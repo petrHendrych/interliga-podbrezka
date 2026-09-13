@@ -73,8 +73,9 @@ editing session only — one notification per session, never one per write.
   the >700 bonus, and every trainer payment row — is derived and recalculated
   automatically. Never ask the user for those numbers.
 - Trainer payment condition types in the database are `score_bonus`,
-  `zero_faults` and `elite_player`. `elite_player` is paid to the player directly,
-  so ask about it only if the user brings it up.
+  `zero_faults`, `elite_player` and `clean_sweep` (10€ for an 8:0 win on match
+  points, home or away, from season 13 on). `elite_player` is paid to the player
+  directly, so ask about it only if the user brings it up.
 
 ## Gotchas
 

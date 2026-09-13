@@ -17,6 +17,7 @@ import {
   playerBonus,
   specialFaultFine,
   streakFineFor,
+  trainerCleanSweepFine,
   trainerElitePlayerBonus,
   trainerScoreBonus,
   trainerZeroFaultsBonus,
@@ -291,6 +292,29 @@ describe('trainer: elite players', () => {
   });
 });
 
+describe('trainer: clean sweep', () => {
+  const cases: [string, MatchContext, number | null][] = [
+    ['8:0 from season 13 on', { seasonId: 13, teamMatchPoints: 8, opponentMatchPoints: 0 }, 10],
+    ['8:0 in an earlier season', { seasonId: 12, teamMatchPoints: 8, opponentMatchPoints: 0 }, null],
+    ['8:1', { seasonId: 13, teamMatchPoints: 8, opponentMatchPoints: 1 }, null],
+    ['7:0', { seasonId: 13, teamMatchPoints: 7, opponentMatchPoints: 0 }, null],
+    ['a 6:0 cup sweep', { seasonId: 13, teamMatchPoints: 6, opponentMatchPoints: 0 }, null],
+    ['8:0.5', { seasonId: 13, teamMatchPoints: 8, opponentMatchPoints: 0.5 }, null],
+    ['a match with no points', { seasonId: 13, teamMatchPoints: null, opponentMatchPoints: null }, null],
+    ['a match with no season', { seasonId: null, teamMatchPoints: 8, opponentMatchPoints: 0 }, null],
+  ];
+
+  it.each(cases)('pays %s', (_label, match, expected) => {
+    expect(trainerCleanSweepFine(match)).toBe(expected);
+  });
+
+  it.each([true, false])('ignores where the match was played (isHome %s)', (isHome) => {
+    expect(trainerCleanSweepFine({
+      seasonId: 13, isHome, teamMatchPoints: 8, opponentMatchPoints: 0,
+    })).toBe(10);
+  });
+});
+
 describe('approvalAffectsTrainerPayments', () => {
   it('is true for a trainer, whose payments only exist once approved', () => {
     expect(approvalAffectsTrainerPayments('trainer')).toBe(true);
@@ -311,6 +335,25 @@ describe('deriveTrainerPayments', () => {
       { conditionType: 'score_bonus', amount: 15 },
       { conditionType: 'zero_faults', amount: 10 },
       { conditionType: 'elite_player', amount: 60 },
+    ]);
+  });
+
+  it('adds the clean sweep last when the match ended 8:0', () => {
+    const rows = Array.from({ length: 6 }, (_, i) => player({
+      userId: `p${i}`, total: 710, faults: 0,
+    }));
+
+    expect(deriveTrainerPayments({
+      teamTotalScore: 3950,
+      isHome: false,
+      seasonId: 13,
+      teamMatchPoints: 8,
+      opponentMatchPoints: 0,
+    }, rows)).toEqual([
+      { conditionType: 'score_bonus', amount: 15 },
+      { conditionType: 'zero_faults', amount: 10 },
+      { conditionType: 'elite_player', amount: 60 },
+      { conditionType: 'clean_sweep', amount: 10 },
     ]);
   });
 
