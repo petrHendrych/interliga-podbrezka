@@ -216,6 +216,12 @@ export function leagueCondition(
   return sql``;
 }
 
+/** A linked admin or trainer keeps their own role but owns the scraped
+ *  `external_player_id`, so the roster is defined by that id, not by the role alone. */
+export function rosterCondition() {
+  return sql`u.is_approved = true AND (u.role = 'player' OR u.external_player_id IS NOT NULL)`;
+}
+
 export interface DBTrainerStats {
   id: string;
   name: string;
@@ -355,7 +361,7 @@ export async function getPlayerBalances(
     LEFT JOIN matches m ON mpr.match_id = m.external_id
       AND (m.season_id = ${targetSeasonId})
       ${leagueCondition(leagueKey)}
-    WHERE u.role = 'player' AND u.is_approved = true
+    WHERE ${rosterCondition()}
     GROUP BY u.external_player_id, u.name, u.id, pd.first_name, pd.last_name
     ORDER BY u.name ASC
   `;

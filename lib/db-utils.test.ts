@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fineAmount, isAllLeagues, leagueCondition, openingBalance, withdrawalTotal,
+  fineAmount, isAllLeagues, leagueCondition, openingBalance, rosterCondition, withdrawalTotal,
 } from '@/lib/db-utils';
 
 interface NeonFragment {
@@ -142,5 +142,22 @@ describe('the reminder queries', () => {
   it('would drop the success gathering if a league were ever passed in', () => {
     // Guards the mistake of "tidying" the call by threading a league key through it.
     expect(render(fineAmount('interliga'))).not.toContain('streak_fine');
+  });
+});
+
+describe('rosterCondition', () => {
+  it('keeps a plain player on the roster', () => {
+    expect(render(rosterCondition())).toContain("u.role = 'player'");
+  });
+
+  it('keeps a linked account on the roster whatever its role', () => {
+    // Linking a scraped player to an admin or trainer account moves the external id
+    // but leaves the role alone, and the player must not vanish from the lists.
+    expect(render(rosterCondition())).toContain('u.external_player_id IS NOT NULL');
+    expect(render(rosterCondition())).toContain("u.role = 'player' OR");
+  });
+
+  it('still leaves unapproved accounts out', () => {
+    expect(render(rosterCondition())).toContain('u.is_approved = true');
   });
 });
