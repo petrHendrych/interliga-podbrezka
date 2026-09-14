@@ -4,6 +4,11 @@ import { runScrapingJob } from '@/lib/scraper';
 import { revalidateSyncedData } from '@/lib/cache';
 import { notifyAdmins, sendMatchResultsPush, sendPersonalMoneyPushes } from '@/lib/push';
 import { dailyDedupeKey } from '@/lib/push-digest';
+import { getBratislavaHour } from '@/lib/dates';
+
+// Vercel crons fire in UTC, so the job is scheduled at both 13:00 and 14:00 UTC
+// and only the firing that lands on 15:00 local time does the work.
+const SCRAPE_LOCAL_HOUR = 15;
 
 /**
  * API Route to trigger the scraping job via Vercel Cron.
@@ -29,6 +34,14 @@ export async function GET(request: Request) {
 
   const startDate = new Date('2026-09-13T00:00:00Z');
   const now = new Date();
+
+  if (!isLocal && getBratislavaHour(now) !== SCRAPE_LOCAL_HOUR) {
+    return NextResponse.json({
+      success: true,
+      message: `Skipped: not ${SCRAPE_LOCAL_HOUR}:00 local time`,
+      timestamp: now.toISOString(),
+    });
+  }
 
   if (now < startDate) {
     console.log(`Periodic cron scraping paused until ${startDate.toISOString()}. Current date: ${now.toISOString()}`);
