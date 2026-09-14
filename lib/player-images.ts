@@ -17,7 +17,7 @@ const IMAGES_BY_EXTERNAL_ID: Record<number, string> = {
 };
 
 const IMAGES_BY_USER_ID: Record<string, string> = {
-  '0c1b2be2-5785-4483-88a9-db24fed7960e': '/players/ponjavic.jpg',
+  '20c77448-faf2-4489-be47-a11aa2e07120': '/players/ponjavic.jpg',
 };
 
 export function getPlayerImageByExternalId(externalPlayerId: number | null | undefined) {
