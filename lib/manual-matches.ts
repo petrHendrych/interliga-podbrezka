@@ -129,7 +129,7 @@ export async function listSelectablePlayers(): Promise<SelectablePlayer[]> {
   const rows = await db
     .select({ id: users.id, name: users.name })
     .from(users)
-    .where(sql`${users.role} = 'player' AND ${users.isApproved}`)
+    .where(sql`${users.isApproved} AND (${users.role} = 'player' OR ${users.externalPlayerId} IS NOT NULL)`)
     .orderBy(asc(users.name));
 
   return rows.map((r) => ({ id: String(r.id), name: String(r.name) }));
