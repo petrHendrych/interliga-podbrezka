@@ -12,15 +12,6 @@ export function getStartOfBratislavaToday(now: Date = new Date()): Date {
   return new Date(`${str}T00:00:00Z`);
 }
 
-export function getBratislavaHour(now: Date = new Date()): number {
-  const str = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Bratislava',
-    hour: '2-digit',
-    hourCycle: 'h23',
-  }).format(now);
-  return Number(str);
-}
-
 export function isNextDay(dateString1: string, dateString2: string): boolean {
   const d1 = parseUtcDate(dateString1);
   const d2 = parseUtcDate(dateString2);

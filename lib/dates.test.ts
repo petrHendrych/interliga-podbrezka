@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   formatDateOnly,
   formatMatchDate,
-  getBratislavaHour,
   getStartOfBratislavaToday,
   isNextDay,
   parseUtcDate,
@@ -82,28 +81,5 @@ describe('formatMatchDate / formatDateOnly', () => {
 
   it('returns the raw string instead of throwing on an invalid locale', () => {
     expect(formatDateOnly('2026-09-12 11:00:00', 'not a locale')).toBe('2026-09-12 11:00:00');
-  });
-});
-
-describe('getBratislavaHour', () => {
-  it('reads the local clock hour in winter (CET, UTC+1)', () => {
-    expect(getBratislavaHour(new Date('2027-01-17T14:00:00Z'))).toBe(15);
-    expect(getBratislavaHour(new Date('2027-01-17T13:00:00Z'))).toBe(14);
-  });
-
-  it('reads the local clock hour in summer (CEST, UTC+2)', () => {
-    expect(getBratislavaHour(new Date('2026-07-19T13:00:00Z'))).toBe(15);
-    expect(getBratislavaHour(new Date('2026-07-19T14:00:00Z'))).toBe(16);
-  });
-
-  it('handles both DST switch days', () => {
-    // CET -> CEST on 2026-03-29: after 02:00 local the offset is already +2.
-    expect(getBratislavaHour(new Date('2026-03-29T13:00:00Z'))).toBe(15);
-    // CEST -> CET on 2026-10-25: after 03:00 local the offset is back to +1.
-    expect(getBratislavaHour(new Date('2026-10-25T14:00:00Z'))).toBe(15);
-  });
-
-  it('returns midnight as 0, not 24', () => {
-    expect(getBratislavaHour(new Date('2026-01-15T23:00:00Z'))).toBe(0);
   });
 });
