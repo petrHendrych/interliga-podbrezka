@@ -2,7 +2,9 @@ import {
   getCachedPlayerName,
   getCachedPlayerBalance,
   getCachedPlayerMatchResults,
+  getCachedPlayerMissingMatches,
 } from '@/lib/db-utils';
+import { buildPlayerMatchRows } from '@/lib/player-matches';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
@@ -36,10 +38,11 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
 
   try {
     // Fetch data from database instead of directly from API
-    const [player, balance, matchFines] = await Promise.all([
+    const [player, balance, matchFines, missingMatches] = await Promise.all([
       getCachedPlayerName(playerId),
       getCachedPlayerBalance(playerId, selectedSeasonId, selectedLeagueKey),
       getCachedPlayerMatchResults(playerId, selectedSeasonId, selectedLeagueKey),
+      getCachedPlayerMissingMatches(playerId, selectedSeasonId, selectedLeagueKey),
     ]);
 
     if (!player) {
@@ -51,6 +54,15 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
     // Only the "all" total carries the success gathering, so that is the one place where
     // breaking it out of the amount says something.
     const showSeasonWideStreakFines = selectedLeagueKey === 'all' && balance.streakFines > 0;
+
+    const matchRows = buildPlayerMatchRows(matchFines ?? [], missingMatches);
+
+    const matchLabel = (opponent: string | null, isHome: boolean | null) => {
+      if (!opponent) return 'Tournament / Other';
+      return isHome
+        ? interpolate(dict.playerDetail.matchHome, { opponent })
+        : interpolate(dict.playerDetail.matchAway, { opponent });
+    };
 
     const fineLabels = {
       paidStatus: dict.playerDetail.paidStatus,
@@ -176,8 +188,35 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {matchFines && matchFines.length > 0 ? (
-                  matchFines.map((result, index) => {
+                {matchRows.length > 0 ? (
+                  matchRows.map((row) => {
+                    if (row.kind !== 'result') {
+                      const { match } = row;
+                      return (
+                        <TableRow key={match.matchId} className="text-muted-foreground">
+                          <TableCell className="whitespace-nowrap">
+                            {match.date ? formatDateOnly(match.date, lang) : '-'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {leagueLabelForId(match.leagueId, match.leagueName, dict)}
+                          </TableCell>
+                          <TableCell>{matchLabel(match.opponent, match.isHome)}</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                          <TableCell className="text-right">
+                            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] whitespace-nowrap">
+                              {row.kind === 'didNotPlay'
+                                ? dict.playerDetail.didNotPlay
+                                : dict.playerDetail.notPlayedYet}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
+                    const result = row.match;
                     const hasFaults = result.faults !== undefined && result.faults !== null;
                     const isStreak5 = Boolean(result.faultlessStreak >= 5);
 
@@ -194,13 +233,6 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                       }
                     }
 
-                    let matchName = 'Tournament / Other';
-                    if (result.opponent) {
-                      matchName = result.isHome
-                        ? interpolate(dict.playerDetail.matchHome, { opponent: result.opponent })
-                        : interpolate(dict.playerDetail.matchAway, { opponent: result.opponent });
-                    }
-
                     let totalColorClass = '';
                     if (result.total) {
                       if (result.total < 600) {
@@ -211,7 +243,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                     }
 
                     return (
-                      <TableRow key={result.matchId || index}>
+                      <TableRow key={result.matchId}>
                         <TableCell className="whitespace-nowrap">
                           {result.date ? formatDateOnly(result.date, lang) : '-'}
                         </TableCell>
@@ -219,7 +251,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                           {leagueLabelForId(result.leagueId, result.leagueName, dict)}
                         </TableCell>
                         <TableCell>
-                          {matchName}
+                          {matchLabel(result.opponent, result.isHome)}
                         </TableCell>
                         <TableCell className="text-right">{result.full ?? '-'}</TableCell>
                         <TableCell className="text-right">{result.clean ?? '-'}</TableCell>

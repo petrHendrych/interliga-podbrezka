@@ -202,6 +202,8 @@
     "streakFinesCount": "{count}x série",
     "streakFinesHint": "Pokuta za sérii 5+ zápasů bez chyby. Je započítaná v této částce, ale protože se počítá napříč všemi soutěžemi, v částkách za jednotlivé soutěže není.",
     "streakBadge": "{count}. bez chyby",
+    "didNotPlay": "Nehrál",
+    "notPlayedYet": "Neodehráno",
     "noResults": "Tento hráč nemá žádné výsledky.",
     "errorLoading": "Chyba při načítání hráče"
   },

@@ -202,6 +202,8 @@
     "streakFinesCount": "{count}x sorozat",
     "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel az összes verseny együtt számít, az egyes versenyek összegeiben nem szerepel.",
     "streakBadge": "{count}. hibátlan",
+    "didNotPlay": "Nem játszott",
+    "notPlayedYet": "Még nem játszott",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"
   },
