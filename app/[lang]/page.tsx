@@ -243,7 +243,7 @@ export default async function Home({
             {belowLimitMatches !== null && (
               <div className={BANK_ROW}>
                 <dt className={BANK_LABEL}>{dict.home.bank.belowLimit}</dt>
-                <dd className={`${BANK_VALUE} ${belowLimitMatches.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                <dd className={`${BANK_VALUE} ${belowLimitMatches.length > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
                   {belowLimitMatches.length > 0 ? (
                     <Tooltip
                       content={(

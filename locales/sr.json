@@ -202,6 +202,8 @@
     "streakFinesCount": "{count}x serija",
     "streakFinesHint": "Kazna za seriju od 5+ utakmica bez greške. Uključena je u ovaj iznos, ali pošto se računa kroz sva takmičenja, nema je u iznosima za pojedinačna takmičenja.",
     "streakBadge": "{count}. bez greške",
+    "didNotPlay": "Nije igrao",
+    "notPlayedYet": "Neodigrano",
     "noResults": "Nema rezultata za ovog igrača.",
     "errorLoading": "Greška pri učitavanju podataka o igraču"
   },

@@ -11,10 +11,19 @@ interface NeonFragment {
  * These helpers build SQL rather than values, so the assertion has to be on the text they
  * build. Reading the template pieces avoids needing a live connection to render it.
  */
+function isFragment(value: unknown): value is NeonFragment {
+  return typeof value === 'object' && value !== null && 'queryData' in value;
+}
+
 function render(fragment: unknown): string {
   const { strings, values } = (fragment as NeonFragment).queryData;
   return strings
-    .map((part, i) => part + (i < values.length ? String(values[i]) : ''))
+    .map((part, i) => {
+      if (i >= values.length) return part;
+      const value = values[i];
+      // A condition composed of other conditions nests fragments rather than strings.
+      return part + (isFragment(value) ? render(value) : String(value));
+    })
     .join('')
     .replace(/\s+/g, ' ')
     .trim();
@@ -95,6 +104,28 @@ describe('leagueCondition', () => {
   it('narrows nothing for the unfiltered view', () => {
     expect(render(leagueCondition())).toBe('');
     expect(render(leagueCondition('all'))).toBe('');
+  });
+
+  it('leaves unstamped matches out unless asked, so the money queries keep their scope', () => {
+    expect(render(leagueCondition('interliga'))).not.toContain('m.league_id IS NULL');
+    expect(render(leagueCondition('pohar'))).not.toContain('m.league_id IS NULL');
+  });
+
+  it('keeps unstamped matches for the calendar, where they are the unplayed fixtures', () => {
+    const options = { includeUnassigned: true };
+
+    expect(render(leagueCondition('interliga', options))).toContain('m.league_id IS NULL');
+    expect(render(leagueCondition('pohar', options))).toContain('m.league_id IS NULL');
+  });
+
+  it('never widens the tournament filter, because we stamp every tournament id ourselves', () => {
+    const condition = render(leagueCondition('turnaje', { includeUnassigned: true }));
+
+    expect(condition).not.toContain('m.league_id IS NULL');
+  });
+
+  it('still narrows nothing for the unfiltered view when unstamped rows are wanted', () => {
+    expect(render(leagueCondition('all', { includeUnassigned: true }))).toBe('');
   });
 });
 

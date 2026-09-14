@@ -14,6 +14,7 @@ import {
 import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
 import type { Fixture } from './payday';
+import type { MissingMatch } from './player-matches';
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
   if (data === undefined) {
@@ -195,12 +196,18 @@ export function openingBalance(seasonId: number, leagueKey?: string) {
 }
 
 /** Narrows to one league; expects the `matches` table aliased as `m`. */
-export function leagueCondition(leagueKey?: string) {
+export function leagueCondition(
+  leagueKey?: string,
+  { includeUnassigned = false }: { includeUnassigned?: boolean } = {},
+) {
+  // A fixture the scraper could not stamp has no league id; dropping it would hide exactly
+  // the unplayed rounds the calendar is for.
+  const unassigned = includeUnassigned ? sql`m.league_id IS NULL OR ` : sql``;
   if (leagueKey === 'interliga') {
-    return sql`AND (m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)}) OR m.league_name ILIKE '%interliga%')`;
+    return sql`AND (${unassigned}m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)}) OR m.league_name ILIKE '%interliga%')`;
   }
   if (leagueKey === 'pohar') {
-    return sql`AND (m.league_id IN (${idList(POHAR_LEAGUE_IDS)}) OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+    return sql`AND (${unassigned}m.league_id IN (${idList(POHAR_LEAGUE_IDS)}) OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
   }
   // Manual competitions are always stamped by us, so no name fallback is needed.
   if (leagueKey === TOURNAMENT_FILTER_KEY) {
@@ -519,6 +526,55 @@ export const getCachedPlayerMatchResults = unstable_cache(
     getPlayerMatchResultsByExternalId(playerId, seasonId, leagueKey)
   ),
   ['player-match-results'],
+  { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-match-results'] },
+);
+
+/** Season matches this player has no result row for; `team_total_score` says which kind. */
+export async function getPlayerMissingMatches(
+  externalPlayerId: number,
+  seasonId?: number,
+  leagueKey?: string,
+): Promise<MissingMatch[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  const rows = await sql`
+    SELECT
+      m.external_id,
+      m.date,
+      m.opponent,
+      m.is_home,
+      m.league_name,
+      m.league_id,
+      (m.team_total_score IS NOT NULL) AS is_played
+    FROM matches m
+    WHERE m.season_id = ${targetSeasonId}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM match_player_results mpr
+        JOIN users u ON mpr.user_id = u.id
+        WHERE mpr.match_id = m.external_id
+          AND u.external_player_id = ${externalPlayerId}
+      )
+      ${leagueCondition(leagueKey, { includeUnassigned: true })}
+    ORDER BY m.date ASC
+  `;
+
+  return rows.map((r) => ({
+    matchId: Number(r.external_id),
+    date: r.date ? new Date(String(r.date)).toISOString() : null,
+    opponent: r.opponent ? String(r.opponent) : null,
+    isHome: r.is_home === null ? null : Boolean(r.is_home),
+    leagueName: r.league_name ? String(r.league_name) : null,
+    leagueId: r.league_id === null ? null : Number(r.league_id),
+    isPlayed: Boolean(r.is_played),
+  }));
+}
+
+export const getCachedPlayerMissingMatches = unstable_cache(
+  async (playerId: number, seasonId: number, leagueKey: string) => (
+    getPlayerMissingMatches(playerId, seasonId, leagueKey)
+  ),
+  ['player-missing-matches'],
   { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['player-match-results'] },
 );
 
