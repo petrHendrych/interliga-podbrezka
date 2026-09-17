@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fineAmount, isAllLeagues, leagueCondition, openingBalance, rosterCondition, withdrawalTotal,
+  fineAmount, isAllLeagues, leagueCondition, openingBalance, rosterCondition, seasonCondition,
+  withdrawalTotal,
 } from '@/lib/db-utils';
+import { DEFAULT_SEASON_ID } from '@/lib/season-config';
 
 interface NeonFragment {
   queryData: { strings: string[]; values: unknown[] };
@@ -142,6 +144,15 @@ describe('the reminder queries', () => {
   it('would drop the success gathering if a league were ever passed in', () => {
     // Guards the mistake of "tidying" the call by threading a league key through it.
     expect(render(fineAmount('interliga'))).not.toContain('streak_fine');
+  });
+
+  it('narrows a reminder to the current season by default', () => {
+    // A debt left over from a closed season must not buzz an admin or a player forever.
+    expect(render(seasonCondition())).toBe(`m.season_id = ${DEFAULT_SEASON_ID}`);
+  });
+
+  it('narrows to any season asked for', () => {
+    expect(render(seasonCondition(12))).toBe('m.season_id = 12');
   });
 });
 

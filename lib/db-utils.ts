@@ -216,6 +216,11 @@ export function leagueCondition(
   return sql``;
 }
 
+/** Narrows to one season; expects the `matches` table aliased as `m`. */
+export function seasonCondition(seasonId: number = DEFAULT_SEASON_ID) {
+  return sql`m.season_id = ${seasonId}`;
+}
+
 /** A linked admin or trainer keeps their own role but owns the scraped
  *  `external_player_id`, so the roster is defined by that id, not by the role alone. */
 export function rosterCondition() {
@@ -665,9 +670,10 @@ export interface UnpaidDebtorAccount {
 
 /**
  * The same debt as `getUnpaidDebtors()`, keyed by account rather than by display name so a
- * notification can be addressed. All-time and league-wide: the reminder asks what you owe
- * the bank, not what you owe it under one filter — which is also why `fineAmount()` is called
- * without a league and therefore counts the success gathering.
+ * notification can be addressed. Current season, league-wide: the reminder asks what you owe
+ * the bank this season, not what you owe it under one filter — which is also why
+ * `fineAmount()` is called without a league and therefore counts the success gathering.
+ * Debt left over from a closed season is settled by hand, never nagged about.
  */
 export async function getUnpaidDebtorsByUser(): Promise<UnpaidDebtorAccount[]> {
   const rows = await sql`
@@ -675,13 +681,17 @@ export async function getUnpaidDebtorsByUser(): Promise<UnpaidDebtorAccount[]> {
     FROM (
       SELECT mpr.user_id AS user_id, ${fineAmount()} AS amount
       FROM match_player_results mpr
-      WHERE mpr.is_paid = false
+      JOIN matches m ON mpr.match_id = m.external_id
+      WHERE ${seasonCondition()}
+        AND mpr.is_paid = false
 
       UNION ALL
 
       SELECT tp.user_id AS user_id, tp.amount AS amount
       FROM trainer_payments tp
-      WHERE tp.is_paid = false
+      JOIN matches m ON tp.match_id = m.external_id
+      WHERE ${seasonCondition()}
+        AND tp.is_paid = false
     ) debts
     GROUP BY user_id
     HAVING SUM(amount) > 0
@@ -719,8 +729,9 @@ export interface UnsettledMatch {
 }
 
 /**
- * Played matches whose fines nobody has settled yet. A match whose misses were never entered
- * looks exactly like this, which is the point: the nag catches both.
+ * Played matches of the current season whose fines nobody has settled yet. A match whose
+ * misses were never entered looks exactly like this, which is the point: the nag catches
+ * both. Older seasons are out of scope — their leftovers would nag forever.
  */
 export async function getUnsettledMatches(playedBefore: Date): Promise<UnsettledMatch[]> {
   const rows = await sql`
@@ -731,7 +742,8 @@ export async function getUnsettledMatches(playedBefore: Date): Promise<Unsettled
       SUM(${fineAmount()})::numeric AS unpaid
     FROM matches m
     JOIN match_player_results mpr ON mpr.match_id = m.external_id
-    WHERE m.team_total_score IS NOT NULL
+    WHERE ${seasonCondition()}
+      AND m.team_total_score IS NOT NULL
       AND m.date < ${playedBefore.toISOString()}
       AND mpr.is_paid = false
     GROUP BY m.external_id, m.opponent, m.date
