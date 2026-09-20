@@ -61,10 +61,10 @@ export const matchPlayerResults = pgTable('match_player_results', {
   isWorstPlayer: boolean('is_worst_player').default(false),
   isUnder600: boolean('is_under_600').default(false),
   isTeamUnderLimit: boolean('is_team_under_limit').default(false),
-  // Counted across all seasons; 5+ triggers the success gathering.
+  // Counted within one season; 5+ triggers the success gathering.
   faultlessStreak: integer('faultless_streak').default(0),
   calculatedFine: numeric('calculated_fine').default('0'),
-  // The success gathering is earned across competitions and seasons, so it is kept out of
+  // The success gathering is earned across competitions of one season, so it is kept out of
   // `calculated_fine` and never attributed to the league that hosted the fifth faultless game.
   streakFine: numeric('streak_fine').default('0'),
   bonusReceived: numeric('bonus_received').default('0'),

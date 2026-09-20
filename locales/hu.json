@@ -197,10 +197,10 @@
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",
-      "streak": "5+ hibátlan mérkőzés sorozat versenyeken át ({count}. mérkőzés)"
+      "streak": "5+ hibátlan mérkőzés sorozat a szezonban ({count}. mérkőzés)"
     },
     "streakFinesCount": "{count}x sorozat",
-    "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel az összes verseny együtt számít, az egyes versenyek összegeiben nem szerepel.",
+    "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel a szezon összes versenye együtt számít, az egyes versenyek összegeiben nem szerepel.",
     "streakBadge": "{count}. hibátlan",
     "didNotPlay": "Nem játszott",
     "notPlayedYet": "Még nem játszott",
@@ -291,7 +291,7 @@
         {
           "title": "Hibátlan meccsek",
           "amount": "10 €",
-          "note": "Az 5. és minden további hiba nélküli meccsért sorozatban. A sorozat minden versenyen át számít."
+          "note": "Az 5. és minden további hiba nélküli meccsért sorozatban. A sorozat minden versenyen át számít, de csak egy szezonon belül — új szezonban nulláról indul."
         }
       ],
       "faultsFormulaLabel": "Így nőnek a hibák büntetései",
@@ -348,7 +348,7 @@
     "notes": {
       "title": "Megjegyzések",
       "items": [
-        "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert minden versenyen át számoljuk.",
+        "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert a szezon minden versenyén át számoljuk.",
         "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
         "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg.",
         "A dress code ismételt be nem tartása vagy a mobil túlzott használata a meccs alatt 10 € különleges büntetés."

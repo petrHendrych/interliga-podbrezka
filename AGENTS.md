@@ -106,8 +106,11 @@ describes it, so the two change together.
   `full_faults_count` (fault into playing full) and `second_to_last_faults_count` (missing
   the 2nd to last throw); both are entered by hand through `lib/match-money.ts`.
 - **Success Gathering**: 10€ for the 5th and every subsequent consecutive game without a
-  fault. Computed automatically from the match history — never marked by hand — and stored
-  in its own `streak_fine` column, never folded into `calculated_fine`.
+  fault. The run is counted **per season** and restarts at every season boundary — four clean
+  games at the end of one season plus a clean opener in the next is a streak of 1, not 5 —
+  but it does cross competitions inside that season. Computed automatically from the match
+  history — never marked by hand — and stored in its own `streak_fine` column, never folded
+  into `calculated_fine`.
 
 The first five land in `calculated_fine`; the success gathering lands in `streak_fine`. A
 player's debt for one match row is always `calculated_fine + streak_fine`.
@@ -222,6 +225,9 @@ at, and above the boundary:
   `second_to_last_faults_count`.
 - Faultless streak `4 / 5 / 6` — `streak_fine` is 10€ from the 5th consecutive game on, lands
   in `streak_fine` and never in `calculated_fine`.
+- Faultless streak across a season boundary: the count restarts, so four clean games in the
+  previous season followed by a clean opener is streak 1 and pays nothing, and a fault in the
+  previous season does not offset the new one.
 - Worst-in-team **including a tie**: every player on the minimum pays, no tie-break.
 - Players with `total = 0` are excluded from under-600, worst-in-team, and the under-limit fine.
 - League scope for the under-3700 fine: home Interliga (penalised), away Interliga (exempt),
@@ -286,8 +292,8 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 
 ### Derived Money Fields
 - `recalculateDerivedFinancials()` in `lib/sync.ts` is the single writer of every derived money field: `calculated_fine`, `streak_fine`, `bonus_received`, `is_worst_player`, `is_under_600`, `is_team_under_limit`, `faultless_streak`, and the `trainer_payments` rows. Sync upserts write raw scores only; admin actions and manual-match edits call the recalculation afterwards. Never compute these inline.
-- Faultless streaks are counted across **all** seasons, so the streak query is never filtered by season or league.
-- The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across competitions, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
+- Faultless streaks are counted **per season** (`matches.season_id`) but across leagues, so both streak windows in the SQL partition by `user_id, season_id` and never by league. Rows whose match has no `season_id` form one bucket of their own.
+- The success gathering lives in its own column, `streak_fine`, never inside `calculated_fine`. It is earned across the competitions of one season, so the league that hosted the fifth faultless game is arbitrary and moves whenever a date or a fault count changes. League-filtered sums therefore exclude it (`fineAmount()` in `lib/db-utils.ts` adds it only for the "all" filter), and the player detail page breaks it out of the "all" total as its own badge so the amount is named rather than silently folded in. A player's real debt for one match row is always `calculated_fine + streak_fine`, settled by the single `is_paid` flag.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
 - The SQL is not unit testable, so its thresholds and formulas are mirrored by pure functions in `lib/money-rules.ts`, which is what the tests exercise. SQL and mirror change in the same commit — see the Testing Rules.
 - Trainer payments are fanned out over `role = 'trainer' AND is_approved`, so approving a trainer must recalculate: their rows for matches already played do not exist until it runs. `approveUser()` does this; anything else that flips `is_approved` or a role must too.
