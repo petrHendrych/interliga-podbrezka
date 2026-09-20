@@ -197,10 +197,10 @@
       "fullFaults": "{count}x greška u pune",
       "secondToLastFaults": "{count}x pretposlednji hitac",
       "specialFaults": "{count}x specijalna greška",
-      "streak": "serija 5+ utakmica bez greške kroz sva takmičenja ({count}. utakmica)"
+      "streak": "serija 5+ utakmica bez greške u sezoni ({count}. utakmica)"
     },
     "streakFinesCount": "{count}x serija",
-    "streakFinesHint": "Kazna za seriju od 5+ utakmica bez greške. Uključena je u ovaj iznos, ali pošto se računa kroz sva takmičenja, nema je u iznosima za pojedinačna takmičenja.",
+    "streakFinesHint": "Kazna za seriju od 5+ utakmica bez greške. Uključena je u ovaj iznos, ali pošto se računa kroz sva takmičenja sezone, nema je u iznosima za pojedinačna takmičenja.",
     "streakBadge": "{count}. bez greške",
     "didNotPlay": "Nije igrao",
     "notPlayedYet": "Neodigrano",
@@ -291,7 +291,7 @@
         {
           "title": "Mečevi bez greške",
           "amount": "10 €",
-          "note": "Za 5. i svaki naredni meč u nizu bez greške. Niz se broji kroz sva takmičenja."
+          "note": "Za 5. i svaki naredni meč u nizu bez greške. Niz se broji kroz sva takmičenja, ali samo unutar jedne sezone — u novoj sezoni kreće od nule."
         }
       ],
       "faultsFormulaLabel": "Kako rastu kazne za greške",
@@ -348,7 +348,7 @@
     "notes": {
       "title": "Napomene",
       "items": [
-        "Kazna za mečeve bez greške vodi se posebno. Nećeš je naći u iznosima po takmičenjima jer se računa kroz sva.",
+        "Kazna za mečeve bez greške vodi se posebno. Nećeš je naći u iznosima po takmičenjima jer se računa kroz sva takmičenja sezone.",
         "Posebne greške admin označava ručno, posle meča.",
         "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju.",
         "Ponovljeno nepoštovanje dress code-a ili preterano korišćenje mobilnog telefona tokom meča je posebna kazna od 10 €."

@@ -193,16 +193,24 @@ describe('calculated fine composition', () => {
 });
 
 describe('success gathering (faultless streak)', () => {
+  const PREVIOUS_SEASON = 12;
+  const CURRENT_SEASON = 13;
+
+  const clean = (seasonId: number | null = CURRENT_SEASON) => ({ faults: 0, seasonId });
+  const withFaults = (faults: number, seasonId: number | null = CURRENT_SEASON) => (
+    { faults, seasonId }
+  );
+
   it.each([[4, 0], [5, 10], [6, 10]])('a streak of %i costs %i €', (streak, expected) => {
     expect(streakFineFor(streak)).toBe(expected);
   });
 
   it('counts a first-ever faultless game as streak 1', () => {
-    expect(faultlessStreaks([{ faults: 0 }])).toEqual([1]);
+    expect(faultlessStreaks([clean()])).toEqual([1]);
   });
 
   it('reaches the fine on the fifth consecutive faultless game', () => {
-    const streaks = faultlessStreaks(Array.from({ length: 6 }, () => ({ faults: 0 })));
+    const streaks = faultlessStreaks(Array.from({ length: 6 }, () => clean()));
 
     expect(streaks).toEqual([1, 2, 3, 4, 5, 6]);
     expect(streaks.map(streakFineFor)).toEqual([0, 0, 0, 0, 10, 10]);
@@ -210,7 +218,7 @@ describe('success gathering (faultless streak)', () => {
 
   it('restarts the count after a fault', () => {
     const streaks = faultlessStreaks([
-      { faults: 0 }, { faults: 0 }, { faults: 3 }, { faults: 0 }, { faults: 0 },
+      clean(), clean(), withFaults(3), clean(), clean(),
     ]);
 
     expect(streaks).toEqual([1, 2, 0, 1, 2]);
@@ -218,7 +226,7 @@ describe('success gathering (faultless streak)', () => {
 
   it('only reaches five after a fault when four clean games follow it', () => {
     const streaks = faultlessStreaks([
-      { faults: 1 }, { faults: 0 }, { faults: 0 }, { faults: 0 }, { faults: 0 }, { faults: 0 },
+      withFaults(1), clean(), clean(), clean(), clean(), clean(),
     ]);
 
     expect(streaks).toEqual([0, 1, 2, 3, 4, 5]);
@@ -226,7 +234,45 @@ describe('success gathering (faultless streak)', () => {
   });
 
   it('treats a missing fault count as faultless', () => {
-    expect(faultlessStreaks([{ faults: null }, { faults: null }])).toEqual([1, 2]);
+    const streaks = faultlessStreaks([
+      { faults: null, seasonId: CURRENT_SEASON },
+      { faults: null, seasonId: CURRENT_SEASON },
+    ]);
+
+    expect(streaks).toEqual([1, 2]);
+  });
+
+  it('restarts the count in a new season', () => {
+    const streaks = faultlessStreaks([
+      clean(PREVIOUS_SEASON), clean(PREVIOUS_SEASON), clean(PREVIOUS_SEASON),
+      clean(), clean(),
+    ]);
+
+    expect(streaks).toEqual([1, 2, 3, 1, 2]);
+    expect(streaks.map(streakFineFor)).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it('does not carry four clean games of the previous season into the fifth', () => {
+    const streaks = faultlessStreaks([
+      clean(PREVIOUS_SEASON), clean(PREVIOUS_SEASON),
+      clean(PREVIOUS_SEASON), clean(PREVIOUS_SEASON),
+      clean(),
+    ]);
+
+    expect(streaks).toEqual([1, 2, 3, 4, 1]);
+    expect(streakFineFor(streaks[4])).toBe(0);
+  });
+
+  it('does not let a fault of the previous season offset the new one', () => {
+    expect(faultlessStreaks([withFaults(3, PREVIOUS_SEASON), clean()])).toEqual([0, 1]);
+  });
+
+  it('counts a season with no id as a bucket of its own', () => {
+    const streaks = faultlessStreaks([
+      clean(null), clean(null), clean(), clean(null),
+    ]);
+
+    expect(streaks).toEqual([1, 2, 1, 3]);
   });
 });
 

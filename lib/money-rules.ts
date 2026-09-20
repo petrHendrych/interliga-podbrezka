@@ -119,24 +119,30 @@ export function worstTotal(rows: PlayerRow[]): number | null {
 }
 
 /**
- * Faultless-streak length per row for one player's games, ordered by date across all
- * seasons and leagues. Mirrors the `grp`/`ROW_NUMBER()` window pair in sync.ts: the very
- * first group carries no offset, so a player whose first recorded game is faultless is on
- * a streak of 1 already.
+ * Faultless-streak length per row for one player's games, ordered by date within one season
+ * but across leagues. Mirrors the `grp`/`ROW_NUMBER()` window pair in sync.ts, both
+ * partitioned by `user_id, season_id`: the first group of a season carries no offset, so a
+ * player whose first game of the season is faultless is on a streak of 1 already. State is
+ * kept per season id rather than reset on a change between neighbouring rows, because
+ * `PARTITION BY` groups equal values wherever they sit in the ordering.
  */
-export function faultlessStreaks(rows: { faults: number | null }[]): number[] {
-  let group = 0;
-  let rowNumber = 0;
+export function faultlessStreaks(
+  rows: { faults: number | null; seasonId: number | null }[],
+): number[] {
+  const perSeason = new Map<number | null, { group: number; rowNumber: number }>();
 
   return rows.map((row) => {
+    const state = perSeason.get(row.seasonId) ?? { group: 0, rowNumber: 0 };
+    perSeason.set(row.seasonId, state);
+
     const hasFault = (row.faults ?? 0) !== 0;
     if (hasFault) {
-      group += 1;
-      rowNumber = 1;
+      state.group += 1;
+      state.rowNumber = 1;
       return 0;
     }
-    rowNumber += 1;
-    return group === 0 ? rowNumber : rowNumber - 1;
+    state.rowNumber += 1;
+    return state.group === 0 ? state.rowNumber : state.rowNumber - 1;
   });
 }
 

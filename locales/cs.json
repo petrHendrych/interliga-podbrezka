@@ -197,10 +197,10 @@
       "fullFaults": "{count}x chyba do plných",
       "secondToLastFaults": "{count}x předposlední hod",
       "specialFaults": "{count}x speciální chyba",
-      "streak": "série 5+ zápasů bez chyby napříč soutěžemi ({count}. zápas)"
+      "streak": "série 5+ zápasů bez chyby v sezoně ({count}. zápas)"
     },
     "streakFinesCount": "{count}x série",
-    "streakFinesHint": "Pokuta za sérii 5+ zápasů bez chyby. Je započítaná v této částce, ale protože se počítá napříč všemi soutěžemi, v částkách za jednotlivé soutěže není.",
+    "streakFinesHint": "Pokuta za sérii 5+ zápasů bez chyby. Je započítaná v této částce, ale protože se počítá napříč všemi soutěžemi sezony, v částkách za jednotlivé soutěže není.",
     "streakBadge": "{count}. bez chyby",
     "didNotPlay": "Nehrál",
     "notPlayedYet": "Neodehráno",
@@ -291,7 +291,7 @@
         {
           "title": "Zápasy bez chyb",
           "amount": "10 €",
-          "note": "Za 5. a každý další zápas v řadě bez chyby. Série se počítá napříč všemi soutěžemi."
+          "note": "Za 5. a každý další zápas v řadě bez chyby. Série se počítá napříč všemi soutěžemi, ale jen v rámci jedné sezony — v nové sezoně začíná od nuly."
         }
       ],
       "faultsFormulaLabel": "Jak rostou pokuty za chyby",
@@ -348,7 +348,7 @@
     "notes": {
       "title": "Poznámky",
       "items": [
-        "Pokuta za zápasy bez chyb je vedená zvlášť. V částkách za jednotlivé soutěže ji nenajdeš, protože se počítá napříč všemi.",
+        "Pokuta za zápasy bez chyb je vedená zvlášť. V částkách za jednotlivé soutěže ji nenajdeš, protože se počítá napříč všemi soutěžemi sezony.",
         "Speciální chyby označuje admin ručně po zápase.",
         "Zaplacené pokuty a bonusy se zpětným přepočtem už nemění.",
         "Opakované nedodržení dress code nebo nadměrné používání mobilu během zápasu je speciální pokuta 10 €."

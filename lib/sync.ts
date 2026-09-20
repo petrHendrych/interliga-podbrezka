@@ -22,6 +22,8 @@ import {
 import {
   CLEAN_SWEEP_FIRST_SEASON_ID,
   CLEAN_SWEEP_TEAM_POINTS,
+  STREAK_FINE,
+  STREAK_LENGTH,
   TEAM_UNDER_LIMIT_FINE,
   TRAINER_CLEAN_SWEEP_FINE,
 } from './money-rules';
@@ -119,7 +121,8 @@ export interface ScrapePayloads {
  */
 export async function recalculateDerivedFinancials() {
   // `grp` increments on each fault, so a run of faultless games shares one group and
-  // its row number is the streak length. Streaks span all seasons, so no filtering.
+  // its row number is the streak length. Streaks restart each season, so both windows
+  // partition by `season_id` — but never by league, a streak crosses competitions.
   await db.execute(sql`
     WITH worst AS (
       SELECT match_id, MIN(total) FILTER (WHERE total > 0) AS min_total
@@ -127,7 +130,7 @@ export async function recalculateDerivedFinancials() {
       GROUP BY match_id
     ),
     ordered AS (
-      SELECT mpr.match_id, mpr.user_id, mpr.total, mpr.faults, m.date,
+      SELECT mpr.match_id, mpr.user_id, mpr.total, mpr.faults, m.date, m.season_id,
              COALESCE(mpr.special_faults_count, 0) AS sfc,
              w.min_total,
              COALESCE(
@@ -142,7 +145,7 @@ export async function recalculateDerivedFinancials() {
                false
              ) AS team_under_limit,
              SUM(CASE WHEN COALESCE(mpr.faults, 0) <> 0 THEN 1 ELSE 0 END) OVER (
-               PARTITION BY mpr.user_id
+               PARTITION BY mpr.user_id, m.season_id
                ORDER BY COALESCE(m.date, '1970-01-01'), mpr.match_id
                ROWS UNBOUNDED PRECEDING
              ) AS grp
@@ -154,7 +157,8 @@ export async function recalculateDerivedFinancials() {
       SELECT *,
         CASE WHEN COALESCE(faults, 0) = 0 THEN
           ROW_NUMBER() OVER (
-            PARTITION BY user_id, grp ORDER BY COALESCE(date, '1970-01-01'), match_id
+            PARTITION BY user_id, season_id, grp
+            ORDER BY COALESCE(date, '1970-01-01'), match_id
           ) - CASE WHEN grp = 0 THEN 0 ELSE 1 END
         ELSE 0 END AS streak
       FROM ordered
@@ -170,7 +174,8 @@ export async function recalculateDerivedFinancials() {
                             + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
                             + s.sfc * 5
                             + CASE WHEN s.team_under_limit THEN ${TEAM_UNDER_LIMIT_FINE} ELSE 0 END,
-        streak_fine         = CASE WHEN s.streak >= 5 THEN 10 ELSE 0 END
+        streak_fine         = CASE WHEN s.streak >= ${STREAK_LENGTH}
+                                   THEN ${STREAK_FINE} ELSE 0 END
     FROM streaks s
     WHERE mpr.match_id = s.match_id AND mpr.user_id = s.user_id
   `);
