@@ -6,9 +6,14 @@ trigger: "user asks to manage match results, mark special misses, update payment
 
 # Manage Match Results and Payments
 
-All reads and writes go through one driver: `scripts/match-money.ts`. It has three
-subcommands — `list`, `sheet`, `apply` — and every one prints JSON to stdout and
-nothing else. There is no admin UI for these fields; this driver is the only write path.
+From the shell, all reads and writes go through one driver: `scripts/match-money.ts`.
+It has three subcommands — `list`, `sheet`, `apply` — and every one prints JSON to
+stdout and nothing else. Admins can also flip the paid flags (player fines, player
+bonuses, trainer payments) in the app under *Pokuty a platby* (`/admin/money`); the
+sheet has per-section and match-wide mark-all-paid buttons. That path goes through
+`applyMatchMoney()` in `lib/match-money-actions.ts`, which shares
+`applyMatchMoneyUpdates()` with this driver.
+Special misses have no UI; this driver is the only way to enter them.
 
 Paths are relative to the repo root. The driver reads `.env.local` for
 `DATABASE_URL` and runs on the shell's default Node (verified on 18 and 22) — the

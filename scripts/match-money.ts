@@ -9,9 +9,10 @@ const USAGE = `Usage:
   npx tsx scripts/match-money.ts sheet --match-id <id>
   npx tsx scripts/match-money.ts apply --match-id <id> [--dry-run] [--notify]   # payload JSON on stdin
 
---notify tells the affected players what changed: whoever gained a fine or a bonus gets
-their own notification. When the write moved nobody's total, everyone gets one "finances
-updated" notification instead. Pass it on the last apply of an editing session.
+--notify tells the affected people what changed: whoever gained a fine or a bonus, or had
+a row marked paid, gets their own notification. When the write produced none of those,
+everyone gets one "finances updated" notification instead. Pass it on the last apply of an
+editing session.
 
 apply payload:
   {
@@ -109,9 +110,9 @@ async function runApply(args: string[]): Promise<void> {
   if (args.includes('--notify')) {
     const { requestPersonalPushes, requestPushBroadcast } = await import('../lib/push-client');
 
-    // Prefer the precise version: only the players whose own money moved, each told what
-    // changed. The team-wide broadcast is the fallback for a write that moved nobody's
-    // total — marking fines paid, say — where "check your balance" is all there is to say.
+    // Prefer the precise version: only the people whose own money moved or was settled,
+    // each told what changed. The team-wide broadcast is the fallback for a write that
+    // produced no personal news, where "check your balance" is all there is to say.
     const notified = await requestPersonalPushes(result.personalPushes);
     if (!notified) {
       await requestPushBroadcast('moneyUpdated');

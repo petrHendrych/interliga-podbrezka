@@ -1,10 +1,16 @@
 import { eq, and, inArray } from 'drizzle-orm';
-import { db } from './db';
+import { db, sql } from './db';
 import { matches, matchPlayerResults, trainerPayments } from './db/schema';
+import { leagueCondition } from './db-utils';
 import { recalculateAndDiffPlayerMoney } from './sync';
-import type { PersonalPush } from './push-digest';
+import { deriveSettlementPushes, type PersonalPush } from './push-digest';
 import { getMatchPlayers, type MatchPlayerResult } from './special-misses';
 import { getMatchTrainerPayments, type TrainerPayment } from './trainer-payments';
+import type {
+  PlayerMoneyUpdate, TrainerPaymentUpdate, MatchMoneyUpdates,
+} from './match-money-payload';
+
+export type { PlayerMoneyUpdate, TrainerPaymentUpdate, MatchMoneyUpdates } from './match-money-payload';
 
 export interface MatchSheet {
   match: {
@@ -13,6 +19,7 @@ export interface MatchSheet {
     opponent: string | null;
     is_home: boolean | null;
     location: string | null;
+    league_id: number | null;
     league_name: string | null;
     round: number | null;
     team_total_score: number | null;
@@ -30,24 +37,6 @@ export interface MatchSheet {
   };
 }
 
-export interface PlayerMoneyUpdate {
-  userId: string;
-  fullFaults?: number;
-  secondToLastFaults?: number;
-  isPaid?: boolean;
-  isBonusPaid?: boolean;
-}
-
-export interface TrainerPaymentUpdate {
-  id: number;
-  isPaid: boolean;
-}
-
-export interface MatchMoneyUpdates {
-  players?: PlayerMoneyUpdate[];
-  trainerPayments?: TrainerPaymentUpdate[];
-}
-
 export interface AppliedChange {
   who: string;
   what: string;
@@ -59,11 +48,90 @@ export interface ApplyResult {
   changes: AppliedChange[];
   recalculated: boolean;
   sheet: MatchSheet;
-  /** Whose own money moved, for the caller to deliver — see the note on the function below. */
+  /**
+   * Whose own money moved or was settled, for the caller to deliver — see the note on the
+   * function below.
+   */
   personalPushes: PersonalPush[];
 }
 
-export class MatchMoneyError extends Error {}
+export type MatchMoneyErrorCode = 'notFound' | 'noBonus' | 'invalid' | 'unknown';
+
+export class MatchMoneyError extends Error {
+  constructor(message: string, readonly code: MatchMoneyErrorCode = 'unknown') {
+    super(message);
+    this.name = 'MatchMoneyError';
+  }
+}
+
+export interface PlayedMatchMoneySummary {
+  externalId: number;
+  date: string | null;
+  opponent: string | null;
+  isHome: boolean | null;
+  leagueId: number | null;
+  leagueName: string | null;
+  teamTotalScore: number | null;
+  opponentTotalScore: number | null;
+  finesUnpaid: number;
+  bonusesUnpaid: number;
+  trainerUnpaid: number;
+}
+
+interface PlayedMatchMoneySummaryRow {
+  external_id: number | string;
+  date: string | Date | null;
+  opponent: string | null;
+  is_home: boolean | null;
+  league_id: number | null;
+  league_name: string | null;
+  team_total_score: number | null;
+  opponent_total_score: number | null;
+  fines_unpaid: string | number;
+  bonuses_unpaid: string | number;
+  trainer_unpaid: string | number;
+}
+
+/**
+ * Played matches of one season with what is still owed per match. Inside one match row the
+ * whole `calculated_fine + streak_fine` is settled by the single `is_paid`, so the streak
+ * fine is included here regardless of the league filter.
+ */
+export async function getPlayedMatchMoneySummaries(
+  seasonId: number,
+  leagueKey?: string,
+): Promise<PlayedMatchMoneySummary[]> {
+  const rows = (await sql`
+    SELECT m.external_id, m.date, m.opponent, m.is_home, m.league_id, m.league_name,
+           m.team_total_score, m.opponent_total_score,
+           COALESCE((SELECT SUM(COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0))
+                     FROM match_player_results mpr
+                     WHERE mpr.match_id = m.external_id AND NOT COALESCE(mpr.is_paid, false)), 0) AS fines_unpaid,
+           COALESCE((SELECT SUM(COALESCE(mpr.bonus_received, 0))
+                     FROM match_player_results mpr
+                     WHERE mpr.match_id = m.external_id AND NOT COALESCE(mpr.is_bonus_paid, false)), 0) AS bonuses_unpaid,
+           COALESCE((SELECT SUM(tp.amount)
+                     FROM trainer_payments tp
+                     WHERE tp.match_id = m.external_id AND NOT COALESCE(tp.is_paid, false)), 0) AS trainer_unpaid
+    FROM matches m
+    WHERE m.season_id = ${seasonId} AND m.team_total_score IS NOT NULL ${leagueCondition(leagueKey)}
+    ORDER BY m.date DESC
+  `) as unknown as PlayedMatchMoneySummaryRow[];
+
+  return rows.map((row) => ({
+    externalId: Number(row.external_id),
+    date: row.date ? new Date(row.date).toISOString() : null,
+    opponent: row.opponent ?? null,
+    isHome: row.is_home ?? null,
+    leagueId: row.league_id ?? null,
+    leagueName: row.league_name ?? null,
+    teamTotalScore: row.team_total_score ?? null,
+    opponentTotalScore: row.opponent_total_score ?? null,
+    finesUnpaid: Number(row.fines_unpaid),
+    bonusesUnpaid: Number(row.bonuses_unpaid),
+    trainerUnpaid: Number(row.trainer_unpaid),
+  }));
+}
 
 export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
   const [match] = await db
@@ -72,7 +140,7 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
     .where(eq(matches.externalId, matchId));
 
   if (!match) {
-    throw new MatchMoneyError(`No match with external id ${matchId}.`);
+    throw new MatchMoneyError(`No match with external id ${matchId}.`, 'notFound');
   }
 
   const players = await getMatchPlayers(matchId);
@@ -88,6 +156,7 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
       opponent: match.opponent ?? null,
       is_home: match.isHome ?? null,
       location: match.location ?? null,
+      league_id: match.leagueId ?? null,
       league_name: match.leagueName ?? null,
       round: match.round ?? null,
       team_total_score: match.teamTotalScore ?? null,
@@ -108,7 +177,7 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
 
 function assertNonNegativeInteger(value: number, label: string): void {
   if (!Number.isInteger(value) || value < 0) {
-    throw new MatchMoneyError(`${label} must be a non-negative integer, got ${value}.`);
+    throw new MatchMoneyError(`${label} must be a non-negative integer, got ${value}.`, 'invalid');
   }
 }
 
@@ -122,7 +191,7 @@ async function applyPlayerUpdates(
   const plan = updates.map((update) => {
     const current = byUserId.get(update.userId);
     if (!current) {
-      throw new MatchMoneyError(`User ${update.userId} has no result row in match ${matchId}.`);
+      throw new MatchMoneyError(`User ${update.userId} has no result row in match ${matchId}.`, 'notFound');
     }
 
     const fullFaults = update.fullFaults ?? current.full_faults_count;
@@ -136,6 +205,7 @@ async function applyPlayerUpdates(
     if (isBonusPaid && current.bonus_received === 0) {
       throw new MatchMoneyError(
         `${current.user_name} has no bonus in this match, so isBonusPaid cannot be true.`,
+        'noBonus',
       );
     }
 
@@ -207,7 +277,10 @@ async function applyTrainerUpdates(
   const changed = updates.filter((update) => {
     const current = byId.get(update.id);
     if (!current) {
-      throw new MatchMoneyError(`Trainer payment ${update.id} does not belong to match ${matchId}.`);
+      throw new MatchMoneyError(
+        `Trainer payment ${update.id} does not belong to match ${matchId}.`,
+        'notFound',
+      );
     }
     return current.isPaid !== update.isPaid;
   });
@@ -263,14 +336,16 @@ export async function applyMatchMoneyUpdates(
 
   // Fines, streaks and trainer rows all derive from the miss counts, so one pass
   // after every write beats recalculating per player.
-  const personalPushes = playerResult.missesChanged
+  const moneyPushes = playerResult.missesChanged
     ? await recalculateAndDiffPlayerMoney()
     : [];
+
+  const after = await getMatchSheet(matchId);
 
   return {
     changes: [...playerResult.changes, ...trainerChanges],
     recalculated: playerResult.missesChanged,
-    sheet: await getMatchSheet(matchId),
-    personalPushes,
+    sheet: after,
+    personalPushes: [...moneyPushes, ...deriveSettlementPushes(sheet, after)],
   };
 }

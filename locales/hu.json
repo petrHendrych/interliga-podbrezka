@@ -52,6 +52,7 @@
     "logout": "Kijelentkezés",
     "manageUsers": "Felhasználók kezelése",
     "manualMatches": "Kézi meccsek",
+    "matchMoney": "Büntetések és befizetések",
     "syncing": "Szinkronizálás...",
     "syncData": "Adatok szinkronizálása",
     "syncConfirmTitle": "Elindítod a szinkronizálást?",
@@ -161,6 +162,50 @@
         "invalidScore": "A pontszám és a hibák csak egész, nem negatív számok lehetnek.",
         "notFound": "A meccs nem található.",
         "notManual": "Ez a meccs a szinkronizálásból jött, nem szerkeszthető.",
+        "unknown": "Hiba történt, próbáld újra."
+      }
+    },
+    "money": {
+      "title": "Büntetések és befizetések",
+      "description": "Jelöld a játékosok büntetéseit, a bónuszokat és az edzők befizetéseit kifizetettnek közvetlenül telefonról.",
+      "listTitle": "Lejátszott meccsek",
+      "empty": "Ebben a szezonban még nincs lejátszott meccs.",
+      "finesUnpaid": "Büntetések",
+      "bonusesUnpaid": "Bónuszok",
+      "trainerUnpaid": "Edzők",
+      "unpaidOf": "{unpaid} € / {total} €",
+      "playersTitle": "Játékosok büntetései",
+      "bonusesTitle": "Bónuszok",
+      "trainerTitle": "Edzők befizetései",
+      "noBonuses": "Ezen a meccsen senki nem szerzett bónuszt.",
+      "noTrainerPayments": "Ehhez a meccshez nem tartozik edzői befizetés.",
+      "paid": "Kifizetve",
+      "unpaid": "Kifizetetlen",
+      "markPaid": "Kifizetés",
+      "markUnpaid": "Visszavonás",
+      "markAllPaid": "Összes megjelölése kifizetettként",
+      "markAllPaidTitle": "Megjelölöd az összeset kifizetettként?",
+      "markAllPaidDescription": "Ebben a részben minden kifizetetlen tétel kifizetettként lesz megjelölve. Az egyes tételeket bármikor visszavonhatod.",
+      "markMatchPaid": "Az egész meccs megjelölése kifizetettként",
+      "markMatchPaidTitle": "Az egész meccset kifizetettként jelölöd?",
+      "markMatchPaidDescription": "A játékosbüntetések ({fines} €), a bónuszok ({bonuses} €) és az edzői befizetések ({trainer} €) egy lépésben kifizetettként lesznek megjelölve. Az egyes tételeket bármikor visszavonhatod.",
+      "confirm": "Megjelölés",
+      "backToList": "Vissza a meccsekhez",
+      "total": "Összesen",
+      "faults": "Hibák",
+      "fine": "Büntetés",
+      "bonus": "Bónusz",
+      "conditions": {
+        "score_bonus": "Csapatteljesítmény",
+        "zero_faults": "Hibátlan csapat",
+        "elite_player": "700 feletti játékosok",
+        "clean_sweep": "8:0-s győzelem"
+      },
+      "errors": {
+        "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
+        "notFound": "A meccs vagy a tétel nem található.",
+        "noBonus": "Ez a játékos ezen a meccsen nem szerzett bónuszt.",
+        "invalid": "Érvénytelen adatok.",
         "unknown": "Hiba történt, próbáld újra."
       }
     }
@@ -441,6 +486,18 @@
       "streakWarning": {
         "title": "Figyelj a sorozatra",
         "body": "{streak} hibátlan meccsed van egymás után. Minden további tiszta meccs {amount} €-ba kerül a kasszába."
+      },
+      "finePaid": {
+        "title": "Büntetés kifizetve",
+        "body": "A {opponent} elleni meccs {amount} € büntetése rendezve."
+      },
+      "bonusPaid": {
+        "title": "Bónusz kifizetve",
+        "body": "A {opponent} elleni meccs {amount} € bónuszát kifizettük neked."
+      },
+      "trainerPaid": {
+        "title": "Befizetés rögzítve",
+        "body": "A {opponent} elleni meccs {amount} € befizetése kifizetettként rögzítve."
       },
       "debtReminder": {
         "title": "Ne feledkezz meg a tartozásról",

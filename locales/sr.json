@@ -52,6 +52,7 @@
     "logout": "Odjavi se",
     "manageUsers": "Upravljanje korisnicima",
     "manualMatches": "Ručni mečevi",
+    "matchMoney": "Kazne i uplate",
     "syncing": "Sinhronizujem...",
     "syncData": "Sinhronizuj podatke",
     "syncConfirmTitle": "Pokrenuti sinhronizaciju?",
@@ -161,6 +162,50 @@
         "invalidScore": "Rezultat i greške moraju biti celi nenegativni brojevi.",
         "notFound": "Meč nije pronađen.",
         "notManual": "Ovaj meč je došao iz sinhronizacije, ne može da se menja.",
+        "unknown": "Došlo je do greške, pokušaj ponovo."
+      }
+    },
+    "money": {
+      "title": "Kazne i uplate",
+      "description": "Označi kazne igrača, bonuse i uplate trenera kao plaćene direktno sa telefona.",
+      "listTitle": "Odigrani mečevi",
+      "empty": "U ovoj sezoni još nema odigranih mečeva.",
+      "finesUnpaid": "Kazne",
+      "bonusesUnpaid": "Bonusi",
+      "trainerUnpaid": "Treneri",
+      "unpaidOf": "{unpaid} € / {total} €",
+      "playersTitle": "Kazne igrača",
+      "bonusesTitle": "Bonusi",
+      "trainerTitle": "Uplate trenera",
+      "noBonuses": "U ovom meču niko nije osvojio bonus.",
+      "noTrainerPayments": "Ovaj meč nema uplate trenera.",
+      "paid": "Plaćeno",
+      "unpaid": "Neplaćeno",
+      "markPaid": "Plati",
+      "markUnpaid": "Vrati",
+      "markAllPaid": "Označi sve kao plaćeno",
+      "markAllPaidTitle": "Označiti sve kao plaćeno?",
+      "markAllPaidDescription": "Sve neplaćene stavke u ovom delu biće označene kao plaćene. Pojedinačne stavke možeš uvek vratiti.",
+      "markMatchPaid": "Označi ceo meč kao plaćen",
+      "markMatchPaidTitle": "Označiti ceo meč kao plaćen?",
+      "markMatchPaidDescription": "Kazne igrača {fines} €, bonusi {bonuses} € i uplate trenera {trainer} € biće označeni kao plaćeni odjednom. Pojedinačne stavke možeš uvek vratiti.",
+      "confirm": "Označi",
+      "backToList": "Nazad na mečeve",
+      "total": "Ukupno",
+      "faults": "Greške",
+      "fine": "Kazna",
+      "bonus": "Bonus",
+      "conditions": {
+        "score_bonus": "Učinak tima",
+        "zero_faults": "Tim bez greške",
+        "elite_player": "Igrači preko 700",
+        "clean_sweep": "Pobeda 8:0"
+      },
+      "errors": {
+        "unauthorized": "Nemaš dozvolu za ovu akciju.",
+        "notFound": "Meč ili stavka nisu pronađeni.",
+        "noBonus": "Ovaj igrač u meču nije osvojio bonus.",
+        "invalid": "Neispravni podaci.",
         "unknown": "Došlo je do greške, pokušaj ponovo."
       }
     }
@@ -441,6 +486,18 @@
       "streakWarning": {
         "title": "Pazi na seriju",
         "body": "Imaš {streak} utakmice zaredom bez greške. Svaka sledeća čista utakmica te košta {amount} € u banku."
+      },
+      "finePaid": {
+        "title": "Kazna plaćena",
+        "body": "Tvoja kazna {amount} € za utakmicu sa {opponent} je izmirena."
+      },
+      "bonusPaid": {
+        "title": "Bonus isplaćen",
+        "body": "Bonus {amount} € za utakmicu sa {opponent} ti je isplaćen."
+      },
+      "trainerPaid": {
+        "title": "Uplata zabeležena",
+        "body": "Tvoja uplata {amount} € za utakmicu sa {opponent} je zabeležena kao plaćena."
       },
       "debtReminder": {
         "title": "Ne zaboravi na dug",
