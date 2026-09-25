@@ -59,7 +59,13 @@ export interface PlayerMoneySnapshot {
   faultlessStreak: number;
 }
 
-export type PersonalPushEvent = 'bonusEarned' | 'fineAdded' | 'streakWarning';
+export type PersonalPushEvent =
+  | 'bonusEarned'
+  | 'fineAdded'
+  | 'streakWarning'
+  | 'finePaid'
+  | 'bonusPaid'
+  | 'trainerPaid';
 
 export interface PersonalPush {
   userId: string;
@@ -134,15 +140,93 @@ export function derivePersonalPushes(
   });
 }
 
-const PERSONAL_PUSH_EVENTS: PersonalPushEvent[] = ['bonusEarned', 'fineAdded', 'streakWarning'];
+/** One player's row of a match sheet, as far as settling it is concerned. */
+export interface SettlementPlayerRow {
+  user_id: string;
+  calculated_fine: number;
+  streak_fine: number;
+  bonus_received: number;
+  is_paid: boolean;
+  is_bonus_paid: boolean;
+}
+
+export interface SettlementTrainerRow {
+  id: number;
+  userId: string;
+  amount: number;
+  isPaid: boolean;
+}
+
+/** The slice of a `MatchSheet` the settlement digest reads, kept db-free on purpose. */
+export interface SettlementSheet {
+  match: { opponent: string | null };
+  players: SettlementPlayerRow[];
+  trainer_payments: SettlementTrainerRow[];
+}
+
+/**
+ * Tells people their money was settled: a sheet read before and after a write, and every row
+ * that went from unpaid to paid becomes a notification for its owner.
+ *
+ * Only the paid direction speaks — an undo is an admin correcting a mis-click. A player gets
+ * one push per row (fine and bonus are separate news), so a bulk write still reaches each
+ * player individually. A trainer's several condition rows of the same match collapse into one
+ * push with the summed amount, because they are all the same "you paid for this match".
+ */
+export function deriveSettlementPushes(
+  before: SettlementSheet,
+  after: SettlementSheet,
+): PersonalPush[] {
+  const opponent = after.match.opponent ?? '';
+  const playersBefore = new Map(before.players.map((player) => [player.user_id, player]));
+  const trainersBefore = new Map(before.trainer_payments.map((payment) => [payment.id, payment]));
+
+  const justPaid = (was: boolean | undefined, now: boolean) => was === false && now;
+
+  const playerPushes = after.players.flatMap((player): PersonalPush[] => {
+    const past = playersBefore.get(player.user_id);
+    const pushes: PersonalPush[] = [];
+
+    const fine = round(player.calculated_fine + player.streak_fine);
+    if (justPaid(past?.is_paid, player.is_paid) && fine > 0) {
+      pushes.push({ userId: player.user_id, event: 'finePaid', params: { amount: fine, opponent } });
+    }
+
+    const bonus = round(player.bonus_received);
+    if (justPaid(past?.is_bonus_paid, player.is_bonus_paid) && bonus > 0) {
+      pushes.push({ userId: player.user_id, event: 'bonusPaid', params: { amount: bonus, opponent } });
+    }
+
+    return pushes;
+  });
+
+  const trainerTotals = new Map<string, number>();
+  after.trainer_payments.forEach((payment) => {
+    const past = trainersBefore.get(payment.id);
+    if (!justPaid(past?.isPaid, payment.isPaid) || payment.amount <= 0) return;
+    trainerTotals.set(payment.userId, (trainerTotals.get(payment.userId) ?? 0) + payment.amount);
+  });
+
+  const trainerPushes = [...trainerTotals.entries()].map(([userId, amount]): PersonalPush => ({
+    userId,
+    event: 'trainerPaid',
+    params: { amount: round(amount), opponent },
+  }));
+
+  return [...playerPushes, ...trainerPushes];
+}
+
+const PERSONAL_PUSH_EVENTS: PersonalPushEvent[] = [
+  'bonusEarned', 'fineAdded', 'streakWarning', 'finePaid', 'bonusPaid', 'trainerPaid',
+];
 
 /**
  * Validates notifications that arrived over HTTP from the CLI. Returns null when the payload
  * is not a personal-push batch at all, so the caller can fall through to another shape.
  *
- * The values land inside a notification, so nothing here is taken on trust: only the three
- * money events are accepted, and params are flattened to strings and numbers rather than
- * passed through — a nested object would reach `interpolate()` as "[object Object]".
+ * The values land inside a notification, so nothing here is taken on trust: only the
+ * personal money events are accepted, and params are flattened to strings and numbers rather
+ * than passed through — a nested object would reach `interpolate()` as "[object Object]".
  */
 export function parsePersonalPushes(value: unknown): PersonalPush[] | null {
   if (!Array.isArray(value)) return null;

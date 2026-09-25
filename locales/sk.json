@@ -181,8 +181,8 @@
       "noTrainerPayments": "Tento zápas nemá žiadne platby trénerov.",
       "paid": "Zaplatené",
       "unpaid": "Nezaplatené",
-      "markPaid": "Označiť ako zaplatené",
-      "markUnpaid": "Označiť ako nezaplatené",
+      "markPaid": "Zaplatiť",
+      "markUnpaid": "Vrátiť",
       "markAllPaid": "Označiť všetky ako zaplatené",
       "markAllPaidTitle": "Označiť všetky ako zaplatené?",
       "markAllPaidDescription": "Všetky nezaplatené položky v tejto sekcii sa označia ako zaplatené. Jednotlivé položky vieš kedykoľvek vrátiť späť.",
@@ -486,6 +486,18 @@
       "streakWarning": {
         "title": "Pozor na sériu",
         "body": "Máš {streak} zápasy v rade bez chyby. Každý ďalší čistý zápas ťa bude stáť {amount} € do banky."
+      },
+      "finePaid": {
+        "title": "Pokuta zaplatená",
+        "body": "Tvoja pokuta {amount} € za zápas s {opponent} je vyrovnaná."
+      },
+      "bonusPaid": {
+        "title": "Bonus vyplatený",
+        "body": "Bonus {amount} € za zápas s {opponent} ti bol vyplatený."
+      },
+      "trainerPaid": {
+        "title": "Platba zapísaná",
+        "body": "Tvoja platba {amount} € za zápas s {opponent} je zapísaná ako zaplatená."
       },
       "debtReminder": {
         "title": "Nezabudni na dlh",

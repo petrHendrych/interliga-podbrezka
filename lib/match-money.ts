@@ -3,7 +3,7 @@ import { db, sql } from './db';
 import { matches, matchPlayerResults, trainerPayments } from './db/schema';
 import { leagueCondition } from './db-utils';
 import { recalculateAndDiffPlayerMoney } from './sync';
-import type { PersonalPush } from './push-digest';
+import { deriveSettlementPushes, type PersonalPush } from './push-digest';
 import { getMatchPlayers, type MatchPlayerResult } from './special-misses';
 import { getMatchTrainerPayments, type TrainerPayment } from './trainer-payments';
 import type {
@@ -48,7 +48,10 @@ export interface ApplyResult {
   changes: AppliedChange[];
   recalculated: boolean;
   sheet: MatchSheet;
-  /** Whose own money moved, for the caller to deliver — see the note on the function below. */
+  /**
+   * Whose own money moved or was settled, for the caller to deliver — see the note on the
+   * function below.
+   */
   personalPushes: PersonalPush[];
 }
 
@@ -333,14 +336,16 @@ export async function applyMatchMoneyUpdates(
 
   // Fines, streaks and trainer rows all derive from the miss counts, so one pass
   // after every write beats recalculating per player.
-  const personalPushes = playerResult.missesChanged
+  const moneyPushes = playerResult.missesChanged
     ? await recalculateAndDiffPlayerMoney()
     : [];
+
+  const after = await getMatchSheet(matchId);
 
   return {
     changes: [...playerResult.changes, ...trainerChanges],
     recalculated: playerResult.missesChanged,
-    sheet: await getMatchSheet(matchId),
-    personalPushes,
+    sheet: after,
+    personalPushes: [...moneyPushes, ...deriveSettlementPushes(sheet, after)],
   };
 }

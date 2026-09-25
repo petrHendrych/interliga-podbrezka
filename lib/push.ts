@@ -246,9 +246,8 @@ export async function sendPushToUsers(
 }
 
 /**
- * Sends each player their own money news. Grouped by event so one broadcast query serves
- * everyone who earned a bonus, and so a player only ever hears the single thing the digest
- * decided was worth saying.
+ * Sends each player their own money news. Grouped by event so one query serves everyone who
+ * earned a bonus, and so a player hears each thing the digest decided was worth saying once.
  */
 export async function sendPersonalMoneyPushes(pushes: PersonalPush[]): Promise<PushResult> {
   if (pushes.length === 0) return EMPTY_RESULT;

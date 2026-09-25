@@ -181,8 +181,8 @@
       "noTrainerPayments": "Ehhez a meccshez nem tartozik edzői befizetés.",
       "paid": "Kifizetve",
       "unpaid": "Kifizetetlen",
-      "markPaid": "Megjelölés kifizetettként",
-      "markUnpaid": "Megjelölés kifizetetlenként",
+      "markPaid": "Kifizetés",
+      "markUnpaid": "Visszavonás",
       "markAllPaid": "Összes megjelölése kifizetettként",
       "markAllPaidTitle": "Megjelölöd az összeset kifizetettként?",
       "markAllPaidDescription": "Ebben a részben minden kifizetetlen tétel kifizetettként lesz megjelölve. Az egyes tételeket bármikor visszavonhatod.",
@@ -486,6 +486,18 @@
       "streakWarning": {
         "title": "Figyelj a sorozatra",
         "body": "{streak} hibátlan meccsed van egymás után. Minden további tiszta meccs {amount} €-ba kerül a kasszába."
+      },
+      "finePaid": {
+        "title": "Büntetés kifizetve",
+        "body": "A {opponent} elleni meccs {amount} € büntetése rendezve."
+      },
+      "bonusPaid": {
+        "title": "Bónusz kifizetve",
+        "body": "A {opponent} elleni meccs {amount} € bónuszát kifizettük neked."
+      },
+      "trainerPaid": {
+        "title": "Befizetés rögzítve",
+        "body": "A {opponent} elleni meccs {amount} € befizetése kifizetettként rögzítve."
       },
       "debtReminder": {
         "title": "Ne feledkezz meg a tartozásról",

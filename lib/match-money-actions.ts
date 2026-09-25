@@ -5,6 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { getSession } from './session';
 import { updateSyncedData } from './cache';
+import { sendPersonalMoneyPushes } from './push';
 import { applyMatchMoneyUpdates, MatchMoneyError, type MatchMoneyErrorCode } from './match-money';
 import type { MatchMoneyUpdates } from './match-money-payload';
 
@@ -28,12 +29,13 @@ export async function applyMatchMoney(
   }
 
   try {
-    await applyMatchMoneyUpdates(matchId, updates);
+    const result = await applyMatchMoneyUpdates(matchId, updates);
 
     updateSyncedData();
     revalidatePath(MONEY_LIST_PATH, 'page');
     revalidatePath(MONEY_SHEET_PATH, 'page');
     revalidatePath(PLAYER_PATH, 'page');
+    await sendPersonalMoneyPushes(result.personalPushes);
     return { success: true };
   } catch (error) {
     if (error instanceof MatchMoneyError) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dailyDedupeKey,
   derivePersonalPushes,
+  deriveSettlementPushes,
   parsePersonalPushes,
   findStuckScrape,
   SCRAPE_STUCK_AFTER_MS,
@@ -9,6 +10,9 @@ import {
   summariseNewResults,
   type NewMatchResult,
   type PlayerMoneySnapshot,
+  type SettlementPlayerRow,
+  type SettlementSheet,
+  type SettlementTrainerRow,
 } from './push-digest';
 import { STREAK_FINE, STREAK_LENGTH } from './money-rules';
 
@@ -259,6 +263,184 @@ describe('derivePersonalPushes', () => {
   });
 });
 
+const OTHER_PLAYER = 'a1b2c3d4-0000-0000-0000-000000000002';
+const TRAINER = 'a1b2c3d4-0000-0000-0000-000000000010';
+const OTHER_TRAINER = 'a1b2c3d4-0000-0000-0000-000000000011';
+
+function playerRow(overrides: Partial<SettlementPlayerRow> = {}): SettlementPlayerRow {
+  return {
+    user_id: PLAYER,
+    calculated_fine: 3,
+    streak_fine: 10,
+    bonus_received: 40,
+    is_paid: false,
+    is_bonus_paid: false,
+    ...overrides,
+  };
+}
+
+function trainerRow(overrides: Partial<SettlementTrainerRow> = {}): SettlementTrainerRow {
+  return {
+    id: 1, userId: TRAINER, amount: 15, isPaid: false, ...overrides,
+  };
+}
+
+function sheet(
+  players: SettlementPlayerRow[],
+  trainerPayments: SettlementTrainerRow[] = [],
+  opponent: string | null = 'Trenčín',
+): SettlementSheet {
+  return { match: { opponent }, players, trainer_payments: trainerPayments };
+}
+
+describe('deriveSettlementPushes', () => {
+  it('tells a player their fine was settled, naming the whole calculated + streak amount', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([playerRow()]),
+      sheet([playerRow({ is_paid: true })]),
+    );
+
+    expect(pushes).toEqual([
+      { userId: PLAYER, event: 'finePaid', params: { amount: 13, opponent: 'Trenčín' } },
+    ]);
+  });
+
+  it('tells a player their bonus was paid out', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([playerRow()]),
+      sheet([playerRow({ is_bonus_paid: true })]),
+    );
+
+    expect(pushes).toEqual([
+      { userId: PLAYER, event: 'bonusPaid', params: { amount: 40, opponent: 'Trenčín' } },
+    ]);
+  });
+
+  it('sends two separate pushes when the fine and the bonus are settled in one write', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([playerRow()]),
+      sheet([playerRow({ is_paid: true, is_bonus_paid: true })]),
+    );
+
+    expect(pushes.map((push) => push.event)).toEqual(['finePaid', 'bonusPaid']);
+  });
+
+  it('stays silent when a row is flipped back to unpaid', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([playerRow({ is_paid: true, is_bonus_paid: true })], [trainerRow({ isPaid: true })]),
+      sheet([playerRow()], [trainerRow()]),
+    );
+
+    expect(pushes).toEqual([]);
+  });
+
+  it('stays silent when nothing changed, even for rows that are already paid', () => {
+    const paid = sheet(
+      [playerRow({ is_paid: true, is_bonus_paid: true })],
+      [trainerRow({ isPaid: true })],
+    );
+
+    expect(deriveSettlementPushes(paid, paid)).toEqual([]);
+  });
+
+  it('does not announce settling a zero amount', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([playerRow({ calculated_fine: 0, streak_fine: 0, bonus_received: 0 })]),
+      sheet([playerRow({
+        calculated_fine: 0, streak_fine: 0, bonus_received: 0, is_paid: true, is_bonus_paid: true,
+      })]),
+    );
+
+    expect(pushes).toEqual([]);
+  });
+
+  it('reaches every player of a bulk write individually', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([
+        playerRow(),
+        playerRow({ user_id: OTHER_PLAYER, calculated_fine: 1, streak_fine: 0 }),
+      ]),
+      sheet([
+        playerRow({ is_paid: true }),
+        playerRow({
+          user_id: OTHER_PLAYER, calculated_fine: 1, streak_fine: 0, is_paid: true,
+        }),
+      ]),
+    );
+
+    expect(pushes).toEqual([
+      { userId: PLAYER, event: 'finePaid', params: { amount: 13, opponent: 'Trenčín' } },
+      { userId: OTHER_PLAYER, event: 'finePaid', params: { amount: 1, opponent: 'Trenčín' } },
+    ]);
+  });
+
+  it('collapses one trainer\'s rows of the match into a single summed push', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([], [trainerRow({ id: 1, amount: 15 }), trainerRow({ id: 2, amount: 10 })]),
+      sheet([], [
+        trainerRow({ id: 1, amount: 15, isPaid: true }),
+        trainerRow({ id: 2, amount: 10, isPaid: true }),
+      ]),
+    );
+
+    expect(pushes).toEqual([
+      { userId: TRAINER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín' } },
+    ]);
+  });
+
+  it('keeps two trainers apart, grouping by their id rather than by the match', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([], [
+        trainerRow({ id: 1 }),
+        trainerRow({ id: 2, amount: 10 }),
+        trainerRow({ id: 3, userId: OTHER_TRAINER }),
+      ]),
+      sheet([], [
+        trainerRow({ id: 1, isPaid: true }),
+        trainerRow({ id: 2, amount: 10, isPaid: true }),
+        trainerRow({ id: 3, userId: OTHER_TRAINER, isPaid: true }),
+      ]),
+    );
+
+    expect(pushes).toEqual([
+      { userId: TRAINER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín' } },
+      { userId: OTHER_TRAINER, event: 'trainerPaid', params: { amount: 15, opponent: 'Trenčín' } },
+    ]);
+  });
+
+  it('sums only the trainer rows that were just settled, not the ones paid earlier', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([], [trainerRow({ id: 1, isPaid: true }), trainerRow({ id: 2, amount: 10 })]),
+      sheet([], [
+        trainerRow({ id: 1, isPaid: true }),
+        trainerRow({ id: 2, amount: 10, isPaid: true }),
+      ]),
+    );
+
+    expect(pushes).toEqual([
+      { userId: TRAINER, event: 'trainerPaid', params: { amount: 10, opponent: 'Trenčín' } },
+    ]);
+  });
+
+  it('falls back to an empty opponent when the match has none', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([playerRow()], [], null),
+      sheet([playerRow({ is_paid: true })], [], null),
+    );
+
+    expect(pushes[0].params.opponent).toBe('');
+  });
+
+  it('ignores a row that did not exist before the write', () => {
+    const pushes = deriveSettlementPushes(
+      sheet([], []),
+      sheet([playerRow({ is_paid: true })], [trainerRow({ isPaid: true })]),
+    );
+
+    expect(pushes).toEqual([]);
+  });
+});
+
 describe('parsePersonalPushes', () => {
   const valid = { userId: PLAYER, event: 'fineAdded', params: { amount: 7, total: 19 } };
 
@@ -277,7 +459,13 @@ describe('parsePersonalPushes', () => {
     expect(parsePersonalPushes([])).toEqual([]);
   });
 
-  it('refuses an event outside the three money notifications', () => {
+  it('accepts the settlement events the money sheet produces', () => {
+    const settled = { userId: PLAYER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín' } };
+
+    expect(parsePersonalPushes([settled])).toEqual([settled]);
+  });
+
+  it('refuses an event outside the personal money notifications', () => {
     // Otherwise anyone holding the cron secret could address any notification to anyone.
     const forged = { ...valid, event: 'scrapeFailed' };
 

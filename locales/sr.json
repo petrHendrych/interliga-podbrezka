@@ -181,8 +181,8 @@
       "noTrainerPayments": "Ovaj meč nema uplate trenera.",
       "paid": "Plaćeno",
       "unpaid": "Neplaćeno",
-      "markPaid": "Označi kao plaćeno",
-      "markUnpaid": "Označi kao neplaćeno",
+      "markPaid": "Plati",
+      "markUnpaid": "Vrati",
       "markAllPaid": "Označi sve kao plaćeno",
       "markAllPaidTitle": "Označiti sve kao plaćeno?",
       "markAllPaidDescription": "Sve neplaćene stavke u ovom delu biće označene kao plaćene. Pojedinačne stavke možeš uvek vratiti.",
@@ -486,6 +486,18 @@
       "streakWarning": {
         "title": "Pazi na seriju",
         "body": "Imaš {streak} utakmice zaredom bez greške. Svaka sledeća čista utakmica te košta {amount} € u banku."
+      },
+      "finePaid": {
+        "title": "Kazna plaćena",
+        "body": "Tvoja kazna {amount} € za utakmicu sa {opponent} je izmirena."
+      },
+      "bonusPaid": {
+        "title": "Bonus isplaćen",
+        "body": "Bonus {amount} € za utakmicu sa {opponent} ti je isplaćen."
+      },
+      "trainerPaid": {
+        "title": "Uplata zabeležena",
+        "body": "Tvoja uplata {amount} € za utakmicu sa {opponent} je zabeležena kao plaćena."
       },
       "debtReminder": {
         "title": "Ne zaboravi na dug",
