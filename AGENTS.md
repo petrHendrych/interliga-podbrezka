@@ -297,7 +297,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
 - The SQL is not unit testable, so its thresholds and formulas are mirrored by pure functions in `lib/money-rules.ts`, which is what the tests exercise. SQL and mirror change in the same commit — see the Testing Rules.
 - Trainer payments are fanned out over `role = 'trainer' AND is_approved`, so approving a trainer must recalculate: their rows for matches already played do not exist until it runs. `approveUser()` does this; anything else that flips `is_approved` or a role must too.
-- `applyMatchMoneyUpdates()` (`lib/match-money.ts`) recalculates but deliberately never invalidates — it runs from `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws. The caller owns invalidation: the CLI calls `requestSyncedDataRevalidation()`, an in-app caller must call `updateSyncedData()`.
+- `applyMatchMoneyUpdates()` (`lib/match-money.ts`) recalculates but deliberately never invalidates — it runs from `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws. The caller owns invalidation: the CLI calls `requestSyncedDataRevalidation()`; the in-app caller, `applyMatchMoney()` in `lib/match-money-actions.ts` (admin-only server action behind the `/admin/money` sheet), calls `updateSyncedData()` and `revalidatePath` after every successful write. Any new in-app caller must do the same.
 
 ### Match Points
 - `matches.team_match_points` / `opponent_match_points` hold the match-point result ("body"),

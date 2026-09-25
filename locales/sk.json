@@ -52,6 +52,7 @@
     "logout": "Odhlásiť sa",
     "manageUsers": "Správa používateľov",
     "manualMatches": "Manuálne zápasy",
+    "matchMoney": "Pokuty a platby",
     "syncing": "Synchronizujem...",
     "syncData": "Synchronizovať dáta",
     "syncConfirmTitle": "Spustiť synchronizáciu?",
@@ -161,6 +162,50 @@
         "invalidScore": "Skóre a chyby musia byť celé nezáporné čísla.",
         "notFound": "Zápas sa nenašiel.",
         "notManual": "Tento zápas prišiel zo synchronizácie, upraviť sa nedá.",
+        "unknown": "Niekde sa stala chyba, skús to znova."
+      }
+    },
+    "money": {
+      "title": "Pokuty a platby",
+      "description": "Označ pokuty hráčov, bonusy a platby trénerov ako zaplatené priamo z telefónu.",
+      "listTitle": "Odohrané zápasy",
+      "empty": "V tejto sezóne zatiaľ nie je žiadny odohraný zápas.",
+      "finesUnpaid": "Pokuty",
+      "bonusesUnpaid": "Bonusy",
+      "trainerUnpaid": "Tréneri",
+      "unpaidOf": "{unpaid} € / {total} €",
+      "playersTitle": "Pokuty hráčov",
+      "bonusesTitle": "Bonusy",
+      "trainerTitle": "Platby trénerov",
+      "noBonuses": "V tomto zápase nikto nezískal bonus.",
+      "noTrainerPayments": "Tento zápas nemá žiadne platby trénerov.",
+      "paid": "Zaplatené",
+      "unpaid": "Nezaplatené",
+      "markPaid": "Označiť ako zaplatené",
+      "markUnpaid": "Označiť ako nezaplatené",
+      "markAllPaid": "Označiť všetky ako zaplatené",
+      "markAllPaidTitle": "Označiť všetky ako zaplatené?",
+      "markAllPaidDescription": "Všetky nezaplatené položky v tejto sekcii sa označia ako zaplatené. Jednotlivé položky vieš kedykoľvek vrátiť späť.",
+      "markMatchPaid": "Označiť všetko ako zaplatené",
+      "markMatchPaidTitle": "Označiť celý zápas ako zaplatený?",
+      "markMatchPaidDescription": "Pokuty hráčov {fines} €, bonusy {bonuses} € a platby trénerov {trainer} € sa označia ako zaplatené v jednej dávke. Jednotlivé položky vieš kedykoľvek vrátiť späť.",
+      "confirm": "Označiť",
+      "backToList": "Späť na zápasy",
+      "total": "Celkom",
+      "faults": "Chyby",
+      "fine": "Pokuta",
+      "bonus": "Bonus",
+      "conditions": {
+        "score_bonus": "Výkon tímu",
+        "zero_faults": "Tím bez chyby",
+        "elite_player": "Hráči nad 700",
+        "clean_sweep": "Výhra 8:0"
+      },
+      "errors": {
+        "unauthorized": "Na túto akciu nemáš oprávnenie.",
+        "notFound": "Zápas alebo záznam sa nenašiel.",
+        "noBonus": "Tento hráč v zápase nezískal žiadny bonus.",
+        "invalid": "Neplatné údaje.",
         "unknown": "Niekde sa stala chyba, skús to znova."
       }
     }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, Sun, Moon, Languages, Users, RefreshCw, ClipboardList, LogOut, ChevronDown, Check,
-  BookOpen, Wallet, Bell, KeyRound,
+  BookOpen, Wallet, Bell, KeyRound, Coins,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ interface MobileNavProps {
     settings: string;
     manageUsers: string;
     manualMatches: string;
+    matchMoney: string;
     syncData: string;
     syncing: string;
     syncConfirmTitle: string;
@@ -177,6 +178,14 @@ export function MobileNav({
                     >
                       <ClipboardList className="size-4 text-muted-foreground" />
                       <span>{translations.manualMatches}</span>
+                    </Link>
+
+                    <Link
+                      href={`/${lang}/admin/money`}
+                      className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
+                    >
+                      <Coins className="size-4 text-muted-foreground" />
+                      <span>{translations.matchMoney}</span>
                     </Link>
 
                     <button
