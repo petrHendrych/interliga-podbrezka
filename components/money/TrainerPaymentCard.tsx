@@ -1,9 +1,11 @@
 import type { MatchMoneyActionError } from '@/lib/match-money-actions';
 import type { TrainerConditionType } from '@/lib/money-rules';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { PaidToggle, type PaidToggleLabels } from './PaidToggle';
 
 export interface TrainerPaymentCardPayment {
   id: number;
+  userId: string;
   userName: string;
   conditionType: string;
   amount: number;
@@ -18,7 +20,10 @@ export interface TrainerPaymentCardProps {
   errors: Record<MatchMoneyActionError, string>;
 }
 
-const CARD = 'flex items-center justify-between gap-3 rounded-xl bg-surface-2 p-4';
+const CARD = 'flex flex-col gap-3 rounded-xl bg-surface-2 p-4';
+const HEADER = 'flex items-center gap-3 min-w-0';
+const AVATAR = 'size-12 shrink-0 rounded-xl after:rounded-xl';
+const AMOUNT_ROW = 'flex items-center justify-between gap-3 border-t border-foreground/10 pt-3';
 
 function isConditionType(
   value: string,
@@ -39,18 +44,29 @@ export function TrainerPaymentCard({
 
   return (
     <div className={CARD}>
-      <div className="flex min-w-0 flex-col">
-        <span className="font-semibold leading-tight">{payment.userName}</span>
-        <span className="text-xs text-muted-foreground">{condition}</span>
-        <span className={`font-semibold tabular-nums ${amountClass}`}>{`${payment.amount} €`}</span>
+      <div className={HEADER}>
+        <PlayerAvatar
+          name={payment.userName}
+          userId={payment.userId}
+          className={AVATAR}
+          fallbackClassName="text-sm"
+        />
+        <div className="min-w-0 flex-1">
+          <span className="block truncate font-bold leading-tight">{payment.userName}</span>
+          <span className="block truncate text-xs text-muted-foreground">{condition}</span>
+        </div>
       </div>
-      <PaidToggle
-        matchId={matchId}
-        target={{ kind: 'trainer', paymentId: payment.id }}
-        isPaid={payment.isPaid}
-        labels={labels}
-        errors={errors}
-      />
+
+      <div className={AMOUNT_ROW}>
+        <span className={`text-base font-semibold tabular-nums ${amountClass}`}>{`${payment.amount} €`}</span>
+        <PaidToggle
+          matchId={matchId}
+          target={{ kind: 'trainer', paymentId: payment.id }}
+          isPaid={payment.isPaid}
+          labels={labels}
+          errors={errors}
+        />
+      </div>
     </div>
   );
 }

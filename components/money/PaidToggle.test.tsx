@@ -22,8 +22,8 @@ const errors: Record<MatchMoneyActionError, string> = {
 const labels = {
   paid: 'Zaplatené',
   unpaid: 'Nezaplatené',
-  markPaid: 'Označiť ako zaplatené',
-  markUnpaid: 'Označiť ako nezaplatené',
+  markPaid: 'Zaplatiť',
+  markUnpaid: 'Vrátiť',
 };
 
 const fineTarget: PaymentTarget = { kind: 'fine', userId: 'u1' };
@@ -44,6 +44,7 @@ describe('PaidToggle', () => {
     renderToggle(fineTarget, false);
 
     expect(screen.getByText(labels.unpaid)).toBeInTheDocument();
+    expect(screen.queryByText(labels.paid)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: labels.markPaid }));
 
     await vi.waitFor(() => expect(applyMatchMoney).toHaveBeenCalledWith(44568, {
@@ -56,11 +57,21 @@ describe('PaidToggle', () => {
     renderToggle(fineTarget, true);
 
     expect(screen.getByText(labels.paid)).toBeInTheDocument();
+    expect(screen.queryByText(labels.unpaid)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: labels.markUnpaid }));
 
     await vi.waitFor(() => expect(applyMatchMoney).toHaveBeenCalledWith(44568, {
       players: [{ userId: 'u1', isPaid: false }],
     }));
+  });
+
+  it('renders the pay button as primary and the undo button as ghost', () => {
+    const { unmount } = renderToggle(fineTarget, false);
+    expect(screen.getByRole('button', { name: labels.markPaid })).toHaveClass('bg-primary');
+    unmount();
+
+    renderToggle(fineTarget, true);
+    expect(screen.getByRole('button', { name: labels.markUnpaid })).not.toHaveClass('bg-primary');
   });
 
   it('flips only the bonus flag for a bonus target', async () => {
@@ -104,11 +115,13 @@ describe('PaidToggle', () => {
     vi.mocked(applyMatchMoney).mockResolvedValueOnce({ success: false, error: 'unknown' });
     renderToggle(fineTarget, false);
 
-    fireEvent.click(screen.getByRole('button', { name: labels.markPaid }));
+    const button = screen.getByRole('button', { name: labels.markPaid });
+    fireEvent.click(button);
     await screen.findByText(errors.unknown);
+    await vi.waitFor(() => expect(button).toBeEnabled());
 
     vi.mocked(applyMatchMoney).mockResolvedValueOnce({ success: true });
-    fireEvent.click(screen.getByRole('button', { name: labels.markPaid }));
+    fireEvent.click(button);
 
     await vi.waitFor(() => expect(screen.queryByText(errors.unknown)).not.toBeInTheDocument());
   });

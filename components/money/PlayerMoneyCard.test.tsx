@@ -3,7 +3,7 @@ import {
 } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { MatchMoneyActionError } from '@/lib/match-money-actions';
-import { PlayerMoneyCard, type PlayerMoneyCardPlayer } from './PlayerMoneyCard';
+import { PlayerMoneyCard, type PlayerMoneyCardPlayer, type PlayerMoneyRow } from './PlayerMoneyCard';
 
 vi.mock('@/lib/match-money-actions', () => ({
   applyMatchMoney: vi.fn(),
@@ -20,8 +20,8 @@ const errors: Record<MatchMoneyActionError, string> = {
 const labels = {
   paid: 'Zaplatené',
   unpaid: 'Nezaplatené',
-  markPaid: 'Označiť ako zaplatené',
-  markUnpaid: 'Označiť ako nezaplatené',
+  markPaid: 'Zaplatiť',
+  markUnpaid: 'Vrátiť',
   total: 'Spolu',
   faults: 'Chyby',
   fine: 'Pokuta',
@@ -31,6 +31,7 @@ const labels = {
 const basePlayer: PlayerMoneyCardPlayer = {
   user_id: 'u1',
   user_name: 'Ján Novák',
+  external_player_id: null,
   total: 712,
   faults: 2,
   calculated_fine: 3,
@@ -40,13 +41,17 @@ const basePlayer: PlayerMoneyCardPlayer = {
   is_bonus_paid: false,
 };
 
-function renderCard(overrides: Partial<PlayerMoneyCardPlayer> = {}) {
+function renderCard(
+  overrides: Partial<PlayerMoneyCardPlayer> = {},
+  rows?: ReadonlyArray<PlayerMoneyRow>,
+) {
   return render(
     <PlayerMoneyCard
       matchId={44568}
       player={{ ...basePlayer, ...overrides }}
       labels={labels}
       errors={errors}
+      rows={rows}
     />,
   );
 }
@@ -93,5 +98,31 @@ describe('PlayerMoneyCard', () => {
 
     expect(screen.getByRole('button', { name: labels.markUnpaid })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: labels.markPaid })).toBeInTheDocument();
+  });
+
+  it('falls back to initials when no photo is mapped', () => {
+    renderCard();
+
+    expect(screen.getByText('JN')).toBeInTheDocument();
+  });
+
+  it('renders only the bonus row and the total tile in bonus-only mode', () => {
+    renderCard({}, ['bonus']);
+
+    expect(screen.getByText('40 €')).toBeInTheDocument();
+    expect(screen.getByText('712')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: labels.markPaid })).toHaveLength(1);
+    expect(screen.queryByText('13 €')).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.fine)).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.faults)).not.toBeInTheDocument();
+  });
+
+  it('shows an unpaid pill for the fine and a paid pill for the bonus in the same card', () => {
+    renderCard({ is_bonus_paid: true });
+
+    expect(screen.getByText(labels.unpaid)).toBeInTheDocument();
+    expect(screen.getByText(labels.paid)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: labels.markPaid })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: labels.markUnpaid })).toBeInTheDocument();
   });
 });

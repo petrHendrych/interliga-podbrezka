@@ -2,7 +2,7 @@
 
 ### Origin
 
-Split out of `.junie/plans/mark-match-fines-paid.md` (its former Steps 8–10, "round 3"). That plan shipped the `/admin/money` section — list page, per-match sheet, `PaidToggle`, `MarkAllPaidButton`, `PlayerMoneyCard`, `TrainerPaymentCard`, the `applyMatchMoney` server action — and is complete. This plan is a **visual-only** pass over the sheet cards. It is **not started**.
+Split out of `.junie/plans/mark-match-fines-paid.md` (its former Steps 8–10, "round 3"). That plan shipped the `/admin/money` section — list page, per-match sheet, `PaidToggle`, `MarkAllPaidButton`, `PlayerMoneyCard`, `TrainerPaymentCard`, the `applyMatchMoney` server action — and is complete. This plan is a **visual-only** pass over the sheet cards. It is **implemented**.
 
 No change to payloads, the server action, `applyMatchMoneyUpdates()`, or any money module — the sheet keeps issuing exactly the same calls.
 
@@ -231,7 +231,7 @@ graph LR
 
 # Delivery Steps
 
-###   Step 1: Make the toggle read the action — status pill plus "Zaplatiť" / "Vrátiť" button
+### ✓ Step 1: Make the toggle read the action — status pill plus "Zaplatiť" / "Vrátiť" button
 Every amount row shows a coloured status pill and a button whose text is the verb that will happen on tap.
 
 - `components/money/PaidToggle.tsx`: render `[pill][button]` per Technical Design #1 — pill text `labels.paid` / `labels.unpaid` with emerald / red tones; button text `labels.markPaid` (variant `default`, `Check`) when unpaid, `labels.markUnpaid` (variant `ghost`, `Undo2`) when paid; drop `aria-label` / `title`; keep `useTransition`, `paymentPayload(target, !isPaid)` and the error block untouched.
@@ -239,7 +239,7 @@ Every amount row shows a coloured status pill and a button whose text is the ver
 - `components/money/PaidToggle.test.tsx`: switch the label fixture to the verbs, add the pill assertions and the `bg-primary` present/absent check (Testing → Step 1).
 - Verify: `pnpm vitest run --project dom components/money/PaidToggle components/money/PlayerMoneyCard components/money/MarkAllPaidButton` and `pnpm vitest run --project node locales` green (existing card tests must still pass with only the fixture labels changed).
 
-###   Step 2: Redesign the player and trainer cards with avatar, stat tiles and amount rows
+### ✓ Step 2: Redesign the player and trainer cards with avatar, stat tiles and amount rows
 `PlayerMoneyCard` and `TrainerPaymentCard` render the "avatar + amount rows" layout, support a bonus-only mode, and are covered by tests.
 
 - `components/money/PlayerMoneyCard.tsx`: add optional `external_player_id?: number | null` to `PlayerMoneyCardPlayer` and `rows?: ReadonlyArray<'fine' | 'bonus'>` (default both); header = `PlayerAvatar` (`externalPlayerId`, `size-12 rounded-xl`) + truncating name + *Celkom* tile (+ *Chyby* tile only when `rows` includes `'fine'`); body = local `AmountRow` per selected row (label, coloured amount via existing `amountClass`, `PaidToggle` only when the amount is > 0) — Technical Design #3.
@@ -248,7 +248,7 @@ Every amount row shows a coloured status pill and a button whose text is the ver
 - `components/money/TrainerPaymentCard.test.tsx` (new): amount, condition label / raw fallback, pill + verb for paid and unpaid, click payload.
 - Verify: `pnpm exec eslint components/money && pnpm exec tsc --noEmit -p tsconfig.json` clean (both new props are optional, so the not-yet-updated page still compiles) and `pnpm vitest run --project dom components/money` green.
 
-###   Step 3: Wire the sheet page — photos, bonus-only section, unpaid first — and run the final check
+### ✓ Step 3: Wire the sheet page — photos, bonus-only section, unpaid first — and run the final check
 `/[lang]/admin/money/[matchId]` shows the redesigned cards with real photos where mapped, bonus-only cards under *Bonusy*, open rows on top in every section, and `pnpm check` is green.
 
 - `app/[lang]/admin/money/[matchId]/page.tsx`: add `externalIdsFor(userIds)` (one `db.select` over `users` with `inArray`, empty-list guard) and `openFirst(isOpen, name)` per Technical Design #4; build `cardPlayers` with `external_player_id`; sort fines by `!is_paid && owed > 0`, bonuses by `!is_bonus_paid`, trainer rows by `!isPaid`, each then by name; pass `rows={['fine','bonus']}` in *Pokuty hráčov* and `rows={['bonus']}` in *Bonusy*; pass trainer rows through unchanged (they already carry `userId`).

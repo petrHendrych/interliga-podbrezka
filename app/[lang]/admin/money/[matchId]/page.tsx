@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, CalendarDays } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { inArray } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchMoneyError, getMatchSheet, type MatchSheet } from '@/lib/match-money';
@@ -28,6 +31,23 @@ async function loadSheet(matchId: number): Promise<MatchSheet | null> {
     if (error instanceof MatchMoneyError && error.code === 'notFound') return null;
     throw error;
   }
+}
+
+async function externalIdsFor(userIds: string[]): Promise<Map<string, number | null>> {
+  if (userIds.length === 0) return new Map();
+  const rows = await db
+    .select({ id: users.id, externalPlayerId: users.externalPlayerId })
+    .from(users)
+    .where(inArray(users.id, userIds));
+  return new Map(rows.map((r) => [r.id, r.externalPlayerId ?? null]));
+}
+
+function openFirst<T>(
+  isOpen: (row: T) => boolean,
+  name: (row: T) => string,
+  lang: Locale,
+): (a: T, b: T) => number {
+  return (a, b) => Number(isOpen(b)) - Number(isOpen(a)) || name(a).localeCompare(name(b), lang);
 }
 
 interface TotalChipProps {
@@ -86,8 +106,19 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
   const { match, totals } = sheet;
   const owed = (player: MatchSheet['players'][number]) => player.calculated_fine + player.streak_fine;
 
-  const players = [...sheet.players].sort((a, b) => a.user_name.localeCompare(b.user_name, lang));
-  const bonusPlayers = players.filter((p) => p.bonus_received > 0);
+  const externalIds = await externalIdsFor(sheet.players.map((p) => p.user_id));
+  const cardPlayers = sheet.players.map((p) => ({
+    ...p,
+    external_player_id: externalIds.get(p.user_id) ?? null,
+  }));
+
+  const players = [...cardPlayers]
+    .sort(openFirst((p) => !p.is_paid && owed(p) > 0, (p) => p.user_name, lang));
+  const bonusPlayers = cardPlayers
+    .filter((p) => p.bonus_received > 0)
+    .sort(openFirst((p) => !p.is_bonus_paid, (p) => p.user_name, lang));
+  const trainerPayments = [...sheet.trainer_payments]
+    .sort(openFirst((p) => !p.isPaid, (p) => p.userName, lang));
 
   const fineTargets: PaymentTarget[] = players
     .filter((p) => !p.is_paid && owed(p) > 0)
@@ -95,7 +126,7 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
   const bonusTargets: PaymentTarget[] = bonusPlayers
     .filter((p) => !p.is_bonus_paid)
     .map((p) => ({ kind: 'bonus', userId: p.user_id }));
-  const trainerTargets: PaymentTarget[] = sheet.trainer_payments
+  const trainerTargets: PaymentTarget[] = trainerPayments
     .filter((p) => !p.isPaid)
     .map((p) => ({ kind: 'trainer', paymentId: p.id }));
 
@@ -203,6 +234,7 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
             player={player}
             labels={cardLabels}
             errors={t.errors}
+            rows={['fine', 'bonus']}
           />
         ))}
       </Section>
@@ -218,16 +250,17 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
               player={player}
               labels={cardLabels}
               errors={t.errors}
+              rows={['bonus']}
             />
           ))
         )}
       </Section>
 
       <Section title={t.trainerTitle} action={bulkButton(trainerTargets)}>
-        {sheet.trainer_payments.length === 0 ? (
+        {trainerPayments.length === 0 ? (
           <p className={`${EMPTY_STATE} lg:col-span-2`}>{t.noTrainerPayments}</p>
         ) : (
-          sheet.trainer_payments.map((payment) => (
+          trainerPayments.map((payment) => (
             <TrainerPaymentCard
               key={payment.id}
               matchId={matchId}

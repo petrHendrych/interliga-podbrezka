@@ -22,6 +22,12 @@ export interface PaidToggleProps {
   size?: 'sm' | 'xs';
 }
 
+const PILL = 'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold';
+const PILL_TONE = {
+  paid: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+  unpaid: 'bg-red-500/15 text-red-700 dark:text-red-400',
+} as const;
+
 export function PaidToggle({
   matchId,
   target,
@@ -33,8 +39,6 @@ export function PaidToggle({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<MatchMoneyActionError | null>(null);
 
-  const actionLabel = isPaid ? labels.markUnpaid : labels.markPaid;
-
   const handleToggle = () => {
     setError(null);
     startTransition(async () => {
@@ -45,19 +49,22 @@ export function PaidToggle({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button
-        type="button"
-        size={size}
-        variant={isPaid ? 'outline' : 'default'}
-        onClick={handleToggle}
-        disabled={isPending}
-        aria-label={actionLabel}
-        title={actionLabel}
-      >
-        {isPending && <Loader2 className="animate-spin" />}
-        {!isPending && (isPaid ? <Undo2 /> : <Check />)}
-        {isPaid ? labels.paid : labels.unpaid}
-      </Button>
+      <div className="flex items-center gap-2">
+        <span className={`${PILL} ${isPaid ? PILL_TONE.paid : PILL_TONE.unpaid}`}>
+          {isPaid ? labels.paid : labels.unpaid}
+        </span>
+        <Button
+          type="button"
+          size={size}
+          variant={isPaid ? 'ghost' : 'default'}
+          onClick={handleToggle}
+          disabled={isPending}
+        >
+          {isPending && <Loader2 className="animate-spin" />}
+          {!isPending && (isPaid ? <Undo2 /> : <Check />)}
+          {isPaid ? labels.markUnpaid : labels.markPaid}
+        </Button>
+      </div>
       {error && (
         <p className="rounded-lg bg-destructive/15 px-2 py-1 text-xs text-destructive">
           {errors[error]}
