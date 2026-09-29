@@ -346,7 +346,7 @@
         {
           "title": "Zápasy bez chyby",
           "amount": "10 €",
-          "note": "Za 5. a každý ďalší zápas v rade bez chyby. Séria sa počíta naprieč všetkými súťažami, ale len v rámci jednej sezóny — v novej sezóne začína od nuly."
+          "note": "Za 5. zápas v rade bez chyby. Potom sa séria vynuluje a ďalšia pokuta príde až po ďalších piatich čistých zápasoch (10., 15., …). Séria sa počíta naprieč všetkými súťažami, ale len v rámci jednej sezóny — v novej sezóne začína od nuly."
         }
       ],
       "faultsFormulaLabel": "Ako rastú pokuty za chyby",
@@ -495,7 +495,7 @@
       },
       "streakWarning": {
         "title": "Pozor na sériu",
-        "body": "Máš {streak} zápasy v rade bez chyby. Každý ďalší čistý zápas ťa bude stáť {amount} € do banky."
+        "body": "Máš {streak} zápasy v rade bez chyby. Ďalší čistý zápas ťa bude stáť {amount} € do banky."
       },
       "finePaid": {
         "title": "Pokuta zaplatená",

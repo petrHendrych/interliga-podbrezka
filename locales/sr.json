@@ -346,7 +346,7 @@
         {
           "title": "Mečevi bez greške",
           "amount": "10 €",
-          "note": "Za 5. i svaki naredni meč u nizu bez greške. Niz se broji kroz sva takmičenja, ali samo unutar jedne sezone — u novoj sezoni kreće od nule."
+          "note": "Za 5. meč u nizu bez greške. Posle toga niz kreće od nule, pa sledeća kazna stiže tek posle još pet čistih mečeva (10., 15., …). Niz se broji kroz sva takmičenja, ali samo unutar jedne sezone — u novoj sezoni kreće od nule."
         }
       ],
       "faultsFormulaLabel": "Kako rastu kazne za greške",
@@ -495,7 +495,7 @@
       },
       "streakWarning": {
         "title": "Pazi na seriju",
-        "body": "Imaš {streak} utakmice zaredom bez greške. Svaka sledeća čista utakmica te košta {amount} € u banku."
+        "body": "Imaš {streak} utakmice zaredom bez greške. Sledeća čista utakmica te košta {amount} € u banku."
       },
       "finePaid": {
         "title": "Kazna plaćena",

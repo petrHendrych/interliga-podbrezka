@@ -203,6 +203,15 @@ describe('derivePersonalPushes', () => {
     expect(pushes.some((push) => push.event === 'streakWarning')).toBe(expected);
   });
 
+  it('nudges again when a streak restarted after its fifth game reaches four', () => {
+    const pushes = derivePersonalPushes(
+      [snapshot({ faultlessStreak: STREAK_WARNING_AT - 1 })],
+      [snapshot({ faultlessStreak: STREAK_WARNING_AT })],
+    );
+
+    expect(pushes.map((push) => push.event)).toEqual(['streakWarning']);
+  });
+
   it('nudges about the streak once, not on every recalculation', () => {
     const at = snapshot({ faultlessStreak: STREAK_WARNING_AT });
 

@@ -74,8 +74,9 @@ export interface PersonalPush {
 }
 
 /**
- * The last free faultless game. The success gathering is a fine, not a reward: from the
- * fifth consecutive clean game on, every further one costs another `STREAK_FINE`.
+ * The last free faultless game. The success gathering is a fine, not a reward: the next clean
+ * game is the fifth in a row and costs `STREAK_FINE`. From season 13 the streak then restarts,
+ * so the stored counter comes back to this value one game before each further fine.
  */
 export const STREAK_WARNING_AT = STREAK_LENGTH - 1;
 

@@ -346,7 +346,7 @@
         {
           "title": "Hibátlan meccsek",
           "amount": "10 €",
-          "note": "Az 5. és minden további hiba nélküli meccsért sorozatban. A sorozat minden versenyen át számít, de csak egy szezonon belül — új szezonban nulláról indul."
+          "note": "Sorozatban az 5. hiba nélküli meccsért. Utána a sorozat nulláról indul, így a következő büntetés csak újabb öt tiszta meccs után jön (10., 15., …). A sorozat minden versenyen át számít, de csak egy szezonon belül — új szezonban nulláról indul."
         }
       ],
       "faultsFormulaLabel": "Így nőnek a hibák büntetései",
@@ -495,7 +495,7 @@
       },
       "streakWarning": {
         "title": "Figyelj a sorozatra",
-        "body": "{streak} hibátlan meccsed van egymás után. Minden további tiszta meccs {amount} €-ba kerül a kasszába."
+        "body": "{streak} hibátlan meccsed van egymás után. A következő tiszta meccs {amount} €-ba kerül a kasszába."
       },
       "finePaid": {
         "title": "Büntetés kifizetve",

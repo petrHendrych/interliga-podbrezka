@@ -25,6 +25,8 @@ export const TEAM_LOSS_FIRST_SEASON_ID = 13;
 export const SPECIAL_FAULT_FINE = 5;
 export const STREAK_LENGTH = 5;
 export const STREAK_FINE = 10;
+/** From 2026/2027 a streak restarts once its 5th game is fined; before, every later game paid. */
+export const STREAK_RESET_FIRST_SEASON_ID = 13;
 
 export const TRAINER_SCORE_LIMIT = 3800;
 export const TRAINER_SCORE_HIGH_LIMIT = 3900;
@@ -140,13 +142,20 @@ export function worstTotal(rows: PlayerRow[]): number | null {
   return Math.min(...played.map((r) => r.total));
 }
 
+/** The `streak` CASE over `run` in the `streaks` CTE of sync.ts. */
+export function storedStreak(run: number, seasonId: number | null): number {
+  if (run === 0 || seasonId === null || seasonId < STREAK_RESET_FIRST_SEASON_ID) return run;
+  return ((run - 1) % STREAK_LENGTH) + 1;
+}
+
 /**
- * Faultless-streak length per row for one player's games, ordered by date within one season
- * but across leagues. Mirrors the `grp`/`ROW_NUMBER()` window pair in sync.ts, both
+ * The stored `faultless_streak` per row for one player's games, ordered by date within one
+ * season but across leagues. Mirrors the `grp`/`ROW_NUMBER()` window pair in sync.ts, both
  * partitioned by `user_id, season_id`: the first group of a season carries no offset, so a
- * player whose first game of the season is faultless is on a streak of 1 already. State is
- * kept per season id rather than reset on a change between neighbouring rows, because
- * `PARTITION BY` groups equal values wherever they sit in the ordering.
+ * player whose first game of the season is faultless is on a streak of 1 already. From season
+ * 13 the run is folded by `storedStreak()` into 1–5. State is kept per season id rather than
+ * reset on a change between neighbouring rows, because `PARTITION BY` groups equal values
+ * wherever they sit in the ordering.
  */
 export function faultlessStreaks(
   rows: { faults: number | null; seasonId: number | null }[],
@@ -164,7 +173,8 @@ export function faultlessStreaks(
       return 0;
     }
     state.rowNumber += 1;
-    return state.group === 0 ? state.rowNumber : state.rowNumber - 1;
+    const run = state.group === 0 ? state.rowNumber : state.rowNumber - 1;
+    return storedStreak(run, row.seasonId);
   });
 }
 

@@ -27,6 +27,7 @@ import {
   LEGACY_TEAM_UNDER_LIMIT_FINE,
   STREAK_FINE,
   STREAK_LENGTH,
+  STREAK_RESET_FIRST_SEASON_ID,
   TEAM_LOSS_FINE,
   TEAM_LOSS_FIRST_SEASON_ID,
   TEAM_UNDER_LIMIT_FINE,
@@ -127,7 +128,8 @@ export interface ScrapePayloads {
 export async function recalculateDerivedFinancials() {
   // `grp` increments on each fault, so a run of faultless games shares one group and
   // its row number is the streak length. Streaks restart each season, so both windows
-  // partition by `season_id` — but never by league, a streak crosses competitions.
+  // partition by `season_id` — but never by league, a streak crosses competitions. From
+  // season 13 the stored streak cycles 1–5, so only every 5th clean game in a row is fined.
   await db.execute(sql`
     WITH worst AS (
       SELECT match_id, MIN(total) FILTER (WHERE total > 0) AS min_total
@@ -168,15 +170,22 @@ export async function recalculateDerivedFinancials() {
       JOIN matches m ON m.external_id = mpr.match_id
       JOIN worst w ON w.match_id = mpr.match_id
     ),
-    streaks AS (
+    runs AS (
       SELECT *,
         CASE WHEN COALESCE(faults, 0) = 0 THEN
           ROW_NUMBER() OVER (
             PARTITION BY user_id, season_id, grp
             ORDER BY COALESCE(date, '1970-01-01'), match_id
           ) - CASE WHEN grp = 0 THEN 0 ELSE 1 END
-        ELSE 0 END AS streak
+        ELSE 0 END AS run
       FROM ordered
+    ),
+    streaks AS (
+      SELECT *,
+        CASE WHEN run > 0 AND season_id >= ${STREAK_RESET_FIRST_SEASON_ID}::int
+             THEN ((run - 1) % ${STREAK_LENGTH}::int) + 1
+             ELSE run END AS streak
+      FROM runs
     )
     UPDATE match_player_results mpr
     SET is_worst_player     = (s.total = s.min_total AND s.total > 0),
