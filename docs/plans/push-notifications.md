@@ -2,7 +2,7 @@
 
 The PWA work (PR #18, `1241c71`) made the app installable, added a hand-written service worker
 (`public/sw.js`), an offline fallback and a rolling session — but deliberately left push
-notifications out of scope. `.junie/plans/pwa-installable-app.md:37-39` states the service worker was
+notifications out of scope. `docs/plans/pwa-installable-app.md:37-39` states the service worker was
 written so `push` / `notificationclick` handlers can be appended later. This plan is that follow-up.
 
 Goal: users get a push notification whenever fresh data lands, in two situations.
@@ -379,7 +379,7 @@ sequenceDiagram
 # Delivery Steps
 
 ### ✓ Step 0: Copy this plan into the repo
-Write this document to `.junie/plans/push-notifications.md` (AGENTS.md Plan Mode Rules); mark steps
+Write this document to `docs/plans/push-notifications.md` (AGENTS.md Plan Mode Rules); mark steps
 with `✓` there as they complete.
 
 ### ✓ Step 1: Dependency, keys, env

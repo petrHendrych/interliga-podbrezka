@@ -41,6 +41,3 @@ yarn-error.log*
 next-env.d.ts
 
 .idea
-.junie/mcp
-.junie/memory
-.junie/db.sqlite

@@ -371,7 +371,7 @@ Audited contents of the working tree:
 
 | Change | Files |
 |---|---|
-| Trainer `clean_sweep` fine rule | `lib/money-rules.ts` (+`CLEAN_SWEEP_TEAM_POINTS`, `TRAINER_CLEAN_SWEEP_FINE`, `CLEAN_SWEEP_FIRST_SEASON_ID`, `trainerCleanSweepFine()`), `lib/money-rules.test.ts`, `lib/sync.ts`, `lib/db-utils.ts` (`cleanSweeps`), `lib/home-helpers.ts`, `lib/api.ts` (`homeTeamPoints`/`awayTeamPoints`), `lib/db/schema.ts`, `app/[lang]/page.tsx`, `locales/{sk,cs,hu,sr}.json`, `AGENTS.md`, `.claude/skills/manage-match-results-and-payments/SKILL.md`, `.junie/plans/trainer-clean-sweep-fine.md` (already staged) |
+| Trainer `clean_sweep` fine rule | `lib/money-rules.ts` (+`CLEAN_SWEEP_TEAM_POINTS`, `TRAINER_CLEAN_SWEEP_FINE`, `CLEAN_SWEEP_FIRST_SEASON_ID`, `trainerCleanSweepFine()`), `lib/money-rules.test.ts`, `lib/sync.ts`, `lib/db-utils.ts` (`cleanSweeps`), `lib/home-helpers.ts`, `lib/api.ts` (`homeTeamPoints`/`awayTeamPoints`), `lib/db/schema.ts`, `app/[lang]/page.tsx`, `locales/{sk,cs,hu,sr}.json`, `AGENTS.md`, `.claude/skills/manage-match-results-and-payments/SKILL.md`, `docs/plans/trainer-clean-sweep-fine.md` (already staged) |
 | Two player photos | `lib/player-images.ts` (`171890` kozma, `19055` dubrava) |
 
 Steps:
@@ -382,7 +382,7 @@ Steps:
    must be green on its own before anything is stacked on top.
 3. Commit the clean-sweep rule as one commit (`feat:`), and the two player photos as a separate
    small commit — they are unrelated to the money rule and should not be buried in it.
-4. **Do not stage `.junie/plans/pwa-pull-to-refresh.md`** (this file). It belongs with the
+4. **Do not stage `docs/plans/pwa-pull-to-refresh.md`** (this file). It belongs with the
    pull-to-refresh work, not the clean-sweep commit.
 
 Per the user's instruction the pull-to-refresh work then continues **on this same branch**, so

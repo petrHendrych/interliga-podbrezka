@@ -2,7 +2,7 @@
 
 ### Overview & Goals
 
-`.junie/plans/push-notifications.md` shipped the push pipeline and two broadcasts
+`docs/plans/push-notifications.md` shipped the push pipeline and two broadcasts
 (`dataSynced`, `moneyUpdated`). Both are vague: they say "something changed", never what.
 This plan replaces them with notifications that name the thing, and adds an admin safety net
 for the flows that fail silently today.

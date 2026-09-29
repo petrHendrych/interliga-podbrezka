@@ -453,7 +453,7 @@ lib/db-utils.ts                       mod in Step 5 → reverted to HEAD in Step
 components/layout/Header.tsx, UserDropdown.tsx, MobileNav.tsx  mod
 locales/sk.json, cs.json, hu.json, sr.json                     mod (+ markMatchPaid* keys in Step 7)
 .junie/skills/manage-match-results-and-payments/SKILL.md, .claude/skills/…/SKILL.md, AGENTS.md  mod (Step 5, re-touched in Step 6)
-.junie/plans/mark-match-fines-paid.md  new (this plan, written by the implementing stage)
+docs/plans/mark-match-fines-paid.md  new (this plan, written by the implementing stage)
 
 Round 2 only:
 components/money/MarkAllPaidButton.tsx      mod  (variant / className props)
@@ -602,9 +602,9 @@ graph LR
 # Delivery Steps
 
 ### ✓ Step 1: Write the plan file and lay the db-free payload + error-code groundwork
-`.junie/plans/mark-match-fines-paid.md` exists, and the payload types live in a module a client component may import.
+`docs/plans/mark-match-fines-paid.md` exists, and the payload types live in a module a client component may import.
 
-- Write this plan (Requirements / Technical Design / Delivery Steps / Testing) to `.junie/plans/mark-match-fines-paid.md` per the plan rules.
+- Write this plan (Requirements / Technical Design / Delivery Steps / Testing) to `docs/plans/mark-match-fines-paid.md` per the plan rules.
 - Create `lib/match-money-payload.ts` with `PlayerMoneyUpdate`, `TrainerPaymentUpdate`, `MatchMoneyUpdates`, `PaymentTarget`, `paymentPayload()`, `markAllPaidPayload()`; no import may reach `lib/db.ts`.
 - In `lib/match-money.ts` remove the three local interfaces, re-export them from the new module, add `MatchMoneyErrorCode` and the `code` field on `MatchMoneyError`, and tag every existing throw (`notFound`, `noBonus`, `invalid`).
 - Add `PlayedMatchMoneySummary` and `getPlayedMatchMoneySummaries(seasonId, leagueKey)` to `lib/match-money.ts` (single aggregate SQL, `leagueCondition` from `lib/db-utils.ts`).
@@ -662,4 +662,4 @@ The sheet header offers one primary button that settles every unpaid fine, bonus
 
 ### Round 3 moved
 
-The card redesign (former Steps 8–10: verb buttons + status pill, avatar/amount-row cards, bonus-only section, photos, unpaid-first sort) now lives in its own plan: `.junie/plans/money-sheet-card-redesign.md`. Technical Design #13–#16, Key Decisions 12–15 and the Round 3 testing notes above are kept here for context only; the executable steps are in that file. This plan is complete.
+The card redesign (former Steps 8–10: verb buttons + status pill, avatar/amount-row cards, bonus-only section, photos, unpaid-first sort) now lives in its own plan: `docs/plans/money-sheet-card-redesign.md`. Technical Design #13–#16, Key Decisions 12–15 and the Round 3 testing notes above are kept here for context only; the executable steps are in that file. This plan is complete.
