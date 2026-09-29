@@ -1,8 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { CHALLENGE_MAX_AGE_SECONDS } from './webauthn-config';
-
-const secretKey = process.env.JWT_SECRET || process.env.NEON_AUTH_COOKIE_SECRET || 'fallback-secret-for-dev-only';
-const key = new TextEncoder().encode(secretKey);
+import { jwtKey } from './jwt-secret';
 
 export type ChallengeKind = 'registration' | 'authentication';
 
@@ -18,7 +16,7 @@ export async function signChallenge(payload: ChallengePayload): Promise<string> 
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${CHALLENGE_MAX_AGE_SECONDS}s`)
-    .sign(key);
+    .sign(jwtKey);
 }
 
 /** Returns null for a tampered, expired, or wrong-kind token, so a registration challenge
@@ -28,7 +26,7 @@ export async function verifyChallenge(
   kind: ChallengeKind,
 ): Promise<ChallengePayload | null> {
   try {
-    const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] });
+    const { payload } = await jwtVerify(token, jwtKey, { algorithms: ['HS256'] });
     const parsed = payload as unknown as ChallengePayload;
     if (parsed.kind !== kind || typeof parsed.challenge !== 'string') return null;
     return parsed;
