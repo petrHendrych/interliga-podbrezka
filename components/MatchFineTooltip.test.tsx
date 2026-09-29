@@ -167,6 +167,16 @@ describe('the breakdown', () => {
     );
   });
 
+  it('hides the success gathering on the first game after a fined streak', async () => {
+    renderTooltip({ calculatedFine: 1, isWorstPlayer: true, faultlessStreak: 1 });
+    const tooltip = await openTooltip();
+
+    expect(tooltip).toHaveTextContent('1 €');
+    expect(tooltip.textContent).not.toContain(
+      sk.playerDetail.fineReasons.streak.replace('{count}', '1'),
+    );
+  });
+
   it('explains a fine no flag accounts for', async () => {
     renderTooltip({ calculatedFine: 7 });
     expect(await openTooltip()).toHaveTextContent(sk.playerDetail.noFine);

@@ -17,6 +17,7 @@ import {
   isUnderLimitEligible,
   playerBonus,
   specialFaultFine,
+  storedStreak,
   streakFineFor,
   teamUnderLimitFineFor,
   trainerCleanSweepFine,
@@ -296,7 +297,7 @@ describe('calculated fine composition', () => {
 
   it('keeps the success gathering out of calculatedFine', () => {
     const rows = [player({ userId: 'a', total: 900 }), player({ userId: 'b', total: 950 })];
-    const derived = derivePlayers(homeInterliga(4000), rows, { a: 7 }).get('a')!;
+    const derived = derivePlayers(homeInterliga(4000), rows, { a: 5 }).get('a')!;
 
     expect(derived.calculatedFine).toBe(1); // worst player only
     expect(derived.streakFine).toBe(10);
@@ -319,8 +320,39 @@ describe('success gathering (faultless streak)', () => {
     expect(faultlessStreaks([clean()])).toEqual([1]);
   });
 
-  it('reaches the fine on the fifth consecutive faultless game', () => {
-    const streaks = faultlessStreaks(Array.from({ length: 6 }, () => clean()));
+  it.each([
+    [0, CURRENT_SEASON, 0],
+    [4, CURRENT_SEASON, 4],
+    [5, CURRENT_SEASON, 5],
+    [6, CURRENT_SEASON, 1],
+    [9, CURRENT_SEASON, 4],
+    [10, CURRENT_SEASON, 5],
+    [11, CURRENT_SEASON, 1],
+    [5, PREVIOUS_SEASON, 5],
+    [6, PREVIOUS_SEASON, 6],
+    [6, null, 6],
+  ])('stores a run of %i in season %s as %i', (run, seasonId, expected) => {
+    expect(storedStreak(run, seasonId)).toBe(expected);
+  });
+
+  it('fines the fifth faultless game and then starts the streak again', () => {
+    const streaks = faultlessStreaks(Array.from({ length: 11 }, () => clean()));
+
+    expect(streaks).toEqual([1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1]);
+    expect(streaks.map(streakFineFor)).toEqual([0, 0, 0, 0, 10, 0, 0, 0, 0, 10, 0]);
+  });
+
+  it('resets a restarted streak on a fault like any other', () => {
+    const streaks = faultlessStreaks([
+      clean(), clean(), clean(), clean(), clean(), clean(), withFaults(1), clean(),
+    ]);
+
+    expect(streaks).toEqual([1, 2, 3, 4, 5, 1, 0, 1]);
+    expect(streaks.map(streakFineFor)).toEqual([0, 0, 0, 0, 10, 0, 0, 0]);
+  });
+
+  it('keeps fining every game from the fifth on before season 13', () => {
+    const streaks = faultlessStreaks(Array.from({ length: 6 }, () => clean(PREVIOUS_SEASON)));
 
     expect(streaks).toEqual([1, 2, 3, 4, 5, 6]);
     expect(streaks.map(streakFineFor)).toEqual([0, 0, 0, 0, 10, 10]);
