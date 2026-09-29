@@ -77,6 +77,7 @@ describe('applyMatchMoney', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/admin/money', 'page');
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/admin/money/[matchId]', 'page');
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/player/[id]', 'page');
+    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/trainer/[id]', 'page');
   });
 
   it('delivers the settlement pushes the write worked out, after invalidating', async () => {

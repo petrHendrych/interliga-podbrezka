@@ -133,7 +133,8 @@ Always `set` (never append), so a client-sent `x-activity-path` is overwritten.
 
 Add `await logPageView();` as the first statement of each signed-in page's default export:
 
-- `app/[lang]/page.tsx`, `app/[lang]/player/[id]/page.tsx`, `app/[lang]/rules/page.tsx`,
+- `app/[lang]/page.tsx`, `app/[lang]/player/[id]/page.tsx`, `app/[lang]/trainer/[id]/page.tsx`,
+  `app/[lang]/rules/page.tsx`,
   `app/[lang]/settings/page.tsx`, `app/[lang]/withdrawals/page.tsx`,
   `app/[lang]/admin/users/page.tsx`, `app/[lang]/admin/matches/page.tsx`,
   `app/[lang]/admin/money/page.tsx`, `app/[lang]/admin/money/[matchId]/page.tsx`.

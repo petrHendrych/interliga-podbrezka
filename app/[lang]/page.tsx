@@ -365,9 +365,10 @@ export default async function Home({
           (players.length > 0 || trainers.length > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-8">
               {trainers.map((trainer) => (
-                <div
+                <Link
                   key={trainer.id}
-                  className={`md:col-span-2 ${PERSON_CARD} ring-1 ring-inset ring-red-800/25`}
+                  href={`/${lang}/trainer/${trainer.id}?season=${selectedSeasonId}&league=${selectedLeagueKey}`}
+                  className={`block md:col-span-2 ${PERSON_CARD} ring-1 ring-inset ring-red-800/25 transition-[box-shadow,transform] hover:shadow-lift-lg hover:ring-red-800/40 active:scale-[0.99]`}
                 >
                   <div className={PERSON_BODY}>
                     <PlayerAvatar
@@ -433,7 +434,7 @@ export default async function Home({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
               {players.map((player, index) => {
                 const isTopScorer = index === 0;

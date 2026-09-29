@@ -15,6 +15,7 @@ import { SYNCED_DATA_REVALIDATE_SECONDS } from './cache';
 import { MatchListItem } from './api';
 import type { Fixture } from './payday';
 import type { MissingMatch } from './player-matches';
+import type { TrainerPaymentRow } from './trainer-matches';
 
 export async function upsertScrapedData(type: string, externalId: number, data: unknown) {
   if (data === undefined) {
@@ -265,6 +266,84 @@ export async function getTrainersWithStats(
   `) as unknown as DBTrainerStats[];
   return trainers;
 }
+
+export interface TrainerProfile {
+  id: string;
+  name: string;
+}
+
+export async function getTrainerById(userId: string): Promise<TrainerProfile | null> {
+  const rows = await sql`
+    SELECT u.id::text AS id, u.name
+    FROM users u
+    WHERE u.id = ${userId}::uuid AND u.role = 'trainer' AND u.is_approved = true
+    LIMIT 1
+  `;
+  if (rows.length === 0) return null;
+  return { id: String(rows[0].id), name: String(rows[0].name || '') };
+}
+
+export const getCachedTrainer = unstable_cache(
+  async (userId: string) => getTrainerById(userId),
+  ['trainer-detail'],
+  { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['trainer-payments'] },
+);
+
+/**
+ * Every match of the season, played or still ahead, each joined with the trainer's payment
+ * rows (if any). Grouping, summing and ordering are left to `lib/trainer-matches.ts` so they
+ * stay unit testable.
+ */
+export async function getTrainerPaymentRows(
+  userId: string,
+  seasonId?: number,
+  leagueKey?: string,
+): Promise<TrainerPaymentRow[]> {
+  const targetSeasonId = seasonId ?? DEFAULT_SEASON_ID;
+
+  const rows = await sql`
+    SELECT
+      m.external_id,
+      m.date,
+      m.opponent,
+      m.is_home,
+      m.league_name,
+      m.league_id,
+      m.team_total_score,
+      (m.team_total_score IS NOT NULL) AS is_played,
+      tp.condition_type,
+      tp.amount,
+      tp.is_paid
+    FROM matches m
+    LEFT JOIN trainer_payments tp
+      ON tp.match_id = m.external_id AND tp.user_id = ${userId}::uuid
+    WHERE m.season_id = ${targetSeasonId}
+      ${leagueCondition(leagueKey, { includeUnassigned: true })}
+    ORDER BY m.date DESC
+  `;
+
+  return rows.map((r) => ({
+    matchId: Number(r.external_id),
+    date: r.date ? new Date(r.date as string | Date).toISOString() : null,
+    opponent: r.opponent ? String(r.opponent) : null,
+    isHome: r.is_home === null ? null : Boolean(r.is_home),
+    leagueName: r.league_name ? String(r.league_name) : null,
+    leagueId: r.league_id == null ? null : Number(r.league_id),
+    teamTotalScore: r.team_total_score == null ? null : Number(r.team_total_score),
+    isPlayed: Boolean(r.is_played),
+    conditionType: r.condition_type ? String(r.condition_type) : null,
+    amount: Number(r.amount || 0),
+    isPaid: Boolean(r.is_paid),
+  }));
+}
+
+export const getCachedTrainerPaymentRows = unstable_cache(
+  async (userId: string, seasonId: number, leagueKey: string) => (
+    getTrainerPaymentRows(userId, seasonId, leagueKey)
+  ),
+  ['trainer-payment-rows'],
+  { revalidate: SYNCED_DATA_REVALIDATE_SECONDS, tags: ['trainer-payments'] },
+);
 
 export interface PlayerBalance {
   totalDue: number;

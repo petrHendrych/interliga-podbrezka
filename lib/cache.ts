@@ -8,6 +8,7 @@ export const SYNCED_DATA_TAGS = [
   'player-balance',
   'player-match-results',
   'player-detail',
+  'trainer-payments',
 ];
 
 /**
