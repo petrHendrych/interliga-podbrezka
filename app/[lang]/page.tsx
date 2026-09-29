@@ -14,7 +14,9 @@ import {
   formatDateOnly,
   FetchDataResult,
 } from '@/lib/home-helpers';
-import { DEFAULT_SEASON_ID, SEASONS_CONFIG, isCurrentSeason } from '@/lib/season-config';
+import {
+  DEFAULT_SEASON_ID, SEASONS_CONFIG, getTeamScoreLimit, isCurrentSeason,
+} from '@/lib/season-config';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -242,7 +244,11 @@ export default async function Home({
 
             {belowLimitMatches !== null && (
               <div className={BANK_ROW}>
-                <dt className={BANK_LABEL}>{dict.home.bank.belowLimit}</dt>
+                <dt className={BANK_LABEL}>
+                  {interpolate(dict.home.bank.belowLimit, {
+                    limit: getTeamScoreLimit(selectedSeasonId),
+                  })}
+                </dt>
                 <dd className={`${BANK_VALUE} ${belowLimitMatches.length > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
                   {belowLimitMatches.length > 0 ? (
                     <Tooltip

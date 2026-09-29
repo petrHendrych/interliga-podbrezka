@@ -63,7 +63,7 @@ the one `apply` of a match, never on a `--dry-run`.
 ## Money rules that decide the questions
 
 - Everything besides the two special misses — sequential fault fines,
-  worst-in-team, under-600, under-3700, the 5-game faultless streak (counted per
+  worst-in-team, under-600, under the team limit, team loss, the 5-game faultless streak (counted per
   season), the 700+ bonus, and every trainer payment row — is derived and
   recalculated automatically. Never ask the user for those numbers.
 

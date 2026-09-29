@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { saveManualMatch, type ManualMatchError } from '@/lib/manual-match-actions';
 import type { ManualMatchDetail, SelectablePlayer } from '@/lib/manual-matches';
+import { MAX_MATCH_POINTS } from '@/lib/validation/manual-match';
 
 /** Season and its manual competitions, flattened for the client. */
 export interface ManualSeasonOption {
@@ -38,6 +39,8 @@ export interface ManualMatchFormTranslations {
   home: string;
   away: string;
   opponentTotalScore: string;
+  teamMatchPoints: string;
+  opponentMatchPoints: string;
   optional: string;
   players: string;
   playersHint: string;
@@ -108,6 +111,15 @@ function toCount(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/** Unlike `toCount`, keeps the half point and leaves an empty field empty. */
+function toPoints(value: string): number | null {
+  return value.trim() === '' ? null : Number(value);
+}
+
+function fromPoints(value: number | null | undefined): string {
+  return value != null ? String(value) : '';
+}
+
 export function ManualMatchForm({
   lang,
   seasons,
@@ -129,6 +141,8 @@ export function ManualMatchForm({
   const [opponentTotal, setOpponentTotal] = useState(
     initial?.opponentTotalScore != null ? String(initial.opponentTotalScore) : '',
   );
+  const [teamPoints, setTeamPoints] = useState(fromPoints(initial?.teamMatchPoints));
+  const [opponentPoints, setOpponentPoints] = useState(fromPoints(initial?.opponentMatchPoints));
   const [rows, setRows] = useState<PlayerRow[]>(() => toRows(initial));
 
   const leagues = useMemo(
@@ -165,6 +179,8 @@ export function ManualMatchForm({
         opponent,
         isHome,
         opponentTotalScore: opponentTotal.trim() === '' ? null : toCount(opponentTotal),
+        teamMatchPoints: toPoints(teamPoints),
+        opponentMatchPoints: toPoints(opponentPoints),
         // Rows left blank are just unused slots, not an error.
         players: rows
           .filter((r) => r.userId !== '')
@@ -184,6 +200,8 @@ export function ManualMatchForm({
           setRows(Array.from({ length: DEFAULT_ROWS }, emptyRow));
           setOpponent('');
           setOpponentTotal('');
+          setTeamPoints('');
+          setOpponentPoints('');
           setDate('');
         }
         router.refresh();
@@ -314,6 +332,37 @@ export function ManualMatchForm({
             className="tabular-nums"
           />
         </label>
+
+        {[
+          {
+            id: 'match-team-points',
+            label: translations.teamMatchPoints,
+            value: teamPoints,
+            onChange: setTeamPoints,
+          },
+          {
+            id: 'match-opponent-points',
+            label: translations.opponentMatchPoints,
+            value: opponentPoints,
+            onChange: setOpponentPoints,
+          },
+        ].map((field) => (
+          <label key={field.id} htmlFor={field.id} className={FIELD}>
+            <span className={LABEL}>{`${field.label} (${translations.optional})`}</span>
+            <Input
+              id={field.id}
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={MAX_MATCH_POINTS}
+              step={0.5}
+              value={field.value}
+              onChange={(e) => field.onChange(e.target.value)}
+              disabled={isPending}
+              className="tabular-nums"
+            />
+          </label>
+        ))}
       </div>
 
       <div className="mt-6">

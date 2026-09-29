@@ -5,7 +5,7 @@ import {
   getCachedPlayerMissingMatches,
 } from '@/lib/db-utils';
 import { buildPlayerMatchRows } from '@/lib/player-matches';
-import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
+import { DEFAULT_SEASON_ID, SEASONS_CONFIG, getTeamScoreLimit } from '@/lib/season-config';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { formatDateOnly } from '@/lib/home-helpers';
@@ -72,7 +72,10 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
         faults: dict.playerDetail.fineReasons.faults,
         worstPlayer: dict.playerDetail.fineReasons.worstPlayer,
         under600: dict.playerDetail.fineReasons.under600,
-        teamUnderLimit: dict.playerDetail.fineReasons.teamUnderLimit,
+        teamUnderLimit: interpolate(dict.playerDetail.fineReasons.teamUnderLimit, {
+          limit: getTeamScoreLimit(selectedSeasonId),
+        }),
+        teamLoss: dict.playerDetail.fineReasons.teamLoss,
         fullFaults: dict.playerDetail.fineReasons.fullFaults,
         secondToLastFaults: dict.playerDetail.fineReasons.secondToLastFaults,
         specialFaults: dict.playerDetail.fineReasons.specialFaults,
@@ -268,6 +271,7 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                             isWorstPlayer={result.isWorstPlayer}
                             isUnder600={result.isUnder600}
                             isTeamUnderLimit={result.isTeamUnderLimit}
+                            isTeamLoss={result.isTeamLoss}
                             fullFaultsCount={result.fullFaultsCount}
                             secondToLastFaultsCount={result.secondToLastFaultsCount}
                             specialFaultsCount={result.specialFaultsCount}

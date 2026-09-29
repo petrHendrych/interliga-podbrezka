@@ -40,7 +40,7 @@
       "bonusesTotal": "Bónuszok összesen",
       "bonusesToPay": "Kifizetésre vár",
       "topDonator": "Legnagyobb adományozó",
-      "belowLimit": "Limit alatt (3700)",
+      "belowLimit": "Limit alatt ({limit})",
       "nextPickup": "Következő pénzfelvétel: {date}",
       "withdrawals": "Kivétek",
       "previousSeason": "Előző szezonból"
@@ -132,6 +132,9 @@
       "home": "Otthon",
       "away": "Idegenben",
       "opponentTotalScore": "Ellenfél pontszáma",
+      "teamMatchPoints": "Saját pontok",
+      "opponentMatchPoints": "Ellenfél pontjai",
+      "matchPoints": "Pontok",
       "optional": "nem kötelező",
       "players": "Felállás",
       "playersHint": "Cserénél vegyél fel még egy játékost, mindenkinek saját dobásai vannak.",
@@ -160,6 +163,7 @@
         "noPlayers": "Vegyél fel legalább egy játékost, és mindenkinél válassz nevet.",
         "duplicatePlayer": "Egy játékos csak egyszer szerepelhet a felállásban.",
         "invalidScore": "A pontszám és a hibák csak egész, nem negatív számok lehetnek.",
+        "invalidMatchPoints": "A pontok 0 és 8 között lehetnek (fél pontonként), és mindkettőt ki kell tölteni.",
         "notFound": "A meccs nem található.",
         "notManual": "Ez a meccs a szinkronizálásból jött, nem szerkeszthető.",
         "unknown": "Hiba történt, próbáld újra."
@@ -238,7 +242,8 @@
       "faults": "{count} hiba",
       "worstPlayer": "leggyengébb játékos",
       "under600": "600 alatt",
-      "teamUnderLimit": "csapat 3700 alatt",
+      "teamUnderLimit": "csapat {limit} alatt",
+      "teamLoss": "csapatvereség",
       "fullFaults": "{count}x telibe hiba",
       "secondToLastFaults": "{count}x utolsó előtti gurítás",
       "specialFaults": "{count}x speciális hiba",
@@ -329,9 +334,14 @@
           "note": "Minden teliből vétett hibáért és minden kihagyott utolsó előtti dobásért."
         },
         {
-          "title": "Csapat 3700 alatt",
-          "amount": "2 €",
-          "note": "Minden játékosnak, aki a meccsen játszott. Csak a hazai meccsekre vonatkozik: az Interliga hazai meccseire és a hazai tornákra. Pontosan 3700 még rendben van, csak az az alatti számít."
+          "title": "Csapat 3750 alatt",
+          "amount": "5 €",
+          "note": "Minden játékosnak, aki a meccsen játszott. Csak a hazai meccsekre vonatkozik: az Interliga hazai meccseire és a hazai tornákra. Pontosan 3750 még rendben van, csak az az alatti számít."
+        },
+        {
+          "title": "Csapatvereség",
+          "amount": "5 €",
+          "note": "Minden játékosnak, aki a meccsen játszott, ha a csapat pontokon kikap — függetlenül a saját eredményedtől. Hazai és idegenbeli meccseken, minden sorozatban. A döntetlen nem számít."
         },
         {
           "title": "Hibátlan meccsek",

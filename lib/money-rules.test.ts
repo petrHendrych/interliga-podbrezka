@@ -12,11 +12,13 @@ import {
   deriveTrainerPayments,
   faultFine,
   faultlessStreaks,
+  isTeamLoss,
   isTeamUnderLimit,
   isUnderLimitEligible,
   playerBonus,
   specialFaultFine,
   streakFineFor,
+  teamUnderLimitFineFor,
   trainerCleanSweepFine,
   trainerElitePlayerBonus,
   trainerScoreBonus,
@@ -34,8 +36,16 @@ function player(overrides: Partial<PlayerRow> & { userId: string }): PlayerRow {
   };
 }
 
-function homeInterliga(teamTotalScore: number | null): MatchContext {
-  return { teamTotalScore, isHome: true, leagueId: interligaId };
+const LEGACY_SEASON = 12;
+const CURRENT_SEASON = 13;
+
+function homeInterliga(
+  teamTotalScore: number | null,
+  seasonId: number | null = LEGACY_SEASON,
+): MatchContext {
+  return {
+    teamTotalScore, isHome: true, leagueId: interligaId, seasonId,
+  };
 }
 
 describe('faults (sequential fine)', () => {
@@ -128,15 +138,33 @@ describe('worst in team', () => {
 
 describe('team total under the limit', () => {
   it.each([
-    [3699, true, 2],
-    [3700, false, 0],
-    [3701, false, 0],
-  ])('a team total of %i fines each player: %s (%i €)', (teamTotal, flagged, fine) => {
+    [LEGACY_SEASON, 3699, true, 2],
+    [LEGACY_SEASON, 3700, false, 0],
+    [LEGACY_SEASON, 3701, false, 0],
+    [CURRENT_SEASON, 3749, true, 5],
+    [CURRENT_SEASON, 3750, false, 0],
+    [CURRENT_SEASON, 3751, false, 0],
+  ])('season %i: a team total of %i fines each player: %s (%i €)', (seasonId, teamTotal, flagged, fine) => {
     const rows = [player({ userId: 'a', total: 900 }), player({ userId: 'b', total: 950 })];
-    const derived = derivePlayers(homeInterliga(teamTotal), rows).get('b')!;
+    const derived = derivePlayers(homeInterliga(teamTotal, seasonId), rows).get('b')!;
 
     expect(derived.isTeamUnderLimit).toBe(flagged);
     expect(derived.calculatedFine).toBe(fine);
+  });
+
+  it('keeps the old limit for an earlier season and the new one from season 13', () => {
+    expect(isTeamUnderLimit(homeInterliga(3720, LEGACY_SEASON))).toBe(false);
+    expect(isTeamUnderLimit(homeInterliga(3720, CURRENT_SEASON))).toBe(true);
+  });
+
+  it('treats a match with no season as an earlier one', () => {
+    expect(isTeamUnderLimit(homeInterliga(3720, null))).toBe(false);
+    expect(isTeamUnderLimit(homeInterliga(3699, null))).toBe(true);
+    expect(teamUnderLimitFineFor(null)).toBe(2);
+  });
+
+  it.each([[11, 2], [12, 2], [13, 5], [14, 5]])('season %i fines %i € per player', (seasonId, fine) => {
+    expect(teamUnderLimitFineFor(seasonId)).toBe(fine);
   });
 
   it('spares a player who did not play', () => {
@@ -148,7 +176,7 @@ describe('team total under the limit', () => {
     expect(derived.get('b')!.isTeamUnderLimit).toBe(true);
   });
 
-  describe('league scope', () => {
+  describe.each([LEGACY_SEASON, CURRENT_SEASON])('league scope in season %i', (seasonId) => {
     it.each<[string, MatchContext, boolean]>([
       ['home Interliga by league id', { isHome: true, leagueId: interligaId }, true],
       ['home Interliga by league name', { isHome: true, leagueName: 'Interliga sever' }, true],
@@ -160,12 +188,79 @@ describe('team total under the limit', () => {
       ['Interliga with an unknown side', { isHome: null, leagueId: interligaId }, false],
     ])('%s is penalised: %s', (_label, match, expected) => {
       expect(isUnderLimitEligible(match)).toBe(expected);
-      expect(isTeamUnderLimit({ ...match, teamTotalScore: 3000 })).toBe(expected);
+      expect(isTeamUnderLimit({ ...match, seasonId, teamTotalScore: 3000 })).toBe(expected);
     });
   });
 
   it('is never under the limit without a team total', () => {
     expect(isTeamUnderLimit(homeInterliga(null))).toBe(false);
+  });
+});
+
+describe('team loss', () => {
+  const points = (
+    teamMatchPoints: number | null,
+    opponentMatchPoints: number | null,
+    overrides: MatchContext = {},
+  ): MatchContext => ({
+    seasonId: CURRENT_SEASON,
+    isHome: true,
+    leagueId: interligaId,
+    teamTotalScore: 3900,
+    teamMatchPoints,
+    opponentMatchPoints,
+    ...overrides,
+  });
+
+  it.each<[string, MatchContext, boolean]>([
+    ['a 3:5 home loss', points(3, 5), true],
+    ['a 4:4 draw', points(4, 4), false],
+    ['a 5:3 win', points(5, 3), false],
+    ['an away Interliga loss', points(3, 5, { isHome: false }), true],
+    ['a cup loss on a split duel, 2.5:3.5', points(2.5, 3.5, { leagueId: poharId }), true],
+    ['a 0:6 cup loss', points(0, 6, { leagueId: poharId }), true],
+    ['a 3:3 cup draw', points(3, 3, { leagueId: poharId }), false],
+    ['a 2:6 tournament loss away', points(2, 6, { leagueId: tournamentId, isHome: false }), true],
+    ['a loss with an unknown side', points(3, 5, { isHome: null }), true],
+    ['missing team points', points(null, 5), false],
+    ['missing opponent points', points(3, null), false],
+    ['a loss in an earlier season', points(3, 5, { seasonId: LEGACY_SEASON }), false],
+    ['a loss with no season', points(3, 5, { seasonId: null }), false],
+  ])('%s is a loss: %s', (_label, match, expected) => {
+    expect(isTeamLoss(match)).toBe(expected);
+  });
+
+  it('fines every player who played 5 €, whatever their own score', () => {
+    const rows = [
+      player({ userId: 'a', total: 650 }),
+      player({ userId: 'b', total: 720 }),
+      player({ userId: 'c', total: 0 }),
+    ];
+    const derived = derivePlayers(points(3, 5), rows);
+
+    expect(derived.get('a')!.isTeamLoss).toBe(true);
+    expect(derived.get('a')!.calculatedFine).toBe(1 + 5); // worst + loss
+    expect(derived.get('b')!.isTeamLoss).toBe(true);
+    expect(derived.get('b')!.calculatedFine).toBe(5);
+    expect(derived.get('b')!.bonusReceived).toBe(40);
+    expect(derived.get('c')!.isTeamLoss).toBe(false);
+    expect(derived.get('c')!.calculatedFine).toBe(0);
+  });
+
+  it('charges nothing for a draw or a win', () => {
+    const rows = [player({ userId: 'a', total: 650 }), player({ userId: 'b', total: 700 })];
+
+    expect(derivePlayers(points(4, 4), rows).get('b')!.calculatedFine).toBe(0);
+    expect(derivePlayers(points(5, 3), rows).get('b')!.calculatedFine).toBe(0);
+  });
+
+  it('stacks with the fine for a home total under the limit', () => {
+    const rows = [player({ userId: 'a', total: 610 }), player({ userId: 'b', total: 640 })];
+    const derived = derivePlayers(points(3, 5, { teamTotalScore: 3700 }), rows).get('b')!;
+
+    expect(derived.isTeamUnderLimit).toBe(true);
+    expect(derived.isTeamLoss).toBe(true);
+    expect(derived.calculatedFine).toBe(5 + 5);
   });
 });
 
@@ -183,6 +278,22 @@ describe('calculated fine composition', () => {
     expect(derived.calculatedFine).toBe(12);
   });
 
+  it('adds the season 13 limit and loss fines on top of the rest', () => {
+    const rows = [
+      player({
+        userId: 'a', total: 590, faults: 2, specialFaultsCount: 1,
+      }),
+      player({ userId: 'b', total: 900 }),
+    ];
+    const match = {
+      ...homeInterliga(3000, CURRENT_SEASON), teamMatchPoints: 2, opponentMatchPoints: 6,
+    };
+    const derived = derivePlayers(match, rows, { a: 0 }).get('a')!;
+
+    // 3 (faults) + 1 (worst) + 1 (under 600) + 5 (special fault) + 5 (under limit) + 5 (loss)
+    expect(derived.calculatedFine).toBe(20);
+  });
+
   it('keeps the success gathering out of calculatedFine', () => {
     const rows = [player({ userId: 'a', total: 900 }), player({ userId: 'b', total: 950 })];
     const derived = derivePlayers(homeInterliga(4000), rows, { a: 7 }).get('a')!;
@@ -194,7 +305,6 @@ describe('calculated fine composition', () => {
 
 describe('success gathering (faultless streak)', () => {
   const PREVIOUS_SEASON = 12;
-  const CURRENT_SEASON = 13;
 
   const clean = (seasonId: number | null = CURRENT_SEASON) => ({ faults: 0, seasonId });
   const withFaults = (faults: number, seasonId: number | null = CURRENT_SEASON) => (
@@ -348,6 +458,9 @@ describe('trainer: clean sweep', () => {
     ['8:0.5', { seasonId: 13, teamMatchPoints: 8, opponentMatchPoints: 0.5 }, null],
     ['a match with no points', { seasonId: 13, teamMatchPoints: null, opponentMatchPoints: null }, null],
     ['a match with no season', { seasonId: null, teamMatchPoints: 8, opponentMatchPoints: 0 }, null],
+    ['a manual tournament 8:0', {
+      seasonId: 13, leagueId: tournamentId, teamMatchPoints: 8, opponentMatchPoints: 0,
+    }, 10],
   ];
 
   it.each(cases)('pays %s', (_label, match, expected) => {

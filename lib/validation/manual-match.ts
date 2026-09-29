@@ -4,6 +4,7 @@ import { getManualLeagues } from '@/lib/season-config';
 export const MAX_PLAYERS = 12;
 export const MAX_SCORE = 1000;
 export const MAX_FAULTS = 200;
+export const MAX_MATCH_POINTS = 8;
 
 /** Error codes the client maps to a localized message; raw messages never reach it. */
 export type ManualMatchError =
@@ -13,6 +14,7 @@ export type ManualMatchError =
   | 'noPlayers'
   | 'duplicatePlayer'
   | 'invalidScore'
+  | 'invalidMatchPoints'
   | 'notFound'
   | 'notManual'
   | 'unknown';
@@ -34,11 +36,20 @@ export interface ManualMatchInput {
   opponent: string;
   isHome: boolean;
   opponentTotalScore: number | null;
+  /** Both or neither: a single value cannot decide a loss. */
+  teamMatchPoints: number | null;
+  opponentMatchPoints: number | null;
   players: ManualMatchPlayerInput[];
 }
 
 export function isCountable(value: number, max: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= max;
+}
+
+/** Half points exist: a drawn duel splits its point. */
+export function isMatchPoints(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= MAX_MATCH_POINTS
+    && Number.isInteger(value * 2);
 }
 
 export function validateManualMatch(input: ManualMatchInput): ManualMatchError | null {
@@ -64,6 +75,13 @@ export function validateManualMatch(input: ManualMatchInput): ManualMatchError |
   if (input.opponentTotalScore !== null
     && !isCountable(input.opponentTotalScore, MAX_SCORE * MAX_PLAYERS)) {
     return 'invalidScore';
+  }
+
+  const { teamMatchPoints, opponentMatchPoints } = input;
+  if ((teamMatchPoints === null) !== (opponentMatchPoints === null)) return 'invalidMatchPoints';
+  if (teamMatchPoints !== null && opponentMatchPoints !== null
+    && !(isMatchPoints(teamMatchPoints) && isMatchPoints(opponentMatchPoints))) {
+    return 'invalidMatchPoints';
   }
 
   return null;

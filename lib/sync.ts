@@ -16,14 +16,19 @@ import {
   getAllTeamIds,
   getSeasonAndLeagueConfig,
   INTERLIGA_LEAGUE_IDS,
+  LEGACY_TEAM_SCORE_LIMIT,
   TEAM_SCORE_LIMIT,
+  TEAM_SCORE_LIMIT_FIRST_SEASON_ID,
   TOURNAMENT_LEAGUE_IDS,
 } from './season-config';
 import {
   CLEAN_SWEEP_FIRST_SEASON_ID,
   CLEAN_SWEEP_TEAM_POINTS,
+  LEGACY_TEAM_UNDER_LIMIT_FINE,
   STREAK_FINE,
   STREAK_LENGTH,
+  TEAM_LOSS_FINE,
+  TEAM_LOSS_FIRST_SEASON_ID,
   TEAM_UNDER_LIMIT_FINE,
   TRAINER_CLEAN_SWEEP_FINE,
 } from './money-rules';
@@ -133,8 +138,12 @@ export async function recalculateDerivedFinancials() {
       SELECT mpr.match_id, mpr.user_id, mpr.total, mpr.faults, m.date, m.season_id,
              COALESCE(mpr.special_faults_count, 0) AS sfc,
              w.min_total,
+             -- Parameters are bound untyped, and a CASE of untyped parameters resolves to
+             -- text, which cannot compare with an integer; the ::int casts prevent that.
              COALESCE(
-               m.team_total_score < ${TEAM_SCORE_LIMIT}
+               m.team_total_score < CASE WHEN m.season_id >= ${TEAM_SCORE_LIMIT_FIRST_SEASON_ID}
+                                         THEN ${TEAM_SCORE_LIMIT}::int
+                                         ELSE ${LEGACY_TEAM_SCORE_LIMIT}::int END
                AND mpr.total > 0
                AND m.is_home
                AND (
@@ -144,6 +153,12 @@ export async function recalculateDerivedFinancials() {
                ),
                false
              ) AS team_under_limit,
+             COALESCE(
+               m.season_id >= ${TEAM_LOSS_FIRST_SEASON_ID}
+               AND mpr.total > 0
+               AND m.team_match_points < m.opponent_match_points,
+               false
+             ) AS team_loss,
              SUM(CASE WHEN COALESCE(mpr.faults, 0) <> 0 THEN 1 ELSE 0 END) OVER (
                PARTITION BY mpr.user_id, m.season_id
                ORDER BY COALESCE(m.date, '1970-01-01'), mpr.match_id
@@ -167,13 +182,19 @@ export async function recalculateDerivedFinancials() {
     SET is_worst_player     = (s.total = s.min_total AND s.total > 0),
         is_under_600        = (s.total < 600 AND s.total > 0),
         is_team_under_limit = s.team_under_limit,
+        is_team_loss        = s.team_loss,
         faultless_streak    = s.streak,
         bonus_received      = CASE WHEN s.total >= 700 THEN 40 ELSE 0 END,
         calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
                             + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
                             + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
                             + s.sfc * 5
-                            + CASE WHEN s.team_under_limit THEN ${TEAM_UNDER_LIMIT_FINE} ELSE 0 END,
+                            + CASE WHEN s.team_under_limit
+                                   THEN CASE WHEN s.season_id >= ${TEAM_SCORE_LIMIT_FIRST_SEASON_ID}
+                                             THEN ${TEAM_UNDER_LIMIT_FINE}::int
+                                             ELSE ${LEGACY_TEAM_UNDER_LIMIT_FINE}::int END
+                                   ELSE 0 END
+                            + CASE WHEN s.team_loss THEN ${TEAM_LOSS_FINE}::int ELSE 0 END,
         streak_fine         = CASE WHEN s.streak >= ${STREAK_LENGTH}
                                    THEN ${STREAK_FINE} ELSE 0 END
     FROM streaks s

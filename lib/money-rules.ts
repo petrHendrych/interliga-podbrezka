@@ -1,7 +1,8 @@
 import {
   INTERLIGA_LEAGUE_IDS,
-  TEAM_SCORE_LIMIT,
+  TEAM_SCORE_LIMIT_FIRST_SEASON_ID,
   TOURNAMENT_LEAGUE_IDS,
+  getTeamScoreLimit,
 } from '@/lib/season-config';
 
 /**
@@ -16,7 +17,11 @@ export const BONUS_TOTAL_LIMIT = 700;
 export const PLAYER_BONUS = 40;
 export const WORST_PLAYER_FINE = 1;
 export const UNDER_600_FINE = 1;
-export const TEAM_UNDER_LIMIT_FINE = 2;
+export const LEGACY_TEAM_UNDER_LIMIT_FINE = 2;
+export const TEAM_UNDER_LIMIT_FINE = 5;
+export const TEAM_LOSS_FINE = 5;
+/** The loss fine opens in 2026/2027; the losses of earlier seasons are not charged. */
+export const TEAM_LOSS_FIRST_SEASON_ID = 13;
 export const SPECIAL_FAULT_FINE = 5;
 export const STREAK_LENGTH = 5;
 export const STREAK_FINE = 10;
@@ -56,6 +61,7 @@ export interface PlayerDerived {
   isWorstPlayer: boolean;
   isUnder600: boolean;
   isTeamUnderLimit: boolean;
+  isTeamLoss: boolean;
   calculatedFine: number;
   streakFine: number;
   bonusReceived: number;
@@ -98,7 +104,23 @@ export function isUnderLimitEligible(match: MatchContext): boolean {
 export function isTeamUnderLimit(match: MatchContext): boolean {
   return isUnderLimitEligible(match)
     && typeof match.teamTotalScore === 'number'
-    && match.teamTotalScore < TEAM_SCORE_LIMIT;
+    && match.teamTotalScore < getTeamScoreLimit(match.seasonId);
+}
+
+/** The season `CASE` inside the `team_under_limit` term of sync.ts `calculated_fine`. */
+export function teamUnderLimitFineFor(seasonId: number | null | undefined): number {
+  return typeof seasonId === 'number' && seasonId >= TEAM_SCORE_LIMIT_FIRST_SEASON_ID
+    ? TEAM_UNDER_LIMIT_FINE
+    : LEGACY_TEAM_UNDER_LIMIT_FINE;
+}
+
+/** `team_loss` in the `ordered` CTE: lost on match points, any league, from season 13. */
+export function isTeamLoss(match: MatchContext): boolean {
+  return typeof match.seasonId === 'number'
+    && match.seasonId >= TEAM_LOSS_FIRST_SEASON_ID
+    && typeof match.teamMatchPoints === 'number'
+    && typeof match.opponentMatchPoints === 'number'
+    && match.teamMatchPoints < match.opponentMatchPoints;
 }
 
 /** `CASE WHEN s.total >= 700 THEN 40 ELSE 0 END` — sync.ts `bonus_received`. */
@@ -154,23 +176,27 @@ export function derivePlayers(
 ): Map<string, PlayerDerived> {
   const minTotal = worstTotal(rows);
   const teamUnderLimit = isTeamUnderLimit(match);
+  const teamLoss = isTeamLoss(match);
 
   return new Map(rows.map((row) => {
     const played = row.total > 0;
     const isWorstPlayer = played && row.total === minTotal;
     const isUnder600 = played && row.total < UNDER_600_LIMIT;
     const underLimit = played && teamUnderLimit;
+    const lost = played && teamLoss;
     const streak = streakByUser[row.userId] ?? 0;
 
     const derived: PlayerDerived = {
       isWorstPlayer,
       isUnder600,
       isTeamUnderLimit: underLimit,
+      isTeamLoss: lost,
       calculatedFine: faultFine(row.faults)
         + (isWorstPlayer ? WORST_PLAYER_FINE : 0)
         + (isUnder600 ? UNDER_600_FINE : 0)
         + specialFaultFine(row.specialFaultsCount)
-        + (underLimit ? TEAM_UNDER_LIMIT_FINE : 0),
+        + (underLimit ? teamUnderLimitFineFor(match.seasonId) : 0)
+        + (lost ? TEAM_LOSS_FINE : 0),
       streakFine: streakFineFor(streak),
       bonusReceived: playerBonus(row.total),
     };

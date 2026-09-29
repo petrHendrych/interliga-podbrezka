@@ -82,8 +82,18 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
 
 export const DEFAULT_SEASON_ID = 13;
 
+/** The limit that applied until season 12. */
+export const LEGACY_TEAM_SCORE_LIMIT = 3700;
 /** Home matches under this team total fine every player who played. */
-export const TEAM_SCORE_LIMIT = 3700;
+export const TEAM_SCORE_LIMIT = 3750;
+/** 2026/2027 raised the limit; earlier seasons keep theirs. */
+export const TEAM_SCORE_LIMIT_FIRST_SEASON_ID = 13;
+
+export function getTeamScoreLimit(seasonId: number | null | undefined): number {
+  return typeof seasonId === 'number' && seasonId >= TEAM_SCORE_LIMIT_FIRST_SEASON_ID
+    ? TEAM_SCORE_LIMIT
+    : LEGACY_TEAM_SCORE_LIMIT;
+}
 
 /**
  * Money already in the bank when a season opened, left over from the one before. Hand-known,

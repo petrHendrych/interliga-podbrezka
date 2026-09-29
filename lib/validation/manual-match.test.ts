@@ -5,6 +5,7 @@ import {
   type ManualMatchPlayerInput,
   MAX_PLAYERS,
   isCountable,
+  isMatchPoints,
   validateManualMatch,
 } from '@/lib/validation/manual-match';
 
@@ -25,6 +26,8 @@ function input(overrides: Partial<ManualMatchInput> = {}): ManualMatchInput {
     opponent: 'Rakovice',
     isHome: true,
     opponentTotalScore: 3400,
+    teamMatchPoints: null,
+    opponentMatchPoints: null,
     players: [player(), player()],
     ...overrides,
   };
@@ -112,5 +115,41 @@ describe('scores', () => {
 
   it('accepts the opponent total boundary of 12000', () => {
     expect(validateManualMatch(input({ opponentTotalScore: 12_000 }))).toBeNull();
+  });
+});
+
+describe('match points', () => {
+  it.each([
+    [0, true],
+    [4.5, true],
+    [8, true],
+    [-0.5, false],
+    [8.5, false],
+    [4.25, false],
+    [Number.NaN, false],
+  ])('%o is a valid match-point value: %s', (value, expected) => {
+    expect(isMatchPoints(value)).toBe(expected);
+  });
+
+  it('accepts a match without points', () => {
+    expect(validateManualMatch(input())).toBeNull();
+  });
+
+  it.each([[2, 6], [3.5, 4.5], [8, 0], [0, 0]])('accepts %o : %o', (team, opponent) => {
+    expect(validateManualMatch(input({
+      teamMatchPoints: team, opponentMatchPoints: opponent,
+    }))).toBeNull();
+  });
+
+  it.each([[2, null], [null, 6]])('rejects only one side filled in (%o : %o)', (team, opponent) => {
+    expect(validateManualMatch(input({
+      teamMatchPoints: team, opponentMatchPoints: opponent,
+    }))).toBe('invalidMatchPoints');
+  });
+
+  it.each([[9, 0], [2, -1], [4.25, 3.75]])('rejects %o : %o', (team, opponent) => {
+    expect(validateManualMatch(input({
+      teamMatchPoints: team, opponentMatchPoints: opponent,
+    }))).toBe('invalidMatchPoints');
   });
 });

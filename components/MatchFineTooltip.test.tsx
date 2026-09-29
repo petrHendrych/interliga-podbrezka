@@ -3,13 +3,17 @@ import {
   fireEvent, render, screen, waitFor,
 } from '@testing-library/react';
 import sk from '@/locales/sk.json';
+import { interpolate } from '@/lib/i18n/config';
 import { MatchFineTooltip, type MatchFineTooltipProps } from '@/components/MatchFineTooltip';
 
 const labels = {
   paidStatus: sk.playerDetail.paidStatus,
   unpaidStatus: sk.playerDetail.unpaidStatus,
   noFine: sk.playerDetail.noFine,
-  reasons: sk.playerDetail.fineReasons,
+  reasons: {
+    ...sk.playerDetail.fineReasons,
+    teamUnderLimit: interpolate(sk.playerDetail.fineReasons.teamUnderLimit, { limit: 3750 }),
+  },
 };
 
 function renderTooltip(overrides: Partial<MatchFineTooltipProps> = {}) {
@@ -22,6 +26,7 @@ function renderTooltip(overrides: Partial<MatchFineTooltipProps> = {}) {
       isWorstPlayer={false}
       isUnder600={false}
       isTeamUnderLimit={false}
+      isTeamLoss={false}
       fullFaultsCount={0}
       secondToLastFaultsCount={0}
       specialFaultsCount={0}
@@ -93,8 +98,28 @@ describe('the breakdown', () => {
 
     expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.worstPlayer);
     expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.under600);
-    expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.teamUnderLimit);
+    expect(tooltip).toHaveTextContent('tím pod 3750');
+    expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.teamLoss);
     expect(tooltip).not.toHaveTextContent(sk.playerDetail.noFine);
+  });
+
+  it('names a team loss as its own reason next to the limit', async () => {
+    renderTooltip({ calculatedFine: 10, isTeamUnderLimit: true, isTeamLoss: true });
+    const tooltip = await openTooltip();
+
+    expect(tooltip).toHaveTextContent('10 €');
+    expect(tooltip).toHaveTextContent('tím pod 3750');
+    expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.teamLoss);
+  });
+
+  it('adds the success gathering to a loss fine in the shown total', async () => {
+    renderTooltip({
+      calculatedFine: 5, streakFine: 10, isTeamLoss: true, faultlessStreak: 5,
+    });
+    const tooltip = await openTooltip();
+
+    expect(tooltip).toHaveTextContent('15 €');
+    expect(tooltip).toHaveTextContent(sk.playerDetail.fineReasons.teamLoss);
   });
 
   it('omits every flag that is not set', async () => {
@@ -103,7 +128,8 @@ describe('the breakdown', () => {
 
     expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.worstPlayer);
     expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.under600);
-    expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.teamUnderLimit);
+    expect(tooltip).not.toHaveTextContent(labels.reasons.teamUnderLimit);
+    expect(tooltip).not.toHaveTextContent(sk.playerDetail.fineReasons.teamLoss);
   });
 
   it('names the specific special fault instead of the generic line', async () => {
