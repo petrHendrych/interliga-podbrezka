@@ -59,7 +59,7 @@ const eslintConfig = [
     files: [
       "**/*.test.ts",
       "**/*.test.tsx",
-      "vitest.config.ts",
+      "vitest.config.mts",
       "vitest.setup.dom.ts",
       "test/**/*.ts",
       "test/**/*.tsx",

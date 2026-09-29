@@ -158,7 +158,7 @@ These rules are binding, not aspirational.
 
 ### Tooling
 
-- **Vitest** is the runner. `vitest.config.ts` declares two projects: `node` (environment
+- **Vitest** is the runner. `vitest.config.mts` declares two projects: `node` (environment
   `node`, for `lib/**`, `locales/**`, `proxy.ts`) and `dom` (jsdom + `@testing-library/react`,
   for `components/**`, `app/**`, `lib/hooks/**`, set up by `vitest.setup.dom.ts`).
 - Run with `nvm use` — the project pins Node 24 (`.nvmrc`, `.npmrc`, `engines`); `jsdom` needs
