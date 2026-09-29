@@ -37,9 +37,9 @@ follow-up.
 ESLint stack stays on eslint 9 / `@typescript-eslint` 7.18 / airbnb — modernising it means
 dropping the unmaintained `eslint-config-airbnb-typescript` and is out of scope here.
 
-> Project rule (`AGENTS.md`, Plan Mode Rules) wants plans under `.junie/plans/`. Plan mode only
+> Project rule (`AGENTS.md`, Plan Mode Rules) wants plans under `docs/plans/`. Plan mode only
 > permits editing this file, so **Step 0 of execution is to copy this plan to
-> `.junie/plans/upgrade-node-24-next-16-3-typescript-7.md`**.
+> `docs/plans/upgrade-node-24-next-16-3-typescript-7.md`**.
 
 # Scope
 
@@ -167,7 +167,7 @@ includes are all supported.
 # Delivery Steps
 
 ### Step 0: Copy this plan into the repo
-Write it to `.junie/plans/upgrade-node-24-next-16-3-typescript-7.md` and mark steps `✓` there
+Write it to `docs/plans/upgrade-node-24-next-16-3-typescript-7.md` and mark steps `✓` there
 while executing.
 
 ### Step 1: Pin Node 24

@@ -13,9 +13,9 @@ bank card so nobody has to guess where it came from.
 The amount is a one-off, hand-known figure, so it is stored as configuration next to the other
 season facts rather than as a new table or an admin-entered row.
 
-Note on plan location: the repo's `AGENTS.md` requires plans under `.junie/plans/`. This file
+Note on plan location: the repo's `AGENTS.md` requires plans under `docs/plans/`. This file
 was written to the path the harness pinned; Step 1 copies it to
-`.junie/plans/team-bank-opening-balance.md`.
+`docs/plans/team-bank-opening-balance.md`.
 
 # Requirements
 
@@ -314,10 +314,10 @@ is why the row hides under a league filter instead of showing `+0.00 €`.
 # Delivery Steps
 
 ### ✓ Step 1: Mirror this plan into the repo
-Copy this file to `.junie/plans/team-bank-opening-balance.md` as required by `AGENTS.md`
+Copy this file to `docs/plans/team-bank-opening-balance.md` as required by `AGENTS.md`
 Plan Mode Rules. Mark steps `✓` there while executing.
 
-Touches: `.junie/plans/team-bank-opening-balance.md`.
+Touches: `docs/plans/team-bank-opening-balance.md`.
 
 ### ✓ Step 2: Add the opening-balance configuration
 Add `SEASON_OPENING_BALANCES` and `getSeasonOpeningBalance()` to `lib/season-config.ts` near

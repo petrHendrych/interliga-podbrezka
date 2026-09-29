@@ -10,7 +10,7 @@ Decisions confirmed with the user:
 - A withdrawal carries a **date**, and its season is derived from that date. It has **no league** — league-filtered views ignore withdrawals entirely (same reasoning as `streak_fine`).
 - Form fields: amount, description, **date**, **category**.
 
-> Note: per `AGENTS.md`, this plan must also live at `.junie/plans/team-bank-withdrawals.md`. Plan mode allows editing only this file, so copying it there is the first thing execution does.
+> Note: per `AGENTS.md`, this plan must also live at `docs/plans/team-bank-withdrawals.md`. Plan mode allows editing only this file, so copying it there is the first thing execution does.
 
 # Requirements
 

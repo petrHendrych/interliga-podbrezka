@@ -10,6 +10,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Mobile-First Design
 
 The main and first focus of the design should be mobile view. All components and layouts must be optimized for mobile devices before considering larger screens.
+
+- **Light and dark mode**: every screen supports both. The default follows the system preference (`defaultTheme="system"`).
+- **Dark background**: the main dark-mode background is Tailwind's `bg-slate-950` (`oklch(0.129 0.042 264.695)`, the `--background` token in `app/globals.css`). Light mode uses a standard light background.
 <!-- END:design-rules -->
 
 <!-- BEGIN:check-rules -->
@@ -37,12 +40,23 @@ Keep comments to a minimum. Code should be self-explanatory through clear naming
 Always ask questions instead of running your assumptions to confirm key decisions.
 <!-- END:decision-rules -->
 
+<!-- BEGIN:git-rules -->
+# Git Rules
+
+Never commit unless the user explicitly asks for that commit.
+
+- Approval covers one commit only. Agreeing to a commit earlier in the session does not carry over to later changes; every new commit needs its own explicit request.
+- A request to make a change — even "on a branch" — is not a request to commit it. Leave the changes uncommitted, report them, and wait for the user's go-ahead.
+- The same applies to pushing, opening pull requests, amending, rebasing, and merging.
+<!-- END:git-rules -->
+
 <!-- BEGIN:plan-rules -->
 # Plan Mode Rules
 
 When working in plan mode, the plan must be detailed and written to a file — never delivered only as a chat message.
 
-- **Location**: save every plan to `.junie/plans/<kebab-case-slug>.md`. The slug describes the task in a few words (e.g. `add-team-bank-section.md`, `speed-up-dashboard-filter.md`). Reuse the existing file when iterating on a plan that is already there.
+- **Location**: every plan lives in `docs/plans/<kebab-case-slug>.md`. The slug describes the task in a few words (e.g. `add-team-bank-section.md`, `speed-up-dashboard-filter.md`). Reuse the existing file when iterating on a plan that is already there.
+- **Claude Code plan mode** writes its plan file into `docs/plans/` by itself (`plansDirectory` in `.claude/settings.json`), under a generated name. Once the plan is approved, rename that file to the kebab-case slug before starting the work.
 - **Write the file before presenting the plan** for approval, so the approved plan and the file always match. If the plan changes during discussion, update the file.
 - **Level of detail**: name concrete files, functions, columns, and components. Include code or SQL snippets for non-obvious changes. A step should be executable without re-deriving decisions.
 

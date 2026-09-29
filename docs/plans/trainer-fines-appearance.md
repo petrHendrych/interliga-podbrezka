@@ -106,9 +106,9 @@ flowchart LR
 
 ### Step 1: Mirror this plan into the repo
 
-Per the project's Plan Mode Rules, copy this plan to `.junie/plans/trainer-fines-appearance.md` (reuse the file if it already exists) so the repo carries the approved plan.
+Per the project's Plan Mode Rules, copy this plan to `docs/plans/trainer-fines-appearance.md` (reuse the file if it already exists) so the repo carries the approved plan.
 
-Touches: `.junie/plans/trainer-fines-appearance.md`.
+Touches: `docs/plans/trainer-fines-appearance.md`.
 
 ### Step 2: Rename the locale key and rewrite the trainer description
 

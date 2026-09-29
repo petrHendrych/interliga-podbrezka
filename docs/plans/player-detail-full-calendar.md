@@ -17,7 +17,7 @@ Decisions taken with the user:
 - **Order**: everything already behind us — results and "did not play" alike — interleaved by date, newest first. Unplayed fixtures appended in `date ASC` at the bottom.
 
 ### Note on plan location
-`AGENTS.md` requires plans under `.junie/plans/`. Plan mode only allows writing this one file, so **Step 0 of delivery is to copy this file to `.junie/plans/player-detail-full-calendar.md`.**
+`AGENTS.md` requires plans under `docs/plans/`. Plan mode only allows writing this one file, so **Step 0 of delivery is to copy this file to `docs/plans/player-detail-full-calendar.md`.**
 
 # Technical Design
 
@@ -270,7 +270,7 @@ flowchart TD
 # Delivery Steps
 
 ### ✓ Step 0: Copy this plan into the repo
-Copy to `.junie/plans/player-detail-full-calendar.md` as AGENTS.md requires; mark steps `✓` there while executing.
+Copy to `docs/plans/player-detail-full-calendar.md` as AGENTS.md requires; mark steps `✓` there while executing.
 
 ### ✓ Step 1: Add the pure row-building helpers
 New `lib/player-matches.ts` with `DatedMatch`, `MissingMatch`, `PlayerMatchRow`, and `buildPlayerMatchRows()` as above. Touches: `lib/player-matches.ts`.

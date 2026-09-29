@@ -178,7 +178,7 @@ flowchart TD
 # Delivery Steps
 
 ### ✓ Step 0: Mirror this plan into the repo
-Write the same content to `.junie/plans/trainer-clean-sweep-fine.md` (plan mode only allows editing the harness plan file, so this is the first execution step).
+Write the same content to `docs/plans/trainer-clean-sweep-fine.md` (plan mode only allows editing the harness plan file, so this is the first execution step).
 
 ### ✓ Step 1: Schema + push
 `lib/db/schema.ts` — add `teamMatchPoints`, `opponentMatchPoints`. Run `pnpm db:push`. Verify with `\d matches` equivalent query.

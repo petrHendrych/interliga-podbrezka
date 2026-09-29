@@ -2,7 +2,7 @@
 
 ### Origin
 
-Split out of `.junie/plans/mark-match-fines-paid.md` (its former Steps 8–10, "round 3"). That plan shipped the `/admin/money` section — list page, per-match sheet, `PaidToggle`, `MarkAllPaidButton`, `PlayerMoneyCard`, `TrainerPaymentCard`, the `applyMatchMoney` server action — and is complete. This plan is a **visual-only** pass over the sheet cards. It is **implemented**.
+Split out of `docs/plans/mark-match-fines-paid.md` (its former Steps 8–10, "round 3"). That plan shipped the `/admin/money` section — list page, per-match sheet, `PaidToggle`, `MarkAllPaidButton`, `PlayerMoneyCard`, `TrainerPaymentCard`, the `applyMatchMoney` server action — and is complete. This plan is a **visual-only** pass over the sheet cards. It is **implemented**.
 
 No change to payloads, the server action, `applyMatchMoneyUpdates()`, or any money module — the sheet keeps issuing exactly the same calls.
 

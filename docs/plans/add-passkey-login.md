@@ -9,8 +9,8 @@ Goal: let an approved user register a passkey on their device and afterwards sig
 Android fingerprint in one tap, with no e-mail typed. The password stays as the fallback and the recovery
 path — a passkey is added, never a replacement.
 
-**Note on plan file location**: `AGENTS.md` requires plans in `.junie/plans/`. Plan mode only permits
-writing this file, so Step 0 of execution is to copy this plan to `.junie/plans/add-passkey-login.md`.
+**Note on plan file location**: `AGENTS.md` requires plans in `docs/plans/`. Plan mode only permits
+writing this file, so Step 0 of execution is to copy this plan to `docs/plans/add-passkey-login.md`.
 
 ## Effort estimate
 

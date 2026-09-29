@@ -6,7 +6,7 @@ The goal is a single read-only reference page — `/[lang]/rules` — that lists
 
 Rules content is taken from the actual implementation in `lib/sync.ts:105-224` (`recalculateDerivedFinancials`), not from the `AGENTS.md` prose — the prose is stale on one point (see Key Decisions).
 
-> **Note on plan location:** `AGENTS.md` requires plans at `.junie/plans/<slug>.md`. Plan mode only allows writing this file, so the first execution action is to copy this plan to `.junie/plans/fine-rules-page.md` before touching code.
+> **Note on plan location:** `AGENTS.md` requires plans at `docs/plans/<slug>.md`. Plan mode only allows writing this file, so the first execution action is to copy this plan to `docs/plans/fine-rules-page.md` before touching code.
 
 # Requirements
 
@@ -206,7 +206,7 @@ flowchart TD
 # Delivery Steps
 
 ### Step 1: Copy this plan to the repo
-Write this plan to `.junie/plans/fine-rules-page.md` as required by `AGENTS.md`. Touches: `.junie/plans/fine-rules-page.md`.
+Write this plan to `docs/plans/fine-rules-page.md` as required by `AGENTS.md`. Touches: `docs/plans/fine-rules-page.md`.
 
 ### Step 2: Add the Slovak source strings
 Add `common.rules` and the full `rules` namespace to `locales/sk.json` exactly as specified above. Touches: `locales/sk.json`.
