@@ -23,6 +23,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { pluralize } from '@/lib/i18n/plural';
 import { getDictionary } from '@/lib/i18n/dictionaries';
+import { logPageView } from '@/lib/activity-log';
 
 const STAT_TILE = 'rounded-lg bg-surface-2 px-2 py-1.5 sm:p-2 text-center flex flex-col justify-center';
 const STAT_LABEL = 'block text-[10px] leading-tight uppercase font-semibold tracking-wide text-muted-foreground';
@@ -64,6 +65,7 @@ export default async function Home({
   params: Promise<{ lang: string }>;
   searchParams: Promise<{ season?: string; league?: string }>;
 }) {
+  await logPageView();
   const { lang: langParam } = await params;
   const { season: seasonParam, league: leagueParam } = await searchParams;
   const lang = langParam as Locale;

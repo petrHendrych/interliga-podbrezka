@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { bankWithdrawals } from './db/schema';
 import { getSession } from './session';
+import { logActivity } from './activity-log';
 import { updateSyncedData } from './cache';
 import { sendPushToAll } from './push';
 import {
@@ -59,6 +60,9 @@ export async function createWithdrawal(input: WithdrawalInput): Promise<Withdraw
       category: dictionary.withdrawals.categories[validated.category],
     }));
 
+    logActivity('admin', 'createWithdrawal', {
+      id: created.id, amount: validated.amount.toFixed(2), category: validated.category,
+    }, session.user);
     return { success: true, id: created.id };
   } catch (error) {
     console.error('Failed to create bank withdrawal:', error);
@@ -85,6 +89,7 @@ export async function deleteWithdrawal(id: number): Promise<WithdrawalResult> {
     updateSyncedData();
     revalidatePath(WITHDRAWALS_PATH, 'page');
     revalidatePath(HOME_PATH, 'page');
+    logActivity('admin', 'deleteWithdrawal', { id }, session.user);
     return { success: true, id };
   } catch (error) {
     console.error('Failed to delete bank withdrawal:', error);

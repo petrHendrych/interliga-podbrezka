@@ -4,6 +4,7 @@ import {
 import { NextRequest } from 'next/server';
 import { decrypt, encrypt } from '@/lib/auth';
 import { SESSION_COOKIE_NAME, SESSION_REFRESH_AFTER_SECONDS } from '@/lib/session-config';
+import { ACTIVITY_PATH_HEADER } from '@/lib/activity-header';
 import { proxy } from '@/proxy';
 
 const expires = new Date('2026-08-12T12:00:00Z');
@@ -125,6 +126,30 @@ describe('admin guard', () => {
     // locale redirect above, these build a fresh URL instead of cloning `nextUrl`.
     const res = await proxy(request('/sk/rules?season=12'));
     expect(location(res).search).toBe('');
+  });
+});
+
+describe('activity path', () => {
+  const forwarded = (res: Response) => res.headers.get(`x-middleware-request-${ACTIVITY_PATH_HEADER}`);
+
+  it('forwards the visited path and query to the page for a signed-in user', async () => {
+    const res = await proxy(request('/sk/player/42?season=13', { session: await sessionCookie('player') }));
+    expect(forwarded(res)).toBe('/sk/player/42?season=13');
+  });
+
+  it('overwrites a path the client sent itself', async () => {
+    const res = await proxy(request(
+      '/sk/rules',
+      { session: await sessionCookie('player') },
+      { [ACTIVITY_PATH_HEADER]: '/sk/admin/users' },
+    ));
+    expect(forwarded(res)).toBe('/sk/rules');
+  });
+
+  it('forwards nothing for public routes or redirects', async () => {
+    expect(forwarded(await proxy(request('/sk/sign-in')))).toBeNull();
+    expect(forwarded(await proxy(request('/sk/rules')))).toBeNull();
+    expect(forwarded(await proxy(request('/rules')))).toBeNull();
   });
 });
 

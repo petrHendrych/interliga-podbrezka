@@ -7,6 +7,7 @@ import { matchPlayerResults, users as usersTable } from '@/lib/db/schema';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import type { Dictionary } from '@/lib/i18n/types';
+import { logPageView } from '@/lib/activity-log';
 import { ApproveUserButton } from './ApproveUserButton';
 import { DeleteUserButton } from './DeleteUserButton';
 import { LinkPlayerDialog, type LinkCandidate } from './LinkPlayerDialog';
@@ -54,6 +55,7 @@ export default async function AdminUsersPage({
 }: {
   params: Promise<{ lang: string }>;
 }) {
+  await logPageView();
   const { lang } = await params;
   const dict = await getDictionary(lang as Locale);
   const t = dict.admin.users;

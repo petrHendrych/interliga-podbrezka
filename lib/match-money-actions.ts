@@ -4,6 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getSession } from './session';
+import { logActivity } from './activity-log';
 import { updateSyncedData } from './cache';
 import { sendPersonalMoneyPushes } from './push';
 import { applyMatchMoneyUpdates, MatchMoneyError, type MatchMoneyErrorCode } from './match-money';
@@ -36,6 +37,7 @@ export async function applyMatchMoney(
     revalidatePath(MONEY_SHEET_PATH, 'page');
     revalidatePath(PLAYER_PATH, 'page');
     await sendPersonalMoneyPushes(result.personalPushes);
+    logActivity('admin', 'applyMatchMoney', { matchId, changes: result.changes.length }, session.user);
     return { success: true };
   } catch (error) {
     if (error instanceof MatchMoneyError) {

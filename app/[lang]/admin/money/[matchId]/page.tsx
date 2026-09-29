@@ -14,6 +14,7 @@ import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { MarkAllPaidButton } from '@/components/money/MarkAllPaidButton';
 import { PlayerMoneyCard } from '@/components/money/PlayerMoneyCard';
 import { TrainerPaymentCard } from '@/components/money/TrainerPaymentCard';
+import { logPageView } from '@/lib/activity-log';
 
 const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
@@ -94,6 +95,7 @@ function Section({ title, action, children }: SectionProps) {
 }
 
 export default async function AdminMoneySheetPage({ params }: PageProps) {
+  await logPageView();
   const { lang: langParam, matchId: matchIdParam } = await params;
   const lang = langParam as Locale;
   const matchId = Number.parseInt(matchIdParam, 10);

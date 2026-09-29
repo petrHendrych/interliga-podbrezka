@@ -4,11 +4,14 @@ import {
 
 const session = vi.hoisted(() => ({ current: { user: { role: 'admin' } } as unknown }));
 const approvedRole = vi.hoisted(() => ({ current: 'player' as string | null }));
+// Each db.batch() call takes the next entry, in the order the action runs its batches.
+const batchResults = vi.hoisted(() => ({ queue: [] as unknown[][] }));
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('./session', () => ({ getSession: async () => session.current }));
 vi.mock('./cache', () => ({ updateSyncedData: vi.fn() }));
 vi.mock('./sync', () => ({ recalculateDerivedFinancials: vi.fn() }));
+vi.mock('./activity-log', () => ({ logActivity: vi.fn() }));
 vi.mock('./db', () => ({
   db: {
     update: () => ({
@@ -20,19 +23,27 @@ vi.mock('./db', () => ({
         }),
       }),
     }),
+    select: () => ({ from: () => ({ where: () => ({}) }) }),
+    delete: () => ({ where: async () => undefined }),
+    batch: async () => batchResults.queue.shift() ?? [],
   },
   sql: {},
 }));
 
 const { updateSyncedData } = await import('./cache');
 const { recalculateDerivedFinancials } = await import('./sync');
-const { approveUser } = await import('./admin-actions');
+const { logActivity } = await import('./activity-log');
+const { approveUser, deleteUser, linkScrapedPlayer } = await import('./admin-actions');
+
+const admin = { id: 'admin-1', name: 'Peter Admin', role: 'admin' };
 
 beforeEach(() => {
-  session.current = { user: { role: 'admin' } };
+  session.current = { user: admin };
   approvedRole.current = 'player';
+  batchResults.queue = [];
   vi.mocked(recalculateDerivedFinancials).mockClear();
   vi.mocked(updateSyncedData).mockClear();
+  vi.mocked(logActivity).mockClear();
 });
 
 describe('approveUser', () => {
@@ -70,5 +81,56 @@ describe('approveUser', () => {
 
     expect(await approveUser('gone')).toEqual({ success: false, error: 'notFound' });
     expect(updateSyncedData).not.toHaveBeenCalled();
+  });
+});
+
+describe('activity log', () => {
+  const scrapedPlaceholder = { id: 's1', email: null, externalPlayerId: 4711 };
+  const account = { id: 'a1', email: 'jan@example.com', externalPlayerId: null };
+
+  it('records who approved which user', async () => {
+    await approveUser('u1');
+    expect(logActivity).toHaveBeenCalledExactlyOnceWith(
+      'admin',
+      'approveUser',
+      { userId: 'u1', role: 'player' },
+      admin,
+    );
+  });
+
+  it('records a deletion', async () => {
+    batchResults.queue = [[[{ count: 0 }], [{ count: 0 }]]];
+
+    expect(await deleteUser('u2')).toEqual({ success: true });
+    expect(logActivity).toHaveBeenCalledExactlyOnceWith('admin', 'deleteUser', { userId: 'u2' }, admin);
+  });
+
+  it('records a link with the external id that moved', async () => {
+    batchResults.queue = [[[account], [scrapedPlaceholder]], []];
+
+    expect(await linkScrapedPlayer('a1', 's1')).toEqual({ success: true });
+    expect(logActivity).toHaveBeenCalledExactlyOnceWith(
+      'admin',
+      'linkScrapedPlayer',
+      { accountId: 'a1', scrapedId: 's1', externalPlayerId: 4711 },
+      admin,
+    );
+  });
+
+  it('records nothing when the action is refused or fails', async () => {
+    session.current = { user: { ...admin, role: 'player' } };
+    await approveUser('u1');
+    await deleteUser('u2');
+    await linkScrapedPlayer('a1', 's1');
+
+    session.current = { user: admin };
+    approvedRole.current = null;
+    await approveUser('gone');
+    await deleteUser(admin.id);
+    batchResults.queue = [[[{ count: 3 }], [{ count: 0 }]], [[account], [account]]];
+    await deleteUser('u2');
+    await linkScrapedPlayer('a1', 'a1');
+
+    expect(logActivity).not.toHaveBeenCalled();
   });
 });

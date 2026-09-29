@@ -7,6 +7,7 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from './db';
 import { matchPlayerResults, trainerPayments, users } from './db/schema';
 import { getSession } from './session';
+import { logActivity } from './activity-log';
 import { updateSyncedData } from './cache';
 import { recalculateDerivedFinancials } from './sync';
 import { approvalAffectsTrainerPayments } from './money-rules';
@@ -51,6 +52,7 @@ export async function approveUser(userId: string): Promise<AdminActionResult> {
 
     updateSyncedData();
     revalidatePath(USERS_PATH, 'page');
+    logActivity('admin', 'approveUser', { userId, role: approved.role }, session.user);
     return { success: true };
   } catch (error) {
     console.error('Failed to approve user:', error);
@@ -94,6 +96,7 @@ export async function deleteUser(userId: string): Promise<AdminActionResult> {
       .delete(users)
       .where(eq(users.id, userId));
     revalidatePath(USERS_PATH, 'page');
+    logActivity('admin', 'deleteUser', { userId }, session.user);
     return { success: true };
   } catch (error) {
     console.error('Failed to delete user:', error);
@@ -157,6 +160,9 @@ export async function linkScrapedPlayer(
     // moved result row.
     updateSyncedData();
     revalidatePath(USERS_PATH, 'page');
+    logActivity('admin', 'linkScrapedPlayer', {
+      accountId, scrapedId, externalPlayerId,
+    }, session.user);
     return { success: true };
   } catch (error) {
     console.error('Failed to link scraped player:', error);

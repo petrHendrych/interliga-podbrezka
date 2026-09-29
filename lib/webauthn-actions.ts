@@ -19,7 +19,9 @@ import type {
 } from '@simplewebauthn/server';
 import { db } from './db';
 import { users } from './db/schema';
+import type { UserPayload } from './auth';
 import { getSession, setSession } from './session';
+import { logActivity } from './activity-log';
 import { i18n } from './i18n/config';
 import {
   CHALLENGE_COOKIE_NAME,
@@ -241,6 +243,14 @@ Promise<PasskeyActionResult<PublicKeyCredentialRequestOptionsJSON>> {
   }
 }
 
+function passkeySignInFailed(
+  reason: 'verificationFailed' | 'notApproved',
+  owner?: UserPayload,
+): PasskeyActionResult {
+  logActivity('sign-in-failed', 'passkey', { reason }, owner);
+  return { success: false, error: reason };
+}
+
 export async function finishPasskeyAuthentication(
   response: AuthenticationResponseJSON,
   lang: unknown,
@@ -256,7 +266,8 @@ export async function finishPasskeyAuthentication(
     const credential = await findCredentialWithOwner(response.id);
     // One generic code for an unknown credential and a bad signature alike, so a failed
     // sign-in never tells the caller which accounts exist.
-    if (!credential) return { success: false, error: 'verificationFailed' };
+    if (!credential) return passkeySignInFailed('verificationFailed');
+    const owner = { id: credential.userId, name: credential.userName, role: credential.userRole };
 
     const verification = await verifyAuthenticationResponse({
       response,
@@ -272,21 +283,18 @@ export async function finishPasskeyAuthentication(
       },
     });
 
-    if (!verification.verified) return { success: false, error: 'verificationFailed' };
+    if (!verification.verified) return passkeySignInFailed('verificationFailed', owner);
 
-    if (!credential.isApproved) return { success: false, error: 'notApproved' };
+    if (!credential.isApproved) return passkeySignInFailed('notApproved', owner);
 
     await touchCredential(credential.credentialId, verification.authenticationInfo.newCounter);
 
-    await setSession({
-      id: credential.userId,
-      role: credential.userRole,
-      name: credential.userName,
-    });
+    await setSession(owner);
+    logActivity('sign-in', 'passkey', {}, owner);
     signedIn = true;
   } catch (error) {
     console.error('Passkey authentication failed:', error);
-    return { success: false, error: 'verificationFailed' };
+    return passkeySignInFailed('verificationFailed');
   } finally {
     await dropChallengeCookie();
   }

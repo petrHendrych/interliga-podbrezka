@@ -20,6 +20,7 @@ import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchFineTooltip } from '@/components/MatchFineTooltip';
 import { Tooltip } from '@/components/ui/tooltip';
+import { logPageView } from '@/lib/activity-log';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
@@ -27,6 +28,7 @@ interface PageProps {
 }
 
 export default async function PlayerDetailPage({ params, searchParams }: PageProps) {
+  await logPageView();
   const { id, lang: langParam } = await params;
   const { season: seasonParam, league: leagueParam } = await searchParams;
   const lang = langParam as Locale;

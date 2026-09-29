@@ -5,6 +5,7 @@ import { getSession } from '@/lib/session';
 import { listCredentialsForUser } from '@/lib/webauthn';
 import { formatDateOnly } from '@/lib/dates';
 import { PasskeyManager } from '@/components/settings/PasskeyManager';
+import { logPageView } from '@/lib/activity-log';
 
 const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg space-y-4';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
@@ -14,6 +15,7 @@ interface PageProps {
 }
 
 export default async function SettingsPage({ params }: PageProps) {
+  await logPageView();
   const { lang: langParam } = await params;
   const lang = langParam as Locale;
   const dict = await getDictionary(lang);

@@ -7,6 +7,7 @@ import { getPlayedMatchMoneySummaries } from '@/lib/match-money';
 import { formatDateOnly } from '@/lib/home-helpers';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
+import { logPageView } from '@/lib/activity-log';
 
 const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
@@ -35,6 +36,7 @@ function AmountChip({ label, amount }: { label: string; amount: number }) {
 }
 
 export default async function AdminMoneyPage({ params, searchParams }: PageProps) {
+  await logPageView();
   const { lang: langParam } = await params;
   const { season: seasonParam, league: leagueParam } = await searchParams;
   const lang = langParam as Locale;
