@@ -175,8 +175,10 @@ These rules are binding, not aspirational.
 - **Vitest** is the runner. `vitest.config.mts` declares two projects: `node` (environment
   `node`, for `lib/**`, `locales/**`, `proxy.ts`) and `dom` (jsdom + `@testing-library/react`,
   for `components/**`, `app/**`, `lib/hooks/**`, set up by `vitest.setup.dom.ts`).
-- Run with `nvm use` — the project pins Node 24 (`.nvmrc`, `.npmrc`, `engines`); `jsdom` needs
-  Node ≥ 24.15, whatever Next needs.
+- Node 24 is pinned by `.nvmrc`, the single source that CI (`actions/setup-node`), nvm, and mise
+  all read — mise only with `idiomatic_version_file_enable_tools` including `node`. pnpm runs
+  scripts on that same shell Node; do not add `useNodeVersion` back, or pnpm downloads a second
+  Node that drifts from it. `jsdom` needs Node ≥ 24.15, whatever Next needs.
 - `test.env` supplies a dummy `DATABASE_URL`, because `lib/db.ts` throws at import time
   without one; `neon()` opens no connection, so no test ever reaches a database.
 - `server-only` is aliased to `test/mocks/server-only.ts`; the real package throws outside
