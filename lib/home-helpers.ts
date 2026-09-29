@@ -17,11 +17,11 @@ import {
 } from '@/lib/db-utils';
 import {
   DEFAULT_SEASON_ID,
-  TEAM_SCORE_LIMIT,
   TOURNAMENT_FILTER_KEY,
   getLeagueConfig,
   getManualLeagues,
   getTeamIdsForSeason,
+  getTeamScoreLimit,
   isCurrentSeason,
 } from '@/lib/season-config';
 import { isUnderLimitEligible } from '@/lib/money-rules';
@@ -110,6 +110,7 @@ export function pickTopDonator(balances: PlayerSeasonBalance[]): TopDonator | nu
 export function collectBelowLimit(
   matches: MatchListItem[],
   leagueKey: string,
+  seasonId: number,
 ): BelowLimitMatch[] | null {
   // The Slovak Cup is exempt, so claiming "0x" there would advertise a rule that never applies.
   if (leagueKey === 'pohar') return null;
@@ -120,7 +121,7 @@ export function collectBelowLimit(
   ));
 
   return played
-    .filter((m) => m.teamTotalScore < TEAM_SCORE_LIMIT)
+    .filter((m) => m.teamTotalScore < getTeamScoreLimit(seasonId))
     .map((m) => ({
       id: m.id,
       name: m.awayName,
@@ -231,7 +232,7 @@ async function fetchHomeDataInternal(
     hasFinishedMatches = teamMatches.some((m) => m.teamTotalScore !== null);
   }
 
-  const belowLimitMatches = collectBelowLimit(matchList ?? [], leagueKey);
+  const belowLimitMatches = collectBelowLimit(matchList ?? [], leagueKey, seasonId);
 
   const eligibleBalances = eligibleForStats(playerBalances);
   const playersWithStats = toPlayersWithStats(eligibleBalances);

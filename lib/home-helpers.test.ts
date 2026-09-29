@@ -48,8 +48,10 @@ function balance(overrides: Partial<PlayerSeasonBalance> = {}): PlayerSeasonBala
 }
 
 describe('collectBelowLimit', () => {
+  const SEASON = 13;
+
   it('never shows the row for the Slovak Cup, which is exempt from the limit', () => {
-    expect(collectBelowLimit([match()], 'pohar')).toBeNull();
+    expect(collectBelowLimit([match()], 'pohar', SEASON)).toBeNull();
   });
 
   it('lists home Interliga and home tournament matches below the limit', () => {
@@ -59,11 +61,19 @@ describe('collectBelowLimit', () => {
       match({ id: 3, teamTotalScore: 3400, leagueId: tournamentId }),
     ];
 
-    expect(collectBelowLimit(matches, 'all')?.map((m) => m.id)).toEqual([1, 3]);
+    expect(collectBelowLimit(matches, 'all', SEASON)?.map((m) => m.id)).toEqual([1, 3]);
   });
 
-  it('ignores a team total of exactly the limit', () => {
-    expect(collectBelowLimit([match({ teamTotalScore: 3700 })], 'all')).toEqual([]);
+  it.each([
+    [12, 3699, true],
+    [12, 3700, false],
+    [12, 3720, false],
+    [13, 3720, true],
+    [13, 3749, true],
+    [13, 3750, false],
+  ])('season %i lists a team total of %i: %s', (seasonId, teamTotalScore, listed) => {
+    const below = collectBelowLimit([match({ teamTotalScore })], 'all', seasonId);
+    expect(below).toHaveLength(listed ? 1 : 0);
   });
 
   it('ignores away matches, which are exempt', () => {
@@ -73,25 +83,25 @@ describe('collectBelowLimit', () => {
         id: 2, isHome: false, leagueId: tournamentId, teamTotalScore: 3000,
       }),
     ];
-    expect(collectBelowLimit(away, 'all')).toEqual([]);
+    expect(collectBelowLimit(away, 'all', SEASON)).toEqual([]);
   });
 
   it('ignores an unplayed match with a zero team total', () => {
-    expect(collectBelowLimit([match({ teamTotalScore: 0 })], 'interliga')).toEqual([]);
+    expect(collectBelowLimit([match({ teamTotalScore: 0 })], 'interliga', SEASON)).toEqual([]);
   });
 
   it('keeps the empty row on screen for every filter the rule applies to', () => {
-    expect(collectBelowLimit([], 'interliga')).toEqual([]);
-    expect(collectBelowLimit([], 'turnaje')).toEqual([]);
-    expect(collectBelowLimit([], 'all')).toEqual([]);
+    expect(collectBelowLimit([], 'interliga', SEASON)).toEqual([]);
+    expect(collectBelowLimit([], 'turnaje', SEASON)).toEqual([]);
+    expect(collectBelowLimit([], 'all', SEASON)).toEqual([]);
   });
 
   it('still hides the row for the exempt Slovak Cup when nothing was played', () => {
-    expect(collectBelowLimit([], 'pohar')).toBeNull();
+    expect(collectBelowLimit([], 'pohar', SEASON)).toBeNull();
   });
 
   it('names the opponent, not our own team', () => {
-    expect(collectBelowLimit([match()], 'all')?.[0].name).toBe('Rakovice');
+    expect(collectBelowLimit([match()], 'all', SEASON)?.[0].name).toBe('Rakovice');
   });
 });
 

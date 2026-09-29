@@ -15,6 +15,8 @@ export interface ManualMatchListItem {
   isHome: boolean | null;
   teamTotalScore: number | null;
   opponentTotalScore: number | null;
+  teamMatchPoints: number | null;
+  opponentMatchPoints: number | null;
   playersCount: number;
 }
 
@@ -35,6 +37,8 @@ export interface ManualMatchDetail {
   opponent: string;
   isHome: boolean;
   opponentTotalScore: number | null;
+  teamMatchPoints: number | null;
+  opponentMatchPoints: number | null;
   players: ManualMatchPlayer[];
 }
 
@@ -62,6 +66,8 @@ export async function listManualMatches(): Promise<ManualMatchListItem[]> {
       isHome: matches.isHome,
       teamTotalScore: matches.teamTotalScore,
       opponentTotalScore: matches.opponentTotalScore,
+      teamMatchPoints: matches.teamMatchPoints,
+      opponentMatchPoints: matches.opponentMatchPoints,
       playersCount: sql<number>`(
         SELECT COUNT(*)::int FROM match_player_results mpr
         WHERE mpr.match_id = ${matches.externalId}
@@ -81,6 +87,8 @@ export async function listManualMatches(): Promise<ManualMatchListItem[]> {
     isHome: r.isHome ?? null,
     teamTotalScore: r.teamTotalScore ?? null,
     opponentTotalScore: r.opponentTotalScore ?? null,
+    teamMatchPoints: r.teamMatchPoints ?? null,
+    opponentMatchPoints: r.opponentMatchPoints ?? null,
     playersCount: Number(r.playersCount || 0),
   }));
 }
@@ -115,6 +123,8 @@ export async function getManualMatch(externalId: number): Promise<ManualMatchDet
     opponent: match.opponent ?? '',
     isHome: match.isHome ?? false,
     opponentTotalScore: match.opponentTotalScore ?? null,
+    teamMatchPoints: match.teamMatchPoints ?? null,
+    opponentMatchPoints: match.opponentMatchPoints ?? null,
     players: playerRows.map((p) => ({
       userId: String(p.userId),
       name: String(p.name),

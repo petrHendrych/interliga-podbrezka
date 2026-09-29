@@ -61,6 +61,7 @@ export const matchPlayerResults = pgTable('match_player_results', {
   isWorstPlayer: boolean('is_worst_player').default(false),
   isUnder600: boolean('is_under_600').default(false),
   isTeamUnderLimit: boolean('is_team_under_limit').default(false),
+  isTeamLoss: boolean('is_team_loss').default(false),
   // Counted within one season; 5+ triggers the success gathering.
   faultlessStreak: integer('faultless_streak').default(0),
   calculatedFine: numeric('calculated_fine').default('0'),

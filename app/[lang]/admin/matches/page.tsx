@@ -80,6 +80,8 @@ export default async function AdminMatchesPage({ params, searchParams }: PagePro
           home: t.home,
           away: t.away,
           opponentTotalScore: t.opponentTotalScore,
+          teamMatchPoints: t.teamMatchPoints,
+          opponentMatchPoints: t.opponentMatchPoints,
           optional: t.optional,
           players: t.players,
           playersHint: t.playersHint,
@@ -138,7 +140,7 @@ export default async function AdminMatchesPage({ params, searchParams }: PagePro
                     </p>
                   </div>
 
-                  <dl className="grid grid-cols-2 gap-2">
+                  <dl className="grid grid-cols-3 gap-2">
                     <div className="rounded-lg bg-surface p-2 text-center">
                       <dt className="block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
                         {t.teamTotal}
@@ -153,6 +155,16 @@ export default async function AdminMatchesPage({ params, searchParams }: PagePro
                       </dt>
                       <dd className="text-sm font-bold tabular-nums">
                         {match.opponentTotalScore ?? '—'}
+                      </dd>
+                    </div>
+                    <div className="rounded-lg bg-surface p-2 text-center">
+                      <dt className="block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
+                        {t.matchPoints}
+                      </dt>
+                      <dd className="text-sm font-bold tabular-nums">
+                        {match.teamMatchPoints !== null && match.opponentMatchPoints !== null
+                          ? `${match.teamMatchPoints} : ${match.opponentMatchPoints}`
+                          : '—'}
                       </dd>
                     </div>
                   </dl>

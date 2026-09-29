@@ -16,6 +16,7 @@ import {
   getSeasonIdForDate,
   getSeasonOpeningBalance,
   getTeamIdsForSeason,
+  getTeamScoreLimit,
   isManualMatchId,
 } from '@/lib/season-config';
 
@@ -108,6 +109,19 @@ describe('getSeasonAndLeagueConfig', () => {
   it('returns null when nothing matches', () => {
     expect(getSeasonAndLeagueConfig()).toBeNull();
     expect(getSeasonAndLeagueConfig(0, 0, 'Bundesliga')).toBeNull();
+  });
+});
+
+describe('getTeamScoreLimit', () => {
+  it.each([
+    [11, 3700],
+    [12, 3700],
+    [13, 3750],
+    [14, 3750],
+    [null, 3700],
+    [undefined, 3700],
+  ])('season %o has a limit of %i', (seasonId, limit) => {
+    expect(getTeamScoreLimit(seasonId)).toBe(limit);
   });
 });
 

@@ -97,8 +97,9 @@ When working in plan mode, the plan must be detailed and written to a file — n
 # Money Calculation Rules
 
 Rules for calculating gatherings (fines) and bonuses for each role. The fine thresholds are
-strict — a player on exactly 600 or a team on exactly 3700 is not penalised — while the bonus
-thresholds are inclusive: exactly 700 / 3800 / 3900 / 4000 already earns the bonus.
+strict — a player on exactly 600 or a team on exactly the limit (3750, 3700 before season 13)
+is not penalised — while the bonus thresholds are inclusive: exactly 700 / 3800 / 3900 / 4000
+already earns the bonus.
 `recalculateDerivedFinancials()` in `lib/sync.ts` is the only implementation; this section
 describes it, so the two change together.
 
@@ -107,10 +108,20 @@ describes it, so the two change together.
 - **Total < 600**: 1€ per game. Only for players who actually played (`total > 0`).
 - **Worst in Team**: 1€ per game — the lowest total among players with `total > 0`. On a tie
   every player on that minimum pays; there is no tie-break.
-- **Team under 3700**: 2€ per player who played (`total > 0`) when the team total is below
-  `TEAM_SCORE_LIMIT`. Applies **only at home**: home Interliga matches and home tournaments
-  (`TOURNAMENT_LEAGUE_IDS` — World Cup, Champions League). Every away match and the Slovak
-  Cup are exempt.
+- **Team under the limit**: 5€ per player who played (`total > 0`) when the team total is
+  below 3750. Both numbers are per season: from season 13 (2026/2027,
+  `TEAM_SCORE_LIMIT_FIRST_SEASON_ID`) the limit is `TEAM_SCORE_LIMIT` = 3750 and the fine
+  `TEAM_UNDER_LIMIT_FINE` = 5€; earlier seasons (and a match with no season) keep
+  `LEGACY_TEAM_SCORE_LIMIT` = 3700 and `LEGACY_TEAM_UNDER_LIMIT_FINE` = 2€. Read the limit
+  through `getTeamScoreLimit(seasonId)`. Applies **only at home**: home Interliga matches and
+  home tournaments (`TOURNAMENT_LEAGUE_IDS` — World Cup, Champions League). Every away match
+  and the Slovak Cup are exempt.
+- **Team Loss**: 5€ (`TEAM_LOSS_FINE`) per player who played (`total > 0`) when Podbrezová
+  loses on match points (`team_match_points < opponent_match_points`), whatever the player's
+  own score. Every competition, home and away. A draw is not a loss, and a match missing
+  either point value is never one. Flagged in `is_team_loss`. Opens in season 13
+  (`TEAM_LOSS_FIRST_SEASON_ID`); the losses of earlier seasons are not charged. Stacks with
+  every other fine, so a home loss under the limit costs 5€ + 5€.
 - **Faults (Sequential Fine)**: Sum of numeric order of faults. Formula: `(n * (n + 1)) / 2`.
   - 1 fault = 1€
   - 2 faults = 1€ + 2€ = 3€
@@ -126,7 +137,7 @@ describes it, so the two change together.
   history — never marked by hand — and stored in its own `streak_fine` column, never folded
   into `calculated_fine`.
 
-The first five land in `calculated_fine`; the success gathering lands in `streak_fine`. A
+The first six land in `calculated_fine`; the success gathering lands in `streak_fine`. A
 player's debt for one match row is always `calculated_fine + streak_fine`.
 
 **Bonuses (to be received):**
@@ -148,8 +159,8 @@ trainers each owe the full amount.
   single row per match with `amount = count * 10`.
 - **Clean Sweep** (`clean_sweep`): 10€ when the match ends **8:0 on match points** for
   Podbrezová. Home and away count alike. Only the exact 8:0 qualifies, so a 6:0 sweep in the
-  Slovak Cup does not, and a manually entered tournament match — which carries no match
-  points at all — never can. The rule opens in season 13 (2026/2027)
+  Slovak Cup does not. A manually entered tournament match counts once its match points are
+  entered in the form; without them it never can. The rule opens in season 13 (2026/2027)
   (`CLEAN_SWEEP_FIRST_SEASON_ID`); the 8:0 wins of earlier seasons are not charged.
 
 ### Role: Admin
@@ -233,7 +244,9 @@ at, and above the boundary:
 
 - Player total `599 / 600 / 601` (under-600 fine, strict) and `699 / 700 / 701` (40€ bonus,
   inclusive from 700).
-- Team total `3699 / 3700 / 3701` (2€ per player, strict), and `3799 / 3800` / `3899 / 3900` /
+- Team total `3749 / 3750 / 3751` in season 13+ (5€ per player, strict) and
+  `3699 / 3700 / 3701` in earlier seasons (2€), plus a total between the two limits that is
+  fined only from season 13; and `3799 / 3800` / `3899 / 3900` /
   `3999 / 4000` for the trainer `score_bonus`, which starts at each limit and where the higher
   tier replaces the lower one rather than stacking.
 - Faults `0, 1, 2, 3, n` against `(n * (n + 1)) / 2`.
@@ -245,8 +258,12 @@ at, and above the boundary:
   previous season followed by a clean opener is streak 1 and pays nothing, and a fault in the
   previous season does not offset the new one.
 - Worst-in-team **including a tie**: every player on the minimum pays, no tie-break.
-- Players with `total = 0` are excluded from under-600, worst-in-team, and the under-limit fine.
-- League scope for the under-3700 fine: home Interliga (penalised), away Interliga (exempt),
+- Players with `total = 0` are excluded from under-600, worst-in-team, the under-limit fine,
+  and the team-loss fine.
+- Team loss: a loss, a draw, a win, a cup loss on a split duel (`2.5 : 3.5`), an away loss, a
+  missing point value on either side, and a loss before season 13 — only the losses from
+  season 13 on pay, and they stack with the under-limit fine.
+- League scope for the under-limit fine: home Interliga (penalised), away Interliga (exempt),
   home tournament (penalised), away tournament (exempt), Slovak Cup (exempt), and a match
   whose `is_home` is NULL (exempt).
 - Trainer `zero_faults`: 10€ at 0 team faults with ≥ 6 players who played; no bonus at 5
@@ -301,7 +318,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Manually entered matches get external ids `>= 900_000_000` (`MANUAL_MATCH_ID_BASE`), so the id range alone says "not scraped".
 - `POHAR_LEAGUE_IDS` keeps the retired id `366` ("Finále") because rows in the database still carry it.
 - Manual leagues are excluded from every scrape-side lookup, so a scrape can never stamp a tournament id onto a match.
-- `TEAM_SCORE_LIMIT = 3700`. Only **home** matches are penalised under it — Interliga and tournaments alike; every away match and the Slovak Cup are not.
+- The team score limit is per season — `getTeamScoreLimit()`: 3750 from season 13, 3700 before. Never compare against `TEAM_SCORE_LIMIT` alone. Only **home** matches are penalised under it — Interliga and tournaments alike; every away match and the Slovak Cup are not.
 
 ### Matching Our Team
 - Match our team by **team id only**, never by club name. Name matching also catches B-team, youth, and women's fixtures — it once pulled ~1250 foreign fixtures into `matches` and mislabelled them as our Slovenský pohár season.
@@ -317,9 +334,11 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 
 ### Match Points
 - `matches.team_match_points` / `opponent_match_points` hold the match-point result ("body"),
-  scraped only: `teamResult.{home,away}.teamPoints` on a `match_detail` payload and
-  `homeTeamPoints` / `awayTeamPoints` on a `match_list` one. Manually entered matches leave
-  them NULL, so every rule keyed on them is silently skipped there.
+  scraped from `teamResult.{home,away}.teamPoints` on a `match_detail` payload and
+  `homeTeamPoints` / `awayTeamPoints` on a `match_list` one. Manually entered matches carry
+  them only when the admin fills both optional fields in the form (0–8 in half-point steps,
+  both or neither — `validateManualMatch()`); otherwise they stay NULL and every rule keyed on
+  them (`team_loss`, `clean_sweep`) is silently skipped there.
 - They are numeric, not integer: a drawn duel splits a point (`0.5` occurs in the cup).
 - Read them with `??`, never the `||` idiom used for the pin totals — `0` is the losing
   side's real result and the `clean_sweep` rule is built on it.

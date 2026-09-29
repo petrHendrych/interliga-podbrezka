@@ -13,6 +13,7 @@ export interface FineLabels {
     worstPlayer: string;
     under600: string;
     teamUnderLimit: string;
+    teamLoss: string;
     fullFaults: string;
     secondToLastFaults: string;
     specialFaults: string;
@@ -28,6 +29,7 @@ export interface MatchFineTooltipProps {
   isWorstPlayer: boolean;
   isUnder600: boolean;
   isTeamUnderLimit: boolean;
+  isTeamLoss: boolean;
   fullFaultsCount: number;
   secondToLastFaultsCount: number;
   specialFaultsCount: number;
@@ -43,6 +45,7 @@ export function MatchFineTooltip({
   isWorstPlayer,
   isUnder600,
   isTeamUnderLimit,
+  isTeamLoss,
   fullFaultsCount,
   secondToLastFaultsCount,
   specialFaultsCount,
@@ -86,6 +89,9 @@ export function MatchFineTooltip({
   }
   if (isTeamUnderLimit) {
     reasonsList.push(labels.reasons.teamUnderLimit);
+  }
+  if (isTeamLoss) {
+    reasonsList.push(labels.reasons.teamLoss);
   }
   if (faultlessStreak !== undefined && faultlessStreak >= 5) {
     reasonsList.push(interpolate(labels.reasons.streak, { count: faultlessStreak }));

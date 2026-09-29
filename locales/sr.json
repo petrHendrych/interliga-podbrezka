@@ -40,7 +40,7 @@
       "bonusesTotal": "Bonusi ukupno",
       "bonusesToPay": "Treba isplatiti",
       "topDonator": "Najveći donator",
-      "belowLimit": "Ispod limita (3700)",
+      "belowLimit": "Ispod limita ({limit})",
       "nextPickup": "Sledeće podizanje novca: {date}",
       "withdrawals": "Podizanja",
       "previousSeason": "Iz prošle sezone"
@@ -132,6 +132,9 @@
       "home": "Kod kuće",
       "away": "U gostima",
       "opponentTotalScore": "Rezultat protivnika",
+      "teamMatchPoints": "Naši poeni",
+      "opponentMatchPoints": "Poeni protivnika",
+      "matchPoints": "Poeni",
       "optional": "nije obavezno",
       "players": "Postava",
       "playersHint": "Kod izmene dodaj još jednog igrača, svako ima svoje bacanje.",
@@ -160,6 +163,7 @@
         "noPlayers": "Dodaj bar jednog igrača i svakom izaberi ime.",
         "duplicatePlayer": "Svaki igrač može biti u postavi samo jednom.",
         "invalidScore": "Rezultat i greške moraju biti celi nenegativni brojevi.",
+        "invalidMatchPoints": "Poeni moraju biti od 0 do 8 (po pola poena) i oba polja popunjena.",
         "notFound": "Meč nije pronađen.",
         "notManual": "Ovaj meč je došao iz sinhronizacije, ne može da se menja.",
         "unknown": "Došlo je do greške, pokušaj ponovo."
@@ -238,7 +242,8 @@
       "faults": "{count} grešaka",
       "worstPlayer": "najslabiji igrač",
       "under600": "ispod 600",
-      "teamUnderLimit": "tim ispod 3700",
+      "teamUnderLimit": "tim ispod {limit}",
+      "teamLoss": "poraz tima",
       "fullFaults": "{count}x greška u pune",
       "secondToLastFaults": "{count}x pretposlednji hitac",
       "specialFaults": "{count}x specijalna greška",
@@ -329,9 +334,14 @@
           "note": "Za svaku grešku u pune i za svako propušteno pretposlednje bacanje."
         },
         {
-          "title": "Tim ispod 3700",
-          "amount": "2 €",
-          "note": "Za svakog igrača koji je igrao na meču. Važi samo za domaće mečeve Interlige i domaće turnire. Tačno 3700 je u redu, kažnjava se tek manje."
+          "title": "Tim ispod 3750",
+          "amount": "5 €",
+          "note": "Za svakog igrača koji je igrao na meču. Važi samo za domaće mečeve Interlige i domaće turnire. Tačno 3750 je u redu, kažnjava se tek manje."
+        },
+        {
+          "title": "Poraz tima",
+          "amount": "5 €",
+          "note": "Za svakog igrača koji je igrao na meču kad tim izgubi na poene — bez obzira na tvoj rezultat. Kod kuće i u gostima, u svim takmičenjima. Nerešeno se ne računa."
         },
         {
           "title": "Mečevi bez greške",

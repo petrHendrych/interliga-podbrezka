@@ -28,6 +28,7 @@ const errors: Record<ManualMatchError, string> = {
   noPlayers: 'Chýbajú hráči',
   duplicatePlayer: 'Hráč je dvakrát',
   invalidScore: 'Neplatný výkon',
+  invalidMatchPoints: 'Neplatné body',
   notFound: 'Zápas sa nenašiel',
   notManual: 'Zápas nie je manuálny',
   unknown: 'Neznáma chyba',
@@ -46,6 +47,8 @@ const translations: ManualMatchFormTranslations = {
   home: 'Doma',
   away: 'Vonku',
   opponentTotalScore: 'Skóre súpera',
+  teamMatchPoints: 'Naše body',
+  opponentMatchPoints: 'Body súpera',
   optional: 'nepovinné',
   players: 'Hráči',
   playersHint: 'Prázdne riadky sa ignorujú',
@@ -174,5 +177,40 @@ describe('saving', () => {
 
     expect(await screen.findByText(errors.duplicatePlayer)).toBeInTheDocument();
     expect(screen.getByLabelText(translations.opponent)).toHaveValue('Rakovice');
+  });
+
+  it('sends half match points as numbers', async () => {
+    vi.mocked(saveManualMatch).mockResolvedValue({ success: true, matchId: 900_000_001 });
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText(/Naše body/), { target: { value: '4.5' } });
+    fireEvent.change(screen.getByLabelText(/Body súpera/), { target: { value: '3.5' } });
+    fireEvent.click(screen.getByRole('button', { name: translations.save }));
+
+    await vi.waitFor(() => expect(saveManualMatch).toHaveBeenCalledWith(
+      expect.objectContaining({ teamMatchPoints: 4.5, opponentMatchPoints: 3.5 }),
+    ));
+  });
+
+  it('sends empty match points as null', async () => {
+    vi.mocked(saveManualMatch).mockResolvedValue({ success: true, matchId: 900_000_001 });
+    renderForm();
+
+    fireEvent.click(screen.getByRole('button', { name: translations.save }));
+
+    await vi.waitFor(() => expect(saveManualMatch).toHaveBeenCalledWith(
+      expect.objectContaining({ teamMatchPoints: null, opponentMatchPoints: null }),
+    ));
+  });
+
+  it('renders the match-point error and keeps the entered points', async () => {
+    vi.mocked(saveManualMatch).mockResolvedValue({ success: false, error: 'invalidMatchPoints' });
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText(/Naše body/), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: translations.save }));
+
+    expect(await screen.findByText(errors.invalidMatchPoints)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Naše body/)).toHaveValue(2);
   });
 });

@@ -12,7 +12,8 @@ Project is deployed on Vercel with URL: https://interliga-podbrezka.vercel.app/.
 **Each player can watch there his annual results and faults money gathering fines for the accounting. Money is gathered by the following rules:**
 - score under 600 -> 1€
 - last from the team -> 1€
-- team under 3700 in a home match (Interliga or tournament) -> 2€ for each player who played (3700 itself is fine)
+- team under 3750 in a home match (Interliga or tournament) -> 5€ for each player who played (3750 itself is fine; until 2025/2026 it was 3700 and 2€)
+- team loses the match on match points (any competition, home or away) -> 5€ for each player who played, from 2026/2027
 - fault into playing full -> 5€ (marked manually default to 0)
 - each fault costs the same amount as the numeric order of the fault -> 1 fault = 1€, 2 faults = 1€ + 2€ = 3€,...
 - missing 2nd to last throw -> 5€ (marked manually default to 0)
