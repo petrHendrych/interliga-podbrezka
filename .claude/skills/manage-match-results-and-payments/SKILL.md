@@ -1,23 +1,23 @@
 ---
 name: manage-match-results-and-payments
-description: Mark special misses (fault into full, missed 2nd-to-last throw) and settle money for a played match — player fines, player bonuses, trainer payments. Use when asked to manage match results, record misses, mark a fine or bonus paid, or check who still owes for a match.
-trigger: "user asks to manage match results, mark special misses, update payment status, or record fines/bonuses for a match"
+description: Record special misses (fault into full, missed 2nd-to-last throw) for a played match. Use when asked to manage match results or record misses. Marking fines, bonuses or trainer payments paid is done in the app under /admin/money, not here.
+trigger: "user asks to manage match results or mark special misses for a match"
 ---
 
-# Manage Match Results and Payments
+# Record Special Misses
 
-From the shell, all reads and writes go through one driver: `scripts/match-money.ts`.
-It has three subcommands — `list`, `sheet`, `apply` — and every one prints JSON to
-stdout and nothing else. Admins can also flip the paid flags (player fines, player
-bonuses, trainer payments) in the app under *Pokuty a platby* (`/admin/money`); the
-sheet has per-section and match-wide mark-all-paid buttons. That path goes through
-`applyMatchMoney()` in `lib/match-money-actions.ts`, which shares
-`applyMatchMoneyUpdates()` with this driver.
-Special misses have no UI; this driver is the only way to enter them.
+Special misses — **fault into playing full** and **missing the 2nd-to-last throw**,
+5€ each — are the only money inputs a human enters, and they have no UI. They go
+through one driver: `scripts/match-money.ts`. It has three subcommands — `list`,
+`sheet`, `apply` — and every one prints JSON to stdout and nothing else.
+
+Paid flags (player fines, player bonuses, trainer payments) are settled by the admin
+in the app under *Pokuty a platby* (`/admin/money`). Do not offer to mark anything
+paid from here; if the user asks, point them to that page.
 
 Paths are relative to the repo root. The driver reads `.env.local` for
-`DATABASE_URL` and runs on the shell's default Node (verified on 18 and 22) — the
-`nvm use 22` this repo needs elsewhere is only for the Next build and lint.
+`DATABASE_URL`, plus `NEXT_PUBLIC_APP_URL` and `CRON_SECRET` to refresh the live
+cache and send notifications over HTTP. It runs on the repo's pinned Node.
 
 ## The three commands
 
@@ -25,19 +25,15 @@ Paths are relative to the repo root. The driver reads `.env.local` for
 # Played matches, newest first. Unplayed fixtures are already filtered out.
 npx tsx scripts/match-money.ts list --limit 4
 
-# Only played matches that still have unpaid fines, bonuses or trainer payments.
-npx tsx scripts/match-money.ts list --unpaid-only --limit 4
-
 # Everything about one match: match info, every player row, trainer payments, totals.
 npx tsx scripts/match-money.ts sheet --match-id 44568
 
 # Write. Payload on stdin. Omitted fields keep their current value.
-npx tsx scripts/match-money.ts apply --match-id 44568 <<'JSON'
+npx tsx scripts/match-money.ts apply --match-id 44568 --notify <<'JSON'
 {
   "players": [
-    { "userId": "849c7762-9e50-4797-9594-c5041818edaf", "fullFaults": 1, "isPaid": true }
-  ],
-  "trainerPayments": [ { "id": 8, "isPaid": true } ]
+    { "userId": "849c7762-9e50-4797-9594-c5041818edaf", "fullFaults": 1, "secondToLastFaults": 0 }
+  ]
 }
 JSON
 ```
@@ -46,11 +42,8 @@ JSON
 writes nothing. `apply` returns `{ changes, recalculated, sheet }`: `changes` is a
 human-readable before/after list, `sheet` is the state after the write.
 
-`apply` also accepts `--notify`. It tells the affected players what changed —
-whoever gained a fine or a bonus gets their own notification with the amount. If
-the write moved nobody's total (marking fines paid, for instance), everyone gets
-one "finances updated" notification instead. Pass it on the **last** apply of an
-editing session only — one notification per session, never one per write.
+`--notify` tells every player whose fine changed, with the new amount. Pass it on
+the one `apply` of a match, never on a `--dry-run`.
 
 ## Workflow
 
@@ -59,52 +52,38 @@ editing session only — one notification per session, never one per write.
    Older matches: the user gives the `external_id` directly.
 2. **Show the roster once.** Run `sheet --match-id <id>` and render a compact
    markdown table: player, total, faults, special misses (full / 2nd-to-last),
-   fine €, bonus €, fine paid?, bonus paid?. Then list trainer payments and totals.
-3. **Ask for deltas, not a questionnaire.** One message: "reply with only what
-   changes, e.g. `Magala 1 full; Gorecký fine paid; trainer score_bonus paid`."
+   fine €, fine paid?.
+3. **Ask for the misses in one message**, e.g. `Magala 1 full; Bína 1 2nd`.
    Do not iterate player by player.
-4. **Apply misses first, in one call.** If any special-miss count changed, send
-   that payload alone (no `isPaid` fields) and read the new fine amounts from the
-   returned `sheet` — see the ordering gotcha below.
-5. **Confirm the new amounts, then apply the payment flags** in a second call.
-   If nothing changed misses, steps 4 and 5 collapse into one call.
-6. **Summarize** from the returned `changes` array, plus the new totals.
+4. **Apply them in one call** with `--notify`, only `fullFaults` /
+   `secondToLastFaults` fields.
+5. **Summarize** from the returned `changes` array: each player's misses and fine
+   before → after, and the match's new fine total.
 
 ## Money rules that decide the questions
 
-- Special misses are the only fields a human enters: **fault into playing full**
-  and **missing the 2nd-to-last throw**, 5€ each. Everything else — sequential
-  fault fines, worst-in-team, under-600, under-3700, the 5-game faultless streak (counted per season),
-  the >700 bonus, and every trainer payment row — is derived and recalculated
-  automatically. Never ask the user for those numbers.
-- Trainer payment condition types in the database are `score_bonus`,
-  `zero_faults`, `elite_player` and `clean_sweep` (10€ for an 8:0 win on match
-  points, home or away, from season 13 on). `elite_player` is paid to the player
-  directly, so ask about it only if the user brings it up.
+- Everything besides the two special misses — sequential fault fines,
+  worst-in-team, under-600, under-3700, the 5-game faultless streak (counted per
+  season), the 700+ bonus, and every trainer payment row — is derived and
+  recalculated automatically. Never ask the user for those numbers.
 
 ## Gotchas
 
 - **Recalculation does not spare paid player rows.** The `UPDATE
-  match_player_results` in `recalculateDerivedFinancials()` (`lib/sync.ts:152`)
-  has no `is_paid` guard — only `trainer_payments` rows are protected. Marking a
-  miss after a fine was marked paid silently changes the amount owed on a settled
-  row. Verified: adding one full-fault to a player whose 1€ fine was already
-  marked paid left the row paid with `calculated_fine` now 6€. Hence: misses
-  first, confirm the new amount, then the paid flag.
-- **`apply` is a read-modify-write.** Fields you omit are preserved, so sending
-  `{"isPaid": true}` alone can no longer wipe `is_bonus_paid`. The old scripts
-  required both flags on every call and clobbered whichever you forgot.
+  match_player_results` in `recalculateDerivedFinancials()` (`lib/sync.ts`) has no
+  `is_paid` guard — only `trainer_payments` rows are protected. Adding a miss to a
+  player whose fine was already marked paid in the app leaves the row paid with a
+  higher amount, so the extra 5€ is never collected. If the sheet shows
+  `is_paid: true` for a player getting a miss, tell the user before applying so
+  they can unmark it in `/admin/money` afterwards.
 - **`list` returns played matches only.** The `matches` table also holds
-  scheduled fixtures — 22 of 53 rows at the time of writing, the newest dated
-  2027 — and they sort to the top. `getPlayedMatches()` filters on
+  scheduled fixtures, and they sort to the top. `getPlayedMatches()` filters on
   `team_total_score IS NOT NULL`; do not reintroduce an unfiltered listing.
-- **`AskUserQuestion` caps at 4 options.** There are 31 played matches. Offer the
-  4 newest; anything older comes in as an explicit match id.
+- **`AskUserQuestion` caps at 4 options.** Offer the 4 newest; anything older
+  comes in as an explicit match id.
 - **One `apply` call = at most one recalculation**, and only when a miss count
   actually changed (`recalculated` in the response says so). Splitting a match
   across many calls re-runs a full cross-season recalculation each time.
-- **Bonus flags are guarded**: `isBonusPaid: true` on a player with
-  `bonus_received: 0` fails with an error instead of recording a phantom payout.
 
 ## Troubleshooting
 
@@ -112,7 +91,7 @@ editing session only — one notification per session, never one per write.
 |---|---|
 | `Error: No match with external id 999999.` | Wrong id. Ids come from `list` (`external_id`), not from a row index. |
 | `Error: User <uuid> has no result row in match <id>.` | The player did not play that match, or the uuid came from another match's sheet. |
-| `Error: Šimon Magala has no bonus in this match, so isBonusPaid cannot be true.` | Bonus is derived from a >700 total; there is nothing to pay out. |
 | `Error: apply expects the payload JSON on stdin` | `apply` was run without a heredoc or pipe. |
 | `Error: stdin is not valid JSON` | Heredoc was interpolated by the shell. Quote the delimiter: `<<'JSON'`. |
-| Connection / auth error from Neon | `.env.local` missing or `DATABASE_URL` stale; the driver loads it with `dotenv` and no fallback. |
+| `DATABASE_URL is not defined in environment variables` | `.env.local` is missing or has no `DATABASE_URL`. It is a sensitive variable on Vercel, so `vercel env pull` returns it blank — copy it from the Neon console. |
+| `Cache revalidation failed with status 401` / nobody notified | `CRON_SECRET` in `.env.local` differs from Vercel's, or the deployment predates a secret change. |
