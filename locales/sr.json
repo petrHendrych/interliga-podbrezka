@@ -257,6 +257,18 @@
     "noResults": "Nema rezultata za ovog igrača.",
     "errorLoading": "Greška pri učitavanju podataka o igraču"
   },
+  "trainerDetail": {
+    "totalDue": "Ukupno",
+    "paid": "Plaćeno",
+    "unpaid": "Preostalo za plaćanje",
+    "paymentsTitle": "Uplate po utakmicama",
+    "teamTotal": "Tim ukupno",
+    "payment": "Uplata",
+    "status": "Status",
+    "partialStatus": "Preostalo {amount} €",
+    "noResults": "U ovoj sezoni još nije odigrana nijedna utakmica.",
+    "errorLoading": "Greška pri učitavanju trenera"
+  },
   "auth": {
     "signInTitle": "Prijava",
     "signInDescription": "Unesi svoje podatke za pristup nalogu",

@@ -6,6 +6,7 @@ import { runScrapingJob } from './scraper';
 import { notifyAdmins, sendMatchResultsPush, sendPersonalMoneyPushes } from './push';
 import { dailyDedupeKey } from './push-digest';
 import { getSession } from './session';
+import { logActivity } from './activity-log';
 
 /**
  * Server action to manually trigger the scraping job.
@@ -28,6 +29,7 @@ export async function triggerSync() {
     await sendMatchResultsPush(outcome.newResults);
     await sendPersonalMoneyPushes(outcome.personalPushes);
 
+    logActivity('admin', 'triggerSync', { newResults: outcome.newResults.length }, session.user);
     return { success: true };
   } catch (error) {
     console.error('Manual sync failed:', error);

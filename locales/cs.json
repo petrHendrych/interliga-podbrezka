@@ -257,6 +257,18 @@
     "noResults": "Tento hráč nemá žádné výsledky.",
     "errorLoading": "Chyba při načítání hráče"
   },
+  "trainerDetail": {
+    "totalDue": "Celkem",
+    "paid": "Zaplaceno",
+    "unpaid": "Zbývá zaplatit",
+    "paymentsTitle": "Platby za zápasy",
+    "teamTotal": "Tým celkem",
+    "payment": "Platba",
+    "status": "Stav",
+    "partialStatus": "Zbývá {amount} €",
+    "noResults": "V této sezóně zatím nebyl odehrán žádný zápas.",
+    "errorLoading": "Chyba při načítání trenéra"
+  },
   "auth": {
     "signInTitle": "Přihlášení",
     "signInDescription": "Zadej své údaje pro přístup k účtu",

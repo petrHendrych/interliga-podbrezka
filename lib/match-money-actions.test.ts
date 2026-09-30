@@ -8,6 +8,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('./session', () => ({ getSession: async () => session.current }));
 vi.mock('./cache', () => ({ updateSyncedData: vi.fn() }));
 vi.mock('./push', () => ({ sendPersonalMoneyPushes: vi.fn() }));
+vi.mock('./activity-log', () => ({ logActivity: vi.fn() }));
 vi.mock('./match-money', () => {
   class MatchMoneyError extends Error {
     constructor(message: string, readonly code: string = 'unknown') {
@@ -24,6 +25,7 @@ vi.mock('./match-money', () => {
 const { revalidatePath } = await import('next/cache');
 const { updateSyncedData } = await import('./cache');
 const { sendPersonalMoneyPushes } = await import('./push');
+const { logActivity } = await import('./activity-log');
 const { applyMatchMoneyUpdates, MatchMoneyError } = await import('./match-money');
 const { applyMatchMoney } = await import('./match-money-actions');
 
@@ -45,6 +47,7 @@ beforeEach(() => {
   vi.mocked(sendPersonalMoneyPushes).mockClear();
   vi.mocked(updateSyncedData).mockClear();
   vi.mocked(revalidatePath).mockClear();
+  vi.mocked(logActivity).mockClear();
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -74,6 +77,7 @@ describe('applyMatchMoney', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/admin/money', 'page');
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/admin/money/[matchId]', 'page');
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/player/[id]', 'page');
+    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/trainer/[id]', 'page');
   });
 
   it('delivers the settlement pushes the write worked out, after invalidating', async () => {
@@ -111,5 +115,32 @@ describe('applyMatchMoney', () => {
     expect(await applyMatchMoney(44568, updates)).toEqual({ success: false, error: 'unknown' });
     expect(updateSyncedData).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('records which admin changed which match, with the number of changes', async () => {
+    const admin = { id: 'admin-1', name: 'Peter Admin', role: 'admin' };
+    session.current = { user: admin };
+    vi.mocked(applyMatchMoneyUpdates).mockResolvedValueOnce({
+      ...applied(), changes: [{}, {}],
+    } as unknown as Awaited<ReturnType<typeof applyMatchMoneyUpdates>>);
+
+    await applyMatchMoney(44568, updates);
+    expect(logActivity).toHaveBeenCalledExactlyOnceWith(
+      'admin',
+      'applyMatchMoney',
+      { matchId: 44568, changes: 2 },
+      admin,
+    );
+  });
+
+  it('records nothing for a refused or failed write', async () => {
+    session.current = { user: { role: 'player' } };
+    await applyMatchMoney(44568, updates);
+
+    session.current = { user: { role: 'admin' } };
+    vi.mocked(applyMatchMoneyUpdates).mockRejectedValueOnce(new MatchMoneyError('guard', 'invalid'));
+    await applyMatchMoney(44568, updates);
+
+    expect(logActivity).not.toHaveBeenCalled();
   });
 });

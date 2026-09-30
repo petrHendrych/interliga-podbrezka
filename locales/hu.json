@@ -257,6 +257,18 @@
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
     "errorLoading": "Hiba a játékos adatainak betöltésekor"
   },
+  "trainerDetail": {
+    "totalDue": "Összesen",
+    "paid": "Kifizetve",
+    "unpaid": "Még fizetendő",
+    "paymentsTitle": "Befizetések mérkőzésenként",
+    "teamTotal": "Csapat összesen",
+    "payment": "Befizetés",
+    "status": "Állapot",
+    "partialStatus": "Még {amount} €",
+    "noResults": "Ebben a szezonban még nem volt lejátszott mérkőzés.",
+    "errorLoading": "Hiba az edző betöltésekor"
+  },
   "auth": {
     "signInTitle": "Bejelentkezés",
     "signInDescription": "Add meg az adataidat a fiókodhoz való hozzáféréshez",

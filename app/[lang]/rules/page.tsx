@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { RuleList } from '@/components/rules/RuleList';
+import { logPageView } from '@/lib/activity-log';
 
 const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg space-y-4';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function RulesPage({ params }: PageProps) {
+  await logPageView();
   const { lang: langParam } = await params;
   const dict = await getDictionary(langParam as Locale);
   const t = dict.rules;

@@ -314,6 +314,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 ### Player Photos
 - Photos live in `public/players/`; the mapping lives in `lib/player-images.ts`. Adding a photo means adding the file **and** an entry there — nothing scans the directory.
 - Keying is by stable identifier, never by name: scraper spelling changes and surnames collide. Players use their external (scraper) id (`IMAGES_BY_EXTERNAL_ID`); trainers and admins have no external id, so they use their `users.id` (`IMAGES_BY_USER_ID`).
+- The same goes for detail pages: `/[lang]/player/[id]` takes the external id, `/[lang]/trainer/[id]` takes the trainer's `users.id` (uuid, checked by `isUuid()` before it reaches a `::uuid` cast). The trainer page's SQL only selects rows; `buildTrainerMatchRows()` in `lib/trainer-matches.ts` groups them per match and does all the summing, so the totals stay unit tested.
 
 ### Seasons, Leagues, Ids
 - `lib/season-config.ts` is the single source of truth for seasons, leagues, team ids, and id ranges. Never hardcode a league or team id elsewhere; derive it from the helpers (`getLeagueIdsForKey`, `getTeamIdsForSeason`, …).

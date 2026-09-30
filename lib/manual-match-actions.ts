@@ -7,6 +7,7 @@ import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import { db, sql } from './db';
 import { matches, matchPlayerResults, trainerPayments } from './db/schema';
 import { getSession } from './session';
+import { logActivity } from './activity-log';
 import { updateSyncedData } from './cache';
 import { recalculateAndDiffPlayerMoney, recalculateDerivedFinancials } from './sync';
 import { sendPersonalMoneyPushes } from './push';
@@ -163,6 +164,9 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
     updateSyncedData();
     revalidatePath(MATCHES_PATH, 'page');
     await sendPersonalMoneyPushes(personalPushes);
+    logActivity('admin', 'saveManualMatch', {
+      matchId, mode: input.externalId === undefined ? 'create' : 'edit',
+    }, session.user);
     return { success: true, matchId };
   } catch (error) {
     console.error('Failed to save manual match:', error);
@@ -201,6 +205,7 @@ export async function deleteManualMatch(externalId: number): Promise<ManualMatch
 
     updateSyncedData();
     revalidatePath(MATCHES_PATH, 'page');
+    logActivity('admin', 'deleteManualMatch', { matchId: externalId }, session.user);
     return { success: true, matchId: externalId };
   } catch (error) {
     console.error('Failed to delete manual match:', error);

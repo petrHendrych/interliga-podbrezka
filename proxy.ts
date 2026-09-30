@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { match as matchLocale } from '@formatjs/intl-localematcher';
 import Negotiator from 'negotiator';
+import { ACTIVITY_PATH_HEADER } from './lib/activity-header';
 import { decrypt, encrypt, type SessionPayload } from './lib/auth';
 import { i18n } from './lib/i18n/config';
 import {
@@ -115,7 +116,9 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}`, req.nextUrl));
   }
 
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set(ACTIVITY_PATH_HEADER, `${pathname}${req.nextUrl.search}`);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   await refreshSessionCookie(response, session);
   return response;
 }

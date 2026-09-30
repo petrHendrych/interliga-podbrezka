@@ -6,7 +6,8 @@ import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { users } from './db/schema';
 import { hashPassword, verifyPassword } from './auth';
-import { setSession, clearSession } from './session';
+import { getSession, setSession, clearSession } from './session';
+import { logActivity } from './activity-log';
 import { i18n } from './i18n/config';
 import { notifyAdmins } from './push';
 
@@ -87,16 +88,13 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
     return { error: 'dbError' };
   }
 
-  if (!user || !user.passwordHash) {
-    return { error: 'invalidCredentials' };
-  }
-
-  const isValid = await verifyPassword(password, user.passwordHash);
-  if (!isValid) {
+  if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
+    logActivity('sign-in-failed', 'password', { reason: 'invalidCredentials', email });
     return { error: 'invalidCredentials' };
   }
 
   if (!user.isApproved) {
+    logActivity('sign-in-failed', 'password', { reason: 'notApproved', email }, user);
     return { error: 'notApproved' };
   }
 
@@ -106,12 +104,15 @@ export async function signIn(prevState: ActionState, formData: FormData): Promis
     name: user.name,
   });
 
+  logActivity('sign-in', 'password', {}, user);
   redirect(`/${lang}`);
   return null; // Should not reach here due to redirect
 }
 
 export async function signOut(lang?: string) {
+  const session = await getSession();
   await clearSession();
+  logActivity('sign-out', null, {}, session?.user);
   redirect(`/${resolveLocale(lang)}/sign-in`);
 }
 

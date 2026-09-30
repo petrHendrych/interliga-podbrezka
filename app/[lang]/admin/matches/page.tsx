@@ -11,6 +11,7 @@ import {
 } from '@/lib/manual-matches';
 import { formatDateOnly } from '@/lib/home-helpers';
 import { leagueLabelForId, leagueLabelForKey } from '@/lib/i18n/league-labels';
+import { logPageView } from '@/lib/activity-log';
 import { ManualMatchForm, type ManualSeasonOption } from './ManualMatchForm';
 import { DeleteMatchButton } from './DeleteMatchButton';
 
@@ -27,6 +28,7 @@ interface PageProps {
 }
 
 export default async function AdminMatchesPage({ params, searchParams }: PageProps) {
+  await logPageView();
   const { lang: langParam } = await params;
   const { edit } = await searchParams;
   const lang = langParam as Locale;

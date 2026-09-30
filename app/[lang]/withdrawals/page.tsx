@@ -5,6 +5,7 @@ import { getSession } from '@/lib/session';
 import { listWithdrawals } from '@/lib/bank-withdrawals';
 import { formatDateOnly, getStartOfBratislavaToday } from '@/lib/home-helpers';
 import { getSeasonConfig } from '@/lib/season-config';
+import { logPageView } from '@/lib/activity-log';
 import { WithdrawalForm } from './WithdrawalForm';
 import { DeleteWithdrawalButton } from './DeleteWithdrawalButton';
 
@@ -20,6 +21,7 @@ interface PageProps {
 }
 
 export default async function WithdrawalsPage({ params }: PageProps) {
+  await logPageView();
   const { lang: langParam } = await params;
   const lang = langParam as Locale;
   const dict = await getDictionary(lang);
