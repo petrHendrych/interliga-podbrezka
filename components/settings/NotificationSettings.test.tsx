@@ -1,8 +1,10 @@
 import {
   afterEach, beforeEach, describe, expect, it, vi,
 } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { PushNotificationToggle } from '@/components/pwa/PushNotificationToggle';
+import {
+  fireEvent, render, screen, waitFor,
+} from '@testing-library/react';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { savePushSubscription } from '@/lib/push-actions';
 import sk from '@/locales/sk.json';
 
@@ -11,7 +13,7 @@ vi.mock('@/lib/push-actions', () => ({
   removePushSubscription: vi.fn().mockResolvedValue({ success: true }),
 }));
 
-const t = sk.pwa;
+const t = sk.settings.notifications;
 
 const subscription = {
   endpoint: 'https://push.example.com/abc',
@@ -41,6 +43,10 @@ function stubPush({ existing = false, permission = 'default' as NotificationPerm
   });
 }
 
+function renderSettings() {
+  return render(<NotificationSettings lang="sk" translations={t} />);
+}
+
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'BPqyxNi0RmV0GNbBfOPQHsGv4i3xk917tw6uVrUGhoyl2RYEPGzVk21lIPy9GctqkV5iFxcIwt0rB_F6YUcGar4');
 });
@@ -53,38 +59,64 @@ afterEach(() => {
   Reflect.deleteProperty(window.navigator, 'serviceWorker');
 });
 
-describe('PushNotificationToggle', () => {
-  it('renders nothing where push is unsupported', () => {
-    const { container } = render(
-      <PushNotificationToggle lang="sk" translations={t} className="row" />,
-    );
+describe('NotificationSettings', () => {
+  it('explains that the browser cannot receive notifications where push is unsupported', () => {
+    renderSettings();
 
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.getByText(t.unsupported)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('offers to enable notifications when none are subscribed', async () => {
+  it('shows the device as off and offers to enable notifications', async () => {
     stubPush();
-    render(<PushNotificationToggle lang="sk" translations={t} className="row" />);
+    renderSettings();
 
-    const button = await screen.findByRole('button', { name: t.notificationsEnable });
+    const button = await screen.findByRole('button', { name: t.enable });
     expect(button).toBeEnabled();
     expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText(t.device)).toBeInTheDocument();
+    expect(screen.getByText(t.off)).toBeInTheDocument();
   });
 
-  it('offers to disable notifications once subscribed', async () => {
+  it('shows the device as on and offers to disable once subscribed', async () => {
     stubPush({ existing: true });
-    render(<PushNotificationToggle lang="sk" translations={t} className="row" />);
+    renderSettings();
 
-    const button = await screen.findByRole('button', { name: t.notificationsDisable });
+    const button = await screen.findByRole('button', { name: t.disable });
     await waitFor(() => expect(button).toHaveAttribute('aria-pressed', 'true'));
+    expect(screen.getByText(t.on)).toBeInTheDocument();
+  });
+
+  it('subscribes and stores the subscription when enabled', async () => {
+    stubPush();
+    renderSettings();
+
+    fireEvent.click(await screen.findByRole('button', { name: t.enable }));
+
+    await waitFor(() => expect(savePushSubscription).toHaveBeenCalledWith(
+      subscription.toJSON(),
+      'sk',
+    ));
+    expect(await screen.findByText(t.on)).toBeInTheDocument();
+  });
+
+  it('shows the localized error and keeps notifications off when saving fails', async () => {
+    vi.mocked(savePushSubscription).mockResolvedValueOnce({ success: false, error: 'saveFailed' });
+    stubPush();
+    renderSettings();
+
+    fireEvent.click(await screen.findByRole('button', { name: t.enable }));
+
+    expect(await screen.findByText(t.errors.saveFailed)).toBeInTheDocument();
+    expect(screen.getByText(t.off)).toBeInTheDocument();
   });
 
   it('explains a permanently blocked permission instead of offering a dead button', async () => {
     stubPush({ permission: 'denied' });
-    render(<PushNotificationToggle lang="sk" translations={t} className="row" />);
+    renderSettings();
 
-    const button = await screen.findByRole('button', { name: t.notificationsBlocked });
-    expect(button).toBeDisabled();
+    expect(await screen.findByText(t.blocked)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(savePushSubscription).not.toHaveBeenCalled();
   });
 });

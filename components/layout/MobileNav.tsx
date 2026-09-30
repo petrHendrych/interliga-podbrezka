@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, Sun, Moon, Languages, Users, RefreshCw, ClipboardList, LogOut, ChevronDown, Check,
-  BookOpen, Wallet, Bell, KeyRound, Coins,
+  BookOpen, Wallet, Settings, Coins,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -15,14 +15,8 @@ import { clearServiceWorkerCaches } from '@/lib/pwa/clear-service-worker-caches'
 import { Locale } from '@/lib/i18n/config';
 import { LANGUAGES, changeLanguage } from '@/lib/i18n/languages';
 import { useSyncData } from '@/lib/hooks/useSyncData';
-import { useNotifyUsers } from '@/lib/hooks/useNotifyUsers';
 import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
-import { NotifyUsersDialog } from '@/components/layout/NotifyUsersDialog';
-import { PushNotificationToggle } from '@/components/pwa/PushNotificationToggle';
-import type { PushMenuTranslations } from '@/components/layout/UserDropdown';
 import { BrandTitle } from '@/components/layout/BrandTitle';
-
-const PANEL_ITEM_CLASS = 'flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium text-left w-full disabled:opacity-50';
 
 interface MobileNavProps {
   user?: {
@@ -46,24 +40,18 @@ interface MobileNavProps {
     logout: string;
     toggleTheme: string;
   };
-  pwa: PushMenuTranslations;
 }
 
 export function MobileNav({
   user,
   lang,
   translations,
-  pwa,
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLangOpen, setIsLangOpen] = React.useState(false);
   const {
     isSyncing, isConfirmOpen, requestSync, setConfirmOpen, confirmSync,
   } = useSyncData();
-  const {
-    isNotifying, isConfirmOpen: isNotifyOpen, error: notifyError,
-    requestNotify, setConfirmOpen: setNotifyOpen, confirmNotify,
-  } = useNotifyUsers();
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
   const pathname = usePathname();
@@ -146,15 +134,9 @@ export function MobileNav({
                   href={`/${lang}/settings`}
                   className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
                 >
-                  <KeyRound className="size-4 text-muted-foreground" />
+                  <Settings className="size-4 text-muted-foreground" />
                   <span>{translations.settings}</span>
                 </Link>
-
-                <PushNotificationToggle
-                  lang={lang}
-                  translations={pwa}
-                  className={PANEL_ITEM_CLASS}
-                />
 
                 {user.role === 'admin' && (
                   <div className="flex flex-col gap-2">
@@ -187,20 +169,6 @@ export function MobileNav({
                       <ClipboardList className="size-4 text-muted-foreground" />
                       <span>{translations.manualMatches}</span>
                     </Link>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        // Collapse the panel so the confirmation is the only thing on screen.
-                        setIsOpen(false);
-                        requestNotify(e);
-                      }}
-                      disabled={isNotifying}
-                      className={PANEL_ITEM_CLASS}
-                    >
-                      <Bell className="size-4 text-muted-foreground" />
-                      <span>{isNotifying ? pwa.notifySending : pwa.notifyUsers}</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -296,29 +264,19 @@ export function MobileNav({
       )}
 
       {user?.role === 'admin' && (
-        <>
-          <SyncDataDialog
-            open={isConfirmOpen}
-            onOpenChange={setConfirmOpen}
-            isSyncing={isSyncing}
-            onConfirm={confirmSync}
-            translations={{
-              syncData: translations.syncData,
-              syncing: translations.syncing,
-              syncConfirmTitle: translations.syncConfirmTitle,
-              syncConfirmDescription: translations.syncConfirmDescription,
-              cancel: translations.cancel,
-            }}
-          />
-          <NotifyUsersDialog
-            open={isNotifyOpen}
-            onOpenChange={setNotifyOpen}
-            isNotifying={isNotifying}
-            error={notifyError}
-            onConfirm={confirmNotify}
-            translations={{ ...pwa, cancel: translations.cancel }}
-          />
-        </>
+        <SyncDataDialog
+          open={isConfirmOpen}
+          onOpenChange={setConfirmOpen}
+          isSyncing={isSyncing}
+          onConfirm={confirmSync}
+          translations={{
+            syncData: translations.syncData,
+            syncing: translations.syncing,
+            syncConfirmTitle: translations.syncConfirmTitle,
+            syncConfirmDescription: translations.syncConfirmDescription,
+            cancel: translations.cancel,
+          }}
+        />
       )}
     </div>
   );

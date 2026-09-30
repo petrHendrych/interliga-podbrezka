@@ -473,19 +473,6 @@
     "offlineDescription": "Stránku se nepodařilo načíst. Zkontroluj připojení a zkus to znovu.",
     "retry": "Zkusit znovu",
     "offlineBanner": "Jsi offline. Čekající požadavky se dokončí po obnovení připojení.",
-    "notificationsEnable": "Zapnout upozornění",
-    "notificationsDisable": "Vypnout upozornění",
-    "notificationsBlocked": "Upozornění jsou zablokovaná v nastavení prohlížeče",
-    "notifyUsers": "Poslat upozornění",
-    "notifyConfirmTitle": "Poslat upozornění hráčům?",
-    "notifyConfirmDescription": "Všem, kdo mají zapnutá upozornění, přijde zpráva, že finance byly aktualizovány.",
-    "notifySending": "Odesílám…",
-    "notifySent": "Upozornění odesláno.",
-    "notifyErrors": {
-      "unauthorized": "Na tuto akci nemáš oprávnění.",
-      "saveFailed": "Upozornění se nepodařilo zapnout, zkus to znovu.",
-      "sendFailed": "Upozornění se nepodařilo odeslat, zkus to znovu."
-    },
     "pullRefreshing": "Obnovuji…"
   },
   "push": {
@@ -561,7 +548,7 @@
   },
   "settings": {
     "title": "Nastavení",
-    "description": "Zjednoduš si přihlašování.",
+    "description": "Nastav si přihlašování a upozornění.",
     "passkeysTitle": "Passkeys",
     "passkeysDescription": "Přihlas se otiskem prstu nebo obličejem místo hesla. Heslo zůstává zachováno.",
     "addPasskey": "Přidat passkey",
@@ -588,6 +575,21 @@
       "invalidLabel": "Zadej název zařízení (max. 40 znaků)",
       "notFound": "Passkey nebyl nalezen",
       "dbError": "Chyba připojení k databázi"
+    },
+    "notifications": {
+      "title": "Upozornění",
+      "description": "Dostávej upozornění na nové výsledky, pokuty a platby. Zapínají se zvlášť pro každé zařízení.",
+      "device": "Toto zařízení",
+      "on": "Zapnuto",
+      "off": "Vypnuto",
+      "blocked": "Upozornění jsou zablokovaná v nastavení prohlížeče",
+      "unsupported": "Tento prohlížeč upozornění nepodporuje. Na iPhonu si nejdřív přidej aplikaci na plochu.",
+      "enable": "Zapnout",
+      "disable": "Vypnout",
+      "errors": {
+        "unauthorized": "Na tuto akci nemáš oprávnění.",
+        "saveFailed": "Upozornění se nepodařilo zapnout, zkus to znovu."
+      }
     }
   }
 }

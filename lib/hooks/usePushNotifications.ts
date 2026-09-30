@@ -19,12 +19,15 @@ function readIsSupported() {
  */
 export function usePushNotifications(lang: Locale) {
   const [isSupported, setIsSupported] = React.useState(false);
+  // Support is only known after mount, so the UI waits instead of flashing "unsupported".
+  const [isChecked, setIsChecked] = React.useState(false);
   const [permission, setPermission] = React.useState<NotificationPermission>('default');
   const [isSubscribed, setIsSubscribed] = React.useState(false);
   const [isBusy, setIsBusy] = React.useState(false);
   const [error, setError] = React.useState<PushActionError | null>(null);
 
   React.useEffect(() => {
+    setIsChecked(true);
     if (!readIsSupported()) return;
 
     setIsSupported(true);
@@ -90,6 +93,7 @@ export function usePushNotifications(lang: Locale) {
   }, []);
 
   return {
+    isChecked,
     isSupported,
     permission,
     isSubscribed,

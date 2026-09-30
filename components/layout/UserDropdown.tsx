@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen, Wallet, Bell, KeyRound, Coins,
+  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen, Wallet, Settings, Coins,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,14 +17,7 @@ import { signOut } from '@/lib/auth-actions';
 import { clearServiceWorkerCaches } from '@/lib/pwa/clear-service-worker-caches';
 import { Locale } from '@/lib/i18n/config';
 import { useSyncData } from '@/lib/hooks/useSyncData';
-import { useNotifyUsers } from '@/lib/hooks/useNotifyUsers';
 import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
-import { NotifyUsersDialog } from '@/components/layout/NotifyUsersDialog';
-import { PushNotificationToggle, type PushToggleTranslations } from '@/components/pwa/PushNotificationToggle';
-import type { NotifyUsersDialogTranslations } from '@/components/layout/NotifyUsersDialog';
-
-export type PushMenuTranslations =
-  PushToggleTranslations & Omit<NotifyUsersDialogTranslations, 'cancel'>;
 
 interface UserDropdownProps {
   user: {
@@ -47,24 +40,16 @@ interface UserDropdownProps {
     cancel: string;
     logout: string;
   };
-  pwa: PushMenuTranslations;
 }
-
-const MENU_ITEM_CLASS = 'flex items-center gap-2 w-full disabled:opacity-50';
 
 export function UserDropdown({
   user,
   lang,
   translations,
-  pwa,
 }: UserDropdownProps) {
   const {
     isSyncing, isConfirmOpen, requestSync, setConfirmOpen, confirmSync,
   } = useSyncData();
-  const {
-    isNotifying, isConfirmOpen: isNotifyOpen, error: notifyError,
-    requestNotify, setConfirmOpen: setNotifyOpen, confirmNotify,
-  } = useNotifyUsers();
   const isAdmin = user.role === 'admin';
 
   return (
@@ -116,16 +101,9 @@ export function UserDropdown({
               href={`/${lang}/settings`}
               className="flex items-center gap-2 w-full"
             >
-              <KeyRound className="size-4 text-muted-foreground" />
+              <Settings className="size-4 text-muted-foreground" />
               <span>{translations.settings}</span>
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 cursor-pointer py-2">
-            <PushNotificationToggle
-              lang={lang}
-              translations={pwa}
-              className={MENU_ITEM_CLASS}
-            />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {isAdmin && (
@@ -156,14 +134,6 @@ export function UserDropdown({
                   <span>{translations.manualMatches}</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={requestNotify}
-                disabled={isNotifying}
-                className="gap-2 cursor-pointer py-2"
-              >
-                <Bell className="size-4 text-muted-foreground" />
-                <span>{isNotifying ? pwa.notifySending : pwa.notifyUsers}</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
           )}
@@ -180,29 +150,19 @@ export function UserDropdown({
         </DropdownMenuContent>
       </DropdownMenu>
       {isAdmin && (
-        <>
-          <SyncDataDialog
-            open={isConfirmOpen}
-            onOpenChange={setConfirmOpen}
-            isSyncing={isSyncing}
-            onConfirm={confirmSync}
-            translations={{
-              syncData: translations.syncData,
-              syncing: translations.syncing,
-              syncConfirmTitle: translations.syncConfirmTitle,
-              syncConfirmDescription: translations.syncConfirmDescription,
-              cancel: translations.cancel,
-            }}
-          />
-          <NotifyUsersDialog
-            open={isNotifyOpen}
-            onOpenChange={setNotifyOpen}
-            isNotifying={isNotifying}
-            error={notifyError}
-            onConfirm={confirmNotify}
-            translations={{ ...pwa, cancel: translations.cancel }}
-          />
-        </>
+        <SyncDataDialog
+          open={isConfirmOpen}
+          onOpenChange={setConfirmOpen}
+          isSyncing={isSyncing}
+          onConfirm={confirmSync}
+          translations={{
+            syncData: translations.syncData,
+            syncing: translations.syncing,
+            syncConfirmTitle: translations.syncConfirmTitle,
+            syncConfirmDescription: translations.syncConfirmDescription,
+            cancel: translations.cancel,
+          }}
+        />
       )}
     </>
   );

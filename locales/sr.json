@@ -473,19 +473,6 @@
     "offlineDescription": "Stranica nije mogla da se učita. Proveri vezu i pokušaj ponovo.",
     "retry": "Pokušaj ponovo",
     "offlineBanner": "Nisi na mreži. Zahtevi na čekanju biće završeni kada se veza vrati.",
-    "notificationsEnable": "Uključi obaveštenja",
-    "notificationsDisable": "Isključi obaveštenja",
-    "notificationsBlocked": "Obaveštenja su blokirana u podešavanjima pregledača",
-    "notifyUsers": "Pošalji obaveštenje",
-    "notifyConfirmTitle": "Poslati obaveštenje igračima?",
-    "notifyConfirmDescription": "Svi koji imaju uključena obaveštenja dobiće poruku da su finansije ažurirane.",
-    "notifySending": "Šaljem…",
-    "notifySent": "Obaveštenje je poslato.",
-    "notifyErrors": {
-      "unauthorized": "Nemaš ovlašćenje za ovu akciju.",
-      "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo.",
-      "sendFailed": "Obaveštenje nije moguće poslati, pokušaj ponovo."
-    },
     "pullRefreshing": "Osvežavam…"
   },
   "push": {
@@ -561,7 +548,7 @@
   },
   "settings": {
     "title": "Podešavanja",
-    "description": "Olakšaj sebi prijavljivanje.",
+    "description": "Podesi prijavljivanje i obaveštenja.",
     "passkeysTitle": "Passkey-evi",
     "passkeysDescription": "Prijavi se otiskom prsta ili licem umesto lozinkom. Lozinka ostaje.",
     "addPasskey": "Dodaj passkey",
@@ -588,6 +575,21 @@
       "invalidLabel": "Unesi naziv uređaja (maks. 40 znakova)",
       "notFound": "Passkey nije pronađen",
       "dbError": "Greška u vezi sa bazom podataka"
+    },
+    "notifications": {
+      "title": "Obaveštenja",
+      "description": "Primaj obaveštenja o novim rezultatima, kaznama i uplatama. Uključuju se posebno za svaki uređaj.",
+      "device": "Ovaj uređaj",
+      "on": "Uključeno",
+      "off": "Isključeno",
+      "blocked": "Obaveštenja su blokirana u podešavanjima pregledača",
+      "unsupported": "Ovaj pregledač ne podržava obaveštenja. Na iPhone-u prvo dodaj aplikaciju na početni ekran.",
+      "enable": "Uključi",
+      "disable": "Isključi",
+      "errors": {
+        "unauthorized": "Nemaš ovlašćenje za ovu akciju.",
+        "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo."
+      }
     }
   }
 }

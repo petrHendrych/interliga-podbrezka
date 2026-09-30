@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation';
+import { Bell, KeyRound } from 'lucide-react';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getSession } from '@/lib/session';
 import { listCredentialsForUser } from '@/lib/webauthn';
 import { formatDateOnly } from '@/lib/dates';
 import { PasskeyManager } from '@/components/settings/PasskeyManager';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { SettingsSection } from '@/components/settings/SettingsSection';
 import { logPageView } from '@/lib/activity-log';
-
-const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg space-y-4';
-const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
 
 interface PageProps {
   params: Promise<{ lang: string }>;
@@ -33,11 +33,7 @@ export default async function SettingsPage({ params }: PageProps) {
         <p className="text-muted-foreground">{t.description}</p>
       </div>
 
-      <section className={SECTION}>
-        <div>
-          <h2 className={SECTION_TITLE}>{t.passkeysTitle}</h2>
-          <p className="text-sm text-muted-foreground">{t.passkeysDescription}</p>
-        </div>
+      <SettingsSection icon={KeyRound} title={t.passkeysTitle} description={t.passkeysDescription}>
         <PasskeyManager
           passkeys={credentials.map((credential) => ({
             id: credential.id,
@@ -68,7 +64,15 @@ export default async function SettingsPage({ params }: PageProps) {
             errors: t.errors,
           }}
         />
-      </section>
+      </SettingsSection>
+
+      <SettingsSection
+        icon={Bell}
+        title={t.notifications.title}
+        description={t.notifications.description}
+      >
+        <NotificationSettings lang={lang} translations={t.notifications} />
+      </SettingsSection>
     </div>
   );
 }
