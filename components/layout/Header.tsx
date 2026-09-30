@@ -34,10 +34,6 @@ export async function Header({ lang }: { lang: Locale }) {
     notificationsEnable: dict.pwa.notificationsEnable,
     notificationsDisable: dict.pwa.notificationsDisable,
     notificationsBlocked: dict.pwa.notificationsBlocked,
-    notifyUsers: dict.pwa.notifyUsers,
-    notifySending: dict.pwa.notifySending,
-    notifyConfirmTitle: dict.pwa.notifyConfirmTitle,
-    notifyConfirmDescription: dict.pwa.notifyConfirmDescription,
     notifyErrors: dict.pwa.notifyErrors,
   };
 

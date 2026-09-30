@@ -476,15 +476,9 @@
     "notificationsEnable": "Értesítések bekapcsolása",
     "notificationsDisable": "Értesítések kikapcsolása",
     "notificationsBlocked": "Az értesítések le vannak tiltva a böngésző beállításaiban",
-    "notifyUsers": "Értesítés küldése",
-    "notifyConfirmTitle": "Küldesz értesítést a játékosoknak?",
-    "notifyConfirmDescription": "Mindenki, akinél be van kapcsolva az értesítés, üzenetet kap arról, hogy a pénzügyek frissültek.",
-    "notifySending": "Küldés…",
-    "notifySent": "Az értesítés elment.",
     "notifyErrors": {
       "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
-      "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra.",
-      "sendFailed": "Az értesítést nem sikerült elküldeni, próbáld újra."
+      "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra."
     },
     "pullRefreshing": "Frissítés…"
   },

@@ -476,15 +476,9 @@
     "notificationsEnable": "Zapnout upozornění",
     "notificationsDisable": "Vypnout upozornění",
     "notificationsBlocked": "Upozornění jsou zablokovaná v nastavení prohlížeče",
-    "notifyUsers": "Poslat upozornění",
-    "notifyConfirmTitle": "Poslat upozornění hráčům?",
-    "notifyConfirmDescription": "Všem, kdo mají zapnutá upozornění, přijde zpráva, že finance byly aktualizovány.",
-    "notifySending": "Odesílám…",
-    "notifySent": "Upozornění odesláno.",
     "notifyErrors": {
       "unauthorized": "Na tuto akci nemáš oprávnění.",
-      "saveFailed": "Upozornění se nepodařilo zapnout, zkus to znovu.",
-      "sendFailed": "Upozornění se nepodařilo odeslat, zkus to znovu."
+      "saveFailed": "Upozornění se nepodařilo zapnout, zkus to znovu."
     },
     "pullRefreshing": "Obnovuji…"
   },

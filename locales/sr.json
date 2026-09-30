@@ -476,15 +476,9 @@
     "notificationsEnable": "Uključi obaveštenja",
     "notificationsDisable": "Isključi obaveštenja",
     "notificationsBlocked": "Obaveštenja su blokirana u podešavanjima pregledača",
-    "notifyUsers": "Pošalji obaveštenje",
-    "notifyConfirmTitle": "Poslati obaveštenje igračima?",
-    "notifyConfirmDescription": "Svi koji imaju uključena obaveštenja dobiće poruku da su finansije ažurirane.",
-    "notifySending": "Šaljem…",
-    "notifySent": "Obaveštenje je poslato.",
     "notifyErrors": {
       "unauthorized": "Nemaš ovlašćenje za ovu akciju.",
-      "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo.",
-      "sendFailed": "Obaveštenje nije moguće poslati, pokušaj ponovo."
+      "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo."
     },
     "pullRefreshing": "Osvežavam…"
   },

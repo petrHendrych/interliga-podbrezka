@@ -3,7 +3,6 @@
 /* eslint-disable no-console */
 
 import { getSession } from './session';
-import { sendPushToAll } from './push';
 import {
   deleteSubscription,
   parseLocale,
@@ -12,7 +11,7 @@ import {
 } from './push-subscriptions';
 
 /** Error codes the client maps to a localized message; raw messages never reach it. */
-export type PushActionError = 'unauthorized' | 'saveFailed' | 'sendFailed';
+export type PushActionError = 'unauthorized' | 'saveFailed';
 
 export type PushActionResult =
   | { success: true }
@@ -54,19 +53,4 @@ export async function removePushSubscription(endpoint: string): Promise<PushActi
     console.error('Failed to remove push subscription:', error);
     return { success: false, error: 'saveFailed' };
   }
-}
-
-/** The explicit "Notify users" action an admin fires after finishing manual money updates. */
-export async function notifyMoneyUpdated(): Promise<PushActionResult> {
-  const session = await getSession();
-  if (session?.user.role !== 'admin') {
-    return { success: false, error: 'unauthorized' };
-  }
-
-  const result = await sendPushToAll('moneyUpdated');
-  if (result.sent === 0 && result.failed > 0) {
-    return { success: false, error: 'sendFailed' };
-  }
-
-  return { success: true };
 }
