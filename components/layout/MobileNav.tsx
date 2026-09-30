@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, Sun, Moon, Languages, Users, RefreshCw, ClipboardList, LogOut, ChevronDown, Check,
-  BookOpen, Wallet, KeyRound, Coins,
+  BookOpen, Wallet, Settings, Coins,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,7 @@ import { Locale } from '@/lib/i18n/config';
 import { LANGUAGES, changeLanguage } from '@/lib/i18n/languages';
 import { useSyncData } from '@/lib/hooks/useSyncData';
 import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
-import { PushNotificationToggle, type PushToggleTranslations } from '@/components/pwa/PushNotificationToggle';
 import { BrandTitle } from '@/components/layout/BrandTitle';
-
-const PANEL_ITEM_CLASS = 'flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium text-left w-full disabled:opacity-50';
 
 interface MobileNavProps {
   user?: {
@@ -43,14 +40,12 @@ interface MobileNavProps {
     logout: string;
     toggleTheme: string;
   };
-  pwa: PushToggleTranslations;
 }
 
 export function MobileNav({
   user,
   lang,
   translations,
-  pwa,
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLangOpen, setIsLangOpen] = React.useState(false);
@@ -139,15 +134,9 @@ export function MobileNav({
                   href={`/${lang}/settings`}
                   className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
                 >
-                  <KeyRound className="size-4 text-muted-foreground" />
+                  <Settings className="size-4 text-muted-foreground" />
                   <span>{translations.settings}</span>
                 </Link>
-
-                <PushNotificationToggle
-                  lang={lang}
-                  translations={pwa}
-                  className={PANEL_ITEM_CLASS}
-                />
 
                 {user.role === 'admin' && (
                   <div className="flex flex-col gap-2">

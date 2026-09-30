@@ -473,13 +473,6 @@
     "offlineDescription": "Nepodarilo sa načítať stránku. Skontroluj pripojenie a skús to znova.",
     "retry": "Skúsiť znova",
     "offlineBanner": "Si offline. Čakajúce požiadavky sa dokončia po obnovení pripojenia.",
-    "notificationsEnable": "Zapnúť upozornenia",
-    "notificationsDisable": "Vypnúť upozornenia",
-    "notificationsBlocked": "Upozornenia sú zablokované v nastaveniach prehliadača",
-    "notifyErrors": {
-      "unauthorized": "Na túto akciu nemáš oprávnenie.",
-      "saveFailed": "Upozornenia sa nepodarilo zapnúť, skús to znova."
-    },
     "pullRefreshing": "Obnovujem…"
   },
   "push": {
@@ -555,7 +548,7 @@
   },
   "settings": {
     "title": "Nastavenia",
-    "description": "Sprav si prihlasovanie pohodlnejšie.",
+    "description": "Nastav si prihlasovanie a upozornenia.",
     "passkeysTitle": "Passkeys",
     "passkeysDescription": "Prihlás sa odtlačkom prsta alebo tvárou namiesto hesla. Heslo zostáva zachované.",
     "addPasskey": "Pridať passkey",
@@ -582,6 +575,21 @@
       "invalidLabel": "Zadaj názov zariadenia (max. 40 znakov)",
       "notFound": "Passkey sa nenašiel",
       "dbError": "Chyba pripojenia k databáze"
+    },
+    "notifications": {
+      "title": "Upozornenia",
+      "description": "Dostávaj upozornenia na nové výsledky, pokuty a platby. Zapínajú sa zvlášť pre každé zariadenie.",
+      "device": "Toto zariadenie",
+      "on": "Zapnuté",
+      "off": "Vypnuté",
+      "blocked": "Upozornenia sú zablokované v nastaveniach prehliadača",
+      "unsupported": "Tento prehliadač upozornenia nepodporuje. Na iPhone si najprv pridaj aplikáciu na plochu.",
+      "enable": "Zapnúť",
+      "disable": "Vypnúť",
+      "errors": {
+        "unauthorized": "Na túto akciu nemáš oprávnenie.",
+        "saveFailed": "Upozornenia sa nepodarilo zapnúť, skús to znova."
+      }
     }
   }
 }

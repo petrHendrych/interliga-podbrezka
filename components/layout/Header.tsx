@@ -30,13 +30,6 @@ export async function Header({ lang }: { lang: Locale }) {
     toggleTheme: dict.common.toggleTheme,
   };
 
-  const pwa = {
-    notificationsEnable: dict.pwa.notificationsEnable,
-    notificationsDisable: dict.pwa.notificationsDisable,
-    notificationsBlocked: dict.pwa.notificationsBlocked,
-    notifyErrors: dict.pwa.notifyErrors,
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 pt-[var(--app-safe-top)] backdrop-blur supports-backdrop-filter:bg-background/60">
       {/* Desktop Navigation */}
@@ -76,7 +69,6 @@ export async function Header({ lang }: { lang: Locale }) {
                 cancel: dict.common.cancel,
                 logout: dict.common.logout,
               }}
-              pwa={pwa}
             />
           )}
         </div>
@@ -87,7 +79,6 @@ export async function Header({ lang }: { lang: Locale }) {
         user={user}
         lang={lang}
         translations={translations}
-        pwa={pwa}
       />
     </header>
   );

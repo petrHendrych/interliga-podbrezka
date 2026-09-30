@@ -68,6 +68,7 @@ describe('usePushNotifications', () => {
     const { result } = renderHook(() => usePushNotifications('sk'));
 
     expect(result.current.isSupported).toBe(false);
+    expect(result.current.isChecked).toBe(true);
   });
 
   it('seeds isSubscribed from the existing browser subscription', async () => {

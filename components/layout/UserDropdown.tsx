@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen, Wallet, KeyRound, Coins,
+  ChevronDown, Users, RefreshCw, ClipboardList, LogOut, BookOpen, Wallet, Settings, Coins,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +18,6 @@ import { clearServiceWorkerCaches } from '@/lib/pwa/clear-service-worker-caches'
 import { Locale } from '@/lib/i18n/config';
 import { useSyncData } from '@/lib/hooks/useSyncData';
 import { SyncDataDialog } from '@/components/layout/SyncDataDialog';
-import { PushNotificationToggle, type PushToggleTranslations } from '@/components/pwa/PushNotificationToggle';
 
 interface UserDropdownProps {
   user: {
@@ -41,16 +40,12 @@ interface UserDropdownProps {
     cancel: string;
     logout: string;
   };
-  pwa: PushToggleTranslations;
 }
-
-const MENU_ITEM_CLASS = 'flex items-center gap-2 w-full disabled:opacity-50';
 
 export function UserDropdown({
   user,
   lang,
   translations,
-  pwa,
 }: UserDropdownProps) {
   const {
     isSyncing, isConfirmOpen, requestSync, setConfirmOpen, confirmSync,
@@ -106,16 +101,9 @@ export function UserDropdown({
               href={`/${lang}/settings`}
               className="flex items-center gap-2 w-full"
             >
-              <KeyRound className="size-4 text-muted-foreground" />
+              <Settings className="size-4 text-muted-foreground" />
               <span>{translations.settings}</span>
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 cursor-pointer py-2">
-            <PushNotificationToggle
-              lang={lang}
-              translations={pwa}
-              className={MENU_ITEM_CLASS}
-            />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {isAdmin && (

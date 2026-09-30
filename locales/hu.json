@@ -473,13 +473,6 @@
     "offlineDescription": "Az oldalt nem sikerült betölteni. Ellenőrizd a kapcsolatot, és próbáld újra.",
     "retry": "Újra",
     "offlineBanner": "Nincs internetkapcsolat. A függőben lévő kérések a kapcsolat helyreállása után befejeződnek.",
-    "notificationsEnable": "Értesítések bekapcsolása",
-    "notificationsDisable": "Értesítések kikapcsolása",
-    "notificationsBlocked": "Az értesítések le vannak tiltva a böngésző beállításaiban",
-    "notifyErrors": {
-      "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
-      "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra."
-    },
     "pullRefreshing": "Frissítés…"
   },
   "push": {
@@ -555,7 +548,7 @@
   },
   "settings": {
     "title": "Beállítások",
-    "description": "Tedd kényelmesebbé a bejelentkezést.",
+    "description": "Állítsd be a bejelentkezést és az értesítéseket.",
     "passkeysTitle": "Passkey-ek",
     "passkeysDescription": "Jelszó helyett ujjlenyomattal vagy arccal lépj be. A jelszó megmarad.",
     "addPasskey": "Passkey hozzáadása",
@@ -582,6 +575,21 @@
       "invalidLabel": "Add meg az eszköz nevét (max. 40 karakter)",
       "notFound": "A passkey nem található",
       "dbError": "Hiba az adatbázis-kapcsolatban"
+    },
+    "notifications": {
+      "title": "Értesítések",
+      "description": "Kapj értesítést az új eredményekről, büntetésekről és kifizetésekről. Minden eszközön külön kell bekapcsolni.",
+      "device": "Ez az eszköz",
+      "on": "Bekapcsolva",
+      "off": "Kikapcsolva",
+      "blocked": "Az értesítések le vannak tiltva a böngésző beállításaiban",
+      "unsupported": "Ez a böngésző nem támogatja az értesítéseket. iPhone-on előbb add hozzá az alkalmazást a kezdőképernyőhöz.",
+      "enable": "Bekapcsolás",
+      "disable": "Kikapcsolás",
+      "errors": {
+        "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
+        "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra."
+      }
     }
   }
 }
