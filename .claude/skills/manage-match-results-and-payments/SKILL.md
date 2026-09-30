@@ -1,6 +1,6 @@
 ---
 name: manage-match-results-and-payments
-description: Record special misses (fault into full, missed 2nd-to-last throw) for a played match. Use when asked to manage match results or record misses. Marking fines, bonuses or trainer payments paid is done in the app under /admin/money, not here.
+description: Record special misses (fault into full, missed 2nd-to-last throw) for a played match. Use when asked to manage match results or record misses. Marking fines, bonuses or trainer payments paid is done in the app under /money (admin only), not here.
 trigger: "user asks to manage match results or mark special misses for a match"
 ---
 
@@ -12,7 +12,8 @@ through one driver: `scripts/match-money.ts`. It has three subcommands — `list
 `sheet`, `apply` — and every one prints JSON to stdout and nothing else.
 
 Paid flags (player fines, player bonuses, trainer payments) are settled by the admin
-in the app under *Pokuty a platby* (`/admin/money`). Do not offer to mark anything
+in the app under *Pokuty a platby* (`/money`; everyone can view it, only the admin
+sees the paid buttons). Do not offer to mark anything
 paid from here; if the user asks, point them to that page.
 
 Paths are relative to the repo root. The driver reads `.env.local` for
@@ -75,7 +76,7 @@ the one `apply` of a match, never on a `--dry-run`.
   player whose fine was already marked paid in the app leaves the row paid with a
   higher amount, so the extra 5€ is never collected. If the sheet shows
   `is_paid: true` for a player getting a miss, tell the user before applying so
-  they can unmark it in `/admin/money` afterwards.
+  they can unmark it in `/money` afterwards.
 - **`list` returns played matches only.** The `matches` table also holds
   scheduled fixtures, and they sort to the top. `getPlayedMatches()` filters on
   `team_total_score IS NOT NULL`; do not reintroduce an unfiltered listing.

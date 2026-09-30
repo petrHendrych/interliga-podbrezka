@@ -104,6 +104,7 @@ export default async function Home({
   const unpaidBonusReceivers = data?.unpaidBonusReceivers || [];
   const topDonator = data?.topDonator || null;
   const belowLimitMatches = data?.belowLimitMatches ?? null;
+  const teamLossMatches = data?.teamLossMatches ?? null;
   const nextHomeMatch = isCurrent ? (data?.nextHomeMatch || null) : null;
 
   const hasNoData = !data
@@ -129,18 +130,6 @@ export default async function Home({
           </p>
 
           <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-10 border-t border-foreground/10">
-            {bankBalance.openingBalance > 0 && (
-              <div className={`${BANK_ROW} sm:col-span-2`}>
-                <dt className={BANK_LABEL}>{dict.home.bank.previousSeason}</dt>
-                <dd className={`${BANK_VALUE} text-emerald-600 dark:text-emerald-400`}>
-                  +
-                  {bankBalance.openingBalance.toFixed(2)}
-                  {' '}
-                  €
-                </dd>
-              </div>
-            )}
-
             <div className={BANK_ROW}>
               <dt className={BANK_LABEL}>{dict.home.bank.unpaid}</dt>
               <dd className={`${BANK_VALUE} text-red-600 dark:text-red-400`}>
@@ -229,21 +218,6 @@ export default async function Home({
               </dd>
             </div>
 
-            {topDonator && (
-              <div className={BANK_ROW}>
-                <dt className={BANK_LABEL}>{dict.home.bank.topDonator}</dt>
-                <dd className="flex min-w-0 items-baseline justify-end gap-2">
-                  <Tooltip content={topDonator.name}>
-                    <span className={`${BANK_VALUE} ${HINT}`}>
-                      {topDonator.amount.toFixed(2)}
-                      {' '}
-                      €
-                    </span>
-                  </Tooltip>
-                </dd>
-              </div>
-            )}
-
             {belowLimitMatches !== null && (
               <div className={BANK_ROW}>
                 <dt className={BANK_LABEL}>
@@ -275,6 +249,40 @@ export default async function Home({
                   ) : (
                     <>
                       {belowLimitMatches.length}
+                      x
+                    </>
+                  )}
+                </dd>
+              </div>
+            )}
+
+            {teamLossMatches !== null && (
+              <div className={BANK_ROW}>
+                <dt className={BANK_LABEL}>{dict.home.bank.teamLosses}</dt>
+                <dd className={`${BANK_VALUE} ${teamLossMatches.length > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                  {teamLossMatches.length > 0 ? (
+                    <Tooltip
+                      content={(
+                        <ul className={TOOLTIP_LIST}>
+                          {teamLossMatches.map((match) => (
+                            <li key={match.id} className={TOOLTIP_ROW}>
+                              <span className="truncate">{match.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums">
+                                {`${match.teamPoints} : ${match.opponentPoints}`}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    >
+                      <span className={HINT}>
+                        {teamLossMatches.length}
+                        x
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <>
+                      {teamLossMatches.length}
                       x
                     </>
                   )}

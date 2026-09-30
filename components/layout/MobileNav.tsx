@@ -135,6 +135,14 @@ export function MobileNav({
                 </Link>
 
                 <Link
+                  href={`/${lang}/money`}
+                  className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
+                >
+                  <Coins className="size-4 text-muted-foreground" />
+                  <span>{translations.matchMoney}</span>
+                </Link>
+
+                <Link
                   href={`/${lang}/settings`}
                   className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
                 >
@@ -178,14 +186,6 @@ export function MobileNav({
                     >
                       <ClipboardList className="size-4 text-muted-foreground" />
                       <span>{translations.manualMatches}</span>
-                    </Link>
-
-                    <Link
-                      href={`/${lang}/admin/money`}
-                      className="flex items-center gap-2.5 p-2.5 text-sm rounded-lg border hover:bg-accent transition-colors font-medium"
-                    >
-                      <Coins className="size-4 text-muted-foreground" />
-                      <span>{translations.matchMoney}</span>
                     </Link>
 
                     <button

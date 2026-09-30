@@ -73,12 +73,15 @@ export interface PlayedMatchMoneySummary {
   leagueName: string | null;
   teamTotalScore: number | null;
   opponentTotalScore: number | null;
+  fines: number;
   finesUnpaid: number;
+  bonuses: number;
   bonusesUnpaid: number;
+  trainer: number;
   trainerUnpaid: number;
 }
 
-interface PlayedMatchMoneySummaryRow {
+export interface PlayedMatchMoneySummaryRow {
   external_id: number | string;
   date: string | Date | null;
   opponent: string | null;
@@ -87,38 +90,19 @@ interface PlayedMatchMoneySummaryRow {
   league_name: string | null;
   team_total_score: number | null;
   opponent_total_score: number | null;
+  fines: string | number;
   fines_unpaid: string | number;
+  bonuses: string | number;
   bonuses_unpaid: string | number;
+  trainer: string | number;
   trainer_unpaid: string | number;
 }
 
-/**
- * Played matches of one season with what is still owed per match. Inside one match row the
- * whole `calculated_fine + streak_fine` is settled by the single `is_paid`, so the streak
- * fine is included here regardless of the league filter.
- */
-export async function getPlayedMatchMoneySummaries(
-  seasonId: number,
-  leagueKey?: string,
-): Promise<PlayedMatchMoneySummary[]> {
-  const rows = (await sql`
-    SELECT m.external_id, m.date, m.opponent, m.is_home, m.league_id, m.league_name,
-           m.team_total_score, m.opponent_total_score,
-           COALESCE((SELECT SUM(COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0))
-                     FROM match_player_results mpr
-                     WHERE mpr.match_id = m.external_id AND NOT COALESCE(mpr.is_paid, false)), 0) AS fines_unpaid,
-           COALESCE((SELECT SUM(COALESCE(mpr.bonus_received, 0))
-                     FROM match_player_results mpr
-                     WHERE mpr.match_id = m.external_id AND NOT COALESCE(mpr.is_bonus_paid, false)), 0) AS bonuses_unpaid,
-           COALESCE((SELECT SUM(tp.amount)
-                     FROM trainer_payments tp
-                     WHERE tp.match_id = m.external_id AND NOT COALESCE(tp.is_paid, false)), 0) AS trainer_unpaid
-    FROM matches m
-    WHERE m.season_id = ${seasonId} AND m.team_total_score IS NOT NULL ${leagueCondition(leagueKey)}
-    ORDER BY m.date DESC
-  `) as unknown as PlayedMatchMoneySummaryRow[];
-
-  return rows.map((row) => ({
+/** Postgres sums come back from Neon as numeric strings. */
+export function toPlayedMatchMoneySummary(
+  row: PlayedMatchMoneySummaryRow,
+): PlayedMatchMoneySummary {
+  return {
     externalId: Number(row.external_id),
     date: row.date ? new Date(row.date).toISOString() : null,
     opponent: row.opponent ?? null,
@@ -127,10 +111,50 @@ export async function getPlayedMatchMoneySummaries(
     leagueName: row.league_name ?? null,
     teamTotalScore: row.team_total_score ?? null,
     opponentTotalScore: row.opponent_total_score ?? null,
+    fines: Number(row.fines),
     finesUnpaid: Number(row.fines_unpaid),
+    bonuses: Number(row.bonuses),
     bonusesUnpaid: Number(row.bonuses_unpaid),
+    trainer: Number(row.trainer),
     trainerUnpaid: Number(row.trainer_unpaid),
-  }));
+  };
+}
+
+/**
+ * Played matches of one season with what each match raised and what of it is still owed.
+ * Inside one match row the whole `calculated_fine + streak_fine` is settled by the single
+ * `is_paid`, so the streak fine is included here regardless of the league filter.
+ */
+export async function getPlayedMatchMoneySummaries(
+  seasonId: number,
+  leagueKey?: string,
+): Promise<PlayedMatchMoneySummary[]> {
+  const rows = (await sql`
+    SELECT m.external_id, m.date, m.opponent, m.is_home, m.league_id, m.league_name,
+           m.team_total_score, m.opponent_total_score,
+           p.fines, p.fines_unpaid, p.bonuses, p.bonuses_unpaid, t.trainer, t.trainer_unpaid
+    FROM matches m
+    CROSS JOIN LATERAL (
+      SELECT COALESCE(SUM(COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0)), 0) AS fines,
+             COALESCE(SUM(COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0))
+                        FILTER (WHERE NOT COALESCE(mpr.is_paid, false)), 0) AS fines_unpaid,
+             COALESCE(SUM(COALESCE(mpr.bonus_received, 0)), 0) AS bonuses,
+             COALESCE(SUM(COALESCE(mpr.bonus_received, 0))
+                        FILTER (WHERE NOT COALESCE(mpr.is_bonus_paid, false)), 0) AS bonuses_unpaid
+      FROM match_player_results mpr
+      WHERE mpr.match_id = m.external_id
+    ) p
+    CROSS JOIN LATERAL (
+      SELECT COALESCE(SUM(tp.amount), 0) AS trainer,
+             COALESCE(SUM(tp.amount) FILTER (WHERE NOT COALESCE(tp.is_paid, false)), 0) AS trainer_unpaid
+      FROM trainer_payments tp
+      WHERE tp.match_id = m.external_id
+    ) t
+    WHERE m.season_id = ${seasonId} AND m.team_total_score IS NOT NULL ${leagueCondition(leagueKey)}
+    ORDER BY m.date DESC
+  `) as unknown as PlayedMatchMoneySummaryRow[];
+
+  return rows.map(toPlayedMatchMoneySummary);
 }
 
 export async function getMatchSheet(matchId: number): Promise<MatchSheet> {

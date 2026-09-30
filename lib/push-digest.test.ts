@@ -275,6 +275,7 @@ describe('derivePersonalPushes', () => {
 const OTHER_PLAYER = 'a1b2c3d4-0000-0000-0000-000000000002';
 const TRAINER = 'a1b2c3d4-0000-0000-0000-000000000010';
 const OTHER_TRAINER = 'a1b2c3d4-0000-0000-0000-000000000011';
+const MATCH_ID = 44568;
 
 function playerRow(overrides: Partial<SettlementPlayerRow> = {}): SettlementPlayerRow {
   return {
@@ -299,7 +300,7 @@ function sheet(
   trainerPayments: SettlementTrainerRow[] = [],
   opponent: string | null = 'Trenčín',
 ): SettlementSheet {
-  return { match: { opponent }, players, trainer_payments: trainerPayments };
+  return { match: { external_id: MATCH_ID, opponent }, players, trainer_payments: trainerPayments };
 }
 
 describe('deriveSettlementPushes', () => {
@@ -310,7 +311,7 @@ describe('deriveSettlementPushes', () => {
     );
 
     expect(pushes).toEqual([
-      { userId: PLAYER, event: 'finePaid', params: { amount: 13, opponent: 'Trenčín' } },
+      { userId: PLAYER, event: 'finePaid', params: { amount: 13, opponent: 'Trenčín', matchId: MATCH_ID } },
     ]);
   });
 
@@ -321,7 +322,7 @@ describe('deriveSettlementPushes', () => {
     );
 
     expect(pushes).toEqual([
-      { userId: PLAYER, event: 'bonusPaid', params: { amount: 40, opponent: 'Trenčín' } },
+      { userId: PLAYER, event: 'bonusPaid', params: { amount: 40, opponent: 'Trenčín', matchId: MATCH_ID } },
     ]);
   });
 
@@ -378,8 +379,8 @@ describe('deriveSettlementPushes', () => {
     );
 
     expect(pushes).toEqual([
-      { userId: PLAYER, event: 'finePaid', params: { amount: 13, opponent: 'Trenčín' } },
-      { userId: OTHER_PLAYER, event: 'finePaid', params: { amount: 1, opponent: 'Trenčín' } },
+      { userId: PLAYER, event: 'finePaid', params: { amount: 13, opponent: 'Trenčín', matchId: MATCH_ID } },
+      { userId: OTHER_PLAYER, event: 'finePaid', params: { amount: 1, opponent: 'Trenčín', matchId: MATCH_ID } },
     ]);
   });
 
@@ -393,7 +394,7 @@ describe('deriveSettlementPushes', () => {
     );
 
     expect(pushes).toEqual([
-      { userId: TRAINER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín' } },
+      { userId: TRAINER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín', matchId: MATCH_ID } },
     ]);
   });
 
@@ -412,8 +413,8 @@ describe('deriveSettlementPushes', () => {
     );
 
     expect(pushes).toEqual([
-      { userId: TRAINER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín' } },
-      { userId: OTHER_TRAINER, event: 'trainerPaid', params: { amount: 15, opponent: 'Trenčín' } },
+      { userId: TRAINER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín', matchId: MATCH_ID } },
+      { userId: OTHER_TRAINER, event: 'trainerPaid', params: { amount: 15, opponent: 'Trenčín', matchId: MATCH_ID } },
     ]);
   });
 
@@ -427,7 +428,7 @@ describe('deriveSettlementPushes', () => {
     );
 
     expect(pushes).toEqual([
-      { userId: TRAINER, event: 'trainerPaid', params: { amount: 10, opponent: 'Trenčín' } },
+      { userId: TRAINER, event: 'trainerPaid', params: { amount: 10, opponent: 'Trenčín', matchId: MATCH_ID } },
     ]);
   });
 
@@ -468,8 +469,10 @@ describe('parsePersonalPushes', () => {
     expect(parsePersonalPushes([])).toEqual([]);
   });
 
-  it('accepts the settlement events the money sheet produces', () => {
-    const settled = { userId: PLAYER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín' } };
+  it('accepts the settlement events the money sheet produces, keeping the match id for the deep link', () => {
+    const settled = {
+      userId: PLAYER, event: 'trainerPaid', params: { amount: 25, opponent: 'Trenčín', matchId: MATCH_ID },
+    };
 
     expect(parsePersonalPushes([settled])).toEqual([settled]);
   });

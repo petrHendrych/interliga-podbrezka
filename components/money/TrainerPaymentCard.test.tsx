@@ -24,6 +24,7 @@ const labels = {
   unpaid: 'Nezaplatené',
   markPaid: 'Zaplatiť',
   markUnpaid: 'Vrátiť',
+  you: 'Ty',
 };
 
 const conditions: Record<TrainerConditionType, string> = {
@@ -42,7 +43,10 @@ const basePayment: TrainerPaymentCardPayment = {
   isPaid: false,
 };
 
-function renderCard(overrides: Partial<TrainerPaymentCardPayment> = {}) {
+function renderCard(
+  overrides: Partial<TrainerPaymentCardPayment> = {},
+  viewer: { canEdit?: boolean; isOwn?: boolean } = {},
+) {
   return render(
     <TrainerPaymentCard
       matchId={44568}
@@ -50,6 +54,8 @@ function renderCard(overrides: Partial<TrainerPaymentCardPayment> = {}) {
       labels={labels}
       conditions={conditions}
       errors={errors}
+      canEdit={viewer.canEdit}
+      isOwn={viewer.isOwn}
     />,
   );
 }
@@ -82,6 +88,26 @@ describe('TrainerPaymentCard', () => {
     expect(screen.getByText(labels.paid)).toBeInTheDocument();
     expect(screen.queryByText(labels.unpaid)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: labels.markUnpaid })).toBeInTheDocument();
+  });
+
+  it.each([
+    [false, labels.unpaid],
+    [true, labels.paid],
+  ])('shows the amount and paid=%s state with no button when the viewer cannot edit', (isPaid, pill) => {
+    renderCard({ isPaid }, { canEdit: false });
+
+    expect(screen.getByText('15 €')).toBeInTheDocument();
+    expect(screen.getByText(pill)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('marks the viewer\'s own payment and leaves other payments unmarked', () => {
+    const { unmount } = renderCard({}, { isOwn: true });
+    expect(screen.getByText(labels.you)).toBeInTheDocument();
+    unmount();
+
+    renderCard();
+    expect(screen.queryByText(labels.you)).not.toBeInTheDocument();
   });
 
   it('falls back to the raw condition type when it is not localized', () => {

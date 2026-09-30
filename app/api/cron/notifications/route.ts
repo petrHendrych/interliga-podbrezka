@@ -57,7 +57,7 @@ async function reportUnsettledMatches(now: Date): Promise<number> {
 
   await Promise.all(unsettled.map((match) => notifyAdmins(
     'unsettledMatch',
-    { opponent: match.opponent ?? '', amount: match.unpaid.toFixed(2) },
+    { opponent: match.opponent ?? '', amount: match.unpaid.toFixed(2), matchId: match.externalId },
     `${match.externalId}:${week}`,
   )));
 

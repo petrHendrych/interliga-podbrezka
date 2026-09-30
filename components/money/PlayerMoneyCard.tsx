@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
 import type { MatchMoneyActionError } from '@/lib/match-money-actions';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { PaidToggle, type PaidToggleLabels } from './PaidToggle';
+import { OWN_CARD_RING, OwnBadge } from './OwnBadge';
+import { PaidStatusPill, PaidToggle, type PaidToggleLabels } from './PaidToggle';
 
 export interface PlayerMoneyCardLabels extends PaidToggleLabels {
   total: string;
   faults: string;
   fine: string;
   bonus: string;
+  you: string;
 }
 
 export type PlayerMoneyRow = 'fine' | 'bonus';
@@ -31,6 +33,8 @@ export interface PlayerMoneyCardProps {
   labels: PlayerMoneyCardLabels;
   errors: Record<MatchMoneyActionError, string>;
   rows?: ReadonlyArray<PlayerMoneyRow>;
+  canEdit?: boolean;
+  isOwn?: boolean;
 }
 
 const ALL_ROWS: ReadonlyArray<PlayerMoneyRow> = ['fine', 'bonus'];
@@ -74,7 +78,7 @@ function AmountRow({
 }
 
 export function PlayerMoneyCard({
-  matchId, player, labels, errors, rows = ALL_ROWS,
+  matchId, player, labels, errors, rows = ALL_ROWS, canEdit = true, isOwn = false,
 }: PlayerMoneyCardProps) {
   const showFine = rows.includes('fine');
   const showBonus = rows.includes('bonus');
@@ -86,8 +90,21 @@ export function PlayerMoneyCard({
     markUnpaid: labels.markUnpaid,
   };
 
+  const paymentStatus = (kind: 'fine' | 'bonus', isPaid: boolean) => (canEdit ? (
+    <PaidToggle
+      matchId={matchId}
+      target={{ kind, userId: player.user_id }}
+      isPaid={isPaid}
+      labels={toggleLabels}
+      errors={errors}
+    />
+  ) : (
+    <PaidStatusPill isPaid={isPaid} labels={toggleLabels} />
+  ));
+
   return (
-    <div className={CARD}>
+    <div className={isOwn ? `${CARD} ${OWN_CARD_RING}` : CARD}>
+      {isOwn && <OwnBadge label={labels.you} />}
       <div className={HEADER}>
         <PlayerAvatar
           name={player.user_name}
@@ -115,15 +132,7 @@ export function PlayerMoneyCard({
           label={labels.fine}
           amount={fine}
           isPaid={player.is_paid}
-          toggle={fine > 0 && (
-            <PaidToggle
-              matchId={matchId}
-              target={{ kind: 'fine', userId: player.user_id }}
-              isPaid={player.is_paid}
-              labels={toggleLabels}
-              errors={errors}
-            />
-          )}
+          toggle={fine > 0 && paymentStatus('fine', player.is_paid)}
         />
       )}
 
@@ -132,15 +141,7 @@ export function PlayerMoneyCard({
           label={labels.bonus}
           amount={player.bonus_received}
           isPaid={player.is_bonus_paid}
-          toggle={player.bonus_received > 0 && (
-            <PaidToggle
-              matchId={matchId}
-              target={{ kind: 'bonus', userId: player.user_id }}
-              isPaid={player.is_bonus_paid}
-              labels={toggleLabels}
-              errors={errors}
-            />
-          )}
+          toggle={player.bonus_received > 0 && paymentStatus('bonus', player.is_bonus_paid)}
         />
       )}
     </div>

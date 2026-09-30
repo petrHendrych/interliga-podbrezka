@@ -30,6 +30,10 @@ export interface MatchListItem {
   teamTotalScore?: number | null;
   homeTeamPoints?: number | null;
   awayTeamPoints?: number | null;
+  /** Our and the opponent's match points, as stored in `matches` rather than home/away. */
+  teamMatchPoints?: number | null;
+  opponentMatchPoints?: number | null;
+  opponent?: string;
   isHome?: boolean;
   leagueId?: number;
   leagueName?: string;

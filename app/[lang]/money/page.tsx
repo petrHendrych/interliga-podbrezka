@@ -7,7 +7,9 @@ import { getPlayedMatchMoneySummaries } from '@/lib/match-money';
 import { formatDateOnly } from '@/lib/home-helpers';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
+import { SettlementChip } from '@/components/money/SettlementChip';
 import { logPageView } from '@/lib/activity-log';
+import { getSession } from '@/lib/session';
 
 const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
@@ -21,32 +23,22 @@ interface PageProps {
   searchParams: Promise<{ season?: string; league?: string }>;
 }
 
-function AmountChip({ label, amount }: { label: string; amount: number }) {
-  const tone = amount > 0
-    ? 'text-red-600 dark:text-red-400 font-semibold'
-    : 'text-muted-foreground';
-  return (
-    <div className="rounded-lg bg-surface p-2 text-center">
-      <span className="block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <span className={`text-sm tabular-nums ${tone}`}>{`${amount} €`}</span>
-    </div>
-  );
-}
-
-export default async function AdminMoneyPage({ params, searchParams }: PageProps) {
+export default async function MoneyPage({ params, searchParams }: PageProps) {
   await logPageView();
   const { lang: langParam } = await params;
   const { season: seasonParam, league: leagueParam } = await searchParams;
   const lang = langParam as Locale;
-  const dict = await getDictionary(lang);
-  const t = dict.admin.money;
 
   const selectedSeasonId = seasonParam ? parseInt(seasonParam, 10) : DEFAULT_SEASON_ID;
   const selectedLeagueKey = leagueParam || 'all';
 
-  const matches = await getPlayedMatchMoneySummaries(selectedSeasonId, selectedLeagueKey);
+  const [dict, session, matches] = await Promise.all([
+    getDictionary(lang),
+    getSession(),
+    getPlayedMatchMoneySummaries(selectedSeasonId, selectedLeagueKey),
+  ]);
+  const t = dict.money;
+  const isAdmin = session?.user.role === 'admin';
 
   const matchLabel = (opponent: string | null, isHome: boolean | null) => (isHome
     ? interpolate(dict.playerDetail.matchHome, { opponent: opponent ?? '—' })
@@ -56,7 +48,7 @@ export default async function AdminMoneyPage({ params, searchParams }: PageProps
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">{t.title}</h1>
-        <p className="text-muted-foreground">{t.description}</p>
+        <p className="text-muted-foreground">{isAdmin ? t.description : t.descriptionReadOnly}</p>
       </div>
 
       <div className="sticky top-[calc(var(--app-header-height)+var(--app-safe-top))] z-30 -mx-4 border-b bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/60 sm:-mx-8 sm:px-8">
@@ -88,7 +80,7 @@ export default async function AdminMoneyPage({ params, searchParams }: PageProps
               {matches.map((match) => (
                 <Link
                   key={match.externalId}
-                  href={`/${lang}/admin/money/${match.externalId}`}
+                  href={`/${lang}/money/${match.externalId}`}
                   className={MATCH_CARD}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -114,9 +106,24 @@ export default async function AdminMoneyPage({ params, searchParams }: PageProps
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    <AmountChip label={t.finesUnpaid} amount={match.finesUnpaid} />
-                    <AmountChip label={t.bonusesUnpaid} amount={match.bonusesUnpaid} />
-                    <AmountChip label={t.trainerUnpaid} amount={match.trainerUnpaid} />
+                    <SettlementChip
+                      label={t.finesUnpaid}
+                      unpaid={match.finesUnpaid}
+                      total={match.fines}
+                      className="bg-surface"
+                    />
+                    <SettlementChip
+                      label={t.bonusesUnpaid}
+                      unpaid={match.bonusesUnpaid}
+                      total={match.bonuses}
+                      className="bg-surface"
+                    />
+                    <SettlementChip
+                      label={t.trainerUnpaid}
+                      unpaid={match.trainerUnpaid}
+                      total={match.trainer}
+                      className="bg-surface"
+                    />
                   </div>
                 </Link>
               ))}

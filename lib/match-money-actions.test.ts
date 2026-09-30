@@ -74,8 +74,8 @@ describe('applyMatchMoney', () => {
     expect(applyMatchMoneyUpdates).toHaveBeenCalledTimes(1);
     expect(applyMatchMoneyUpdates).toHaveBeenCalledWith(44568, updates);
     expect(updateSyncedData).toHaveBeenCalledTimes(1);
-    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/admin/money', 'page');
-    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/admin/money/[matchId]', 'page');
+    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/money', 'page');
+    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/money/[matchId]', 'page');
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/player/[id]', 'page');
     expect(revalidatePath).toHaveBeenCalledWith('/[lang]/trainer/[id]', 'page');
   });

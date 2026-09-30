@@ -104,6 +104,15 @@ export function UserDropdown({
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2 cursor-pointer py-2">
             <Link
+              href={`/${lang}/money`}
+              className="flex items-center gap-2 w-full"
+            >
+              <Coins className="size-4 text-muted-foreground" />
+              <span>{translations.matchMoney}</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-2 cursor-pointer py-2">
+            <Link
               href={`/${lang}/settings`}
               className="flex items-center gap-2 w-full"
             >
@@ -145,15 +154,6 @@ export function UserDropdown({
                 >
                   <ClipboardList className="size-4 text-muted-foreground" />
                   <span>{translations.manualMatches}</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2 cursor-pointer py-2">
-                <Link
-                  href={`/${lang}/admin/money`}
-                  className="flex items-center gap-2 w-full"
-                >
-                  <Coins className="size-4 text-muted-foreground" />
-                  <span>{translations.matchMoney}</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem

@@ -5,7 +5,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { MatchMoneyActionError } from '@/lib/match-money-actions';
 import { applyMatchMoney } from '@/lib/match-money-actions';
 import type { PaymentTarget } from '@/lib/match-money-payload';
-import { PaidToggle } from './PaidToggle';
+import { PaidStatusPill, PaidToggle } from './PaidToggle';
 
 vi.mock('@/lib/match-money-actions', () => ({
   applyMatchMoney: vi.fn(),
@@ -124,5 +124,18 @@ describe('PaidToggle', () => {
     fireEvent.click(button);
 
     await vi.waitFor(() => expect(screen.queryByText(errors.unknown)).not.toBeInTheDocument());
+  });
+});
+
+describe('PaidStatusPill', () => {
+  it.each([
+    [true, labels.paid, labels.unpaid],
+    [false, labels.unpaid, labels.paid],
+  ])('renders paid=%s as "%s" and no button', (isPaid, shown, hidden) => {
+    render(<PaidStatusPill isPaid={isPaid} labels={labels} />);
+
+    expect(screen.getByText(shown)).toBeInTheDocument();
+    expect(screen.queryByText(hidden)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

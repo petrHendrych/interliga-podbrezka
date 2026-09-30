@@ -160,7 +160,7 @@ export interface SettlementTrainerRow {
 
 /** The slice of a `MatchSheet` the settlement digest reads, kept db-free on purpose. */
 export interface SettlementSheet {
-  match: { opponent: string | null };
+  match: { external_id: number; opponent: string | null };
   players: SettlementPlayerRow[];
   trainer_payments: SettlementTrainerRow[];
 }
@@ -179,6 +179,7 @@ export function deriveSettlementPushes(
   after: SettlementSheet,
 ): PersonalPush[] {
   const opponent = after.match.opponent ?? '';
+  const matchId = after.match.external_id;
   const playersBefore = new Map(before.players.map((player) => [player.user_id, player]));
   const trainersBefore = new Map(before.trainer_payments.map((payment) => [payment.id, payment]));
 
@@ -190,12 +191,16 @@ export function deriveSettlementPushes(
 
     const fine = round(player.calculated_fine + player.streak_fine);
     if (justPaid(past?.is_paid, player.is_paid) && fine > 0) {
-      pushes.push({ userId: player.user_id, event: 'finePaid', params: { amount: fine, opponent } });
+      pushes.push({
+        userId: player.user_id, event: 'finePaid', params: { amount: fine, opponent, matchId },
+      });
     }
 
     const bonus = round(player.bonus_received);
     if (justPaid(past?.is_bonus_paid, player.is_bonus_paid) && bonus > 0) {
-      pushes.push({ userId: player.user_id, event: 'bonusPaid', params: { amount: bonus, opponent } });
+      pushes.push({
+        userId: player.user_id, event: 'bonusPaid', params: { amount: bonus, opponent, matchId },
+      });
     }
 
     return pushes;
@@ -211,7 +216,7 @@ export function deriveSettlementPushes(
   const trainerPushes = [...trainerTotals.entries()].map(([userId, amount]): PersonalPush => ({
     userId,
     event: 'trainerPaid',
-    params: { amount: round(amount), opponent },
+    params: { amount: round(amount), opponent, matchId },
   }));
 
   return [...playerPushes, ...trainerPushes];
