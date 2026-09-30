@@ -26,6 +26,7 @@ const labels = {
   faults: 'Chyby',
   fine: 'Pokuta',
   bonus: 'Bonus',
+  you: 'Ty',
 };
 
 const basePlayer: PlayerMoneyCardPlayer = {
@@ -44,6 +45,7 @@ const basePlayer: PlayerMoneyCardPlayer = {
 function renderCard(
   overrides: Partial<PlayerMoneyCardPlayer> = {},
   rows?: ReadonlyArray<PlayerMoneyRow>,
+  viewer: { canEdit?: boolean; isOwn?: boolean } = {},
 ) {
   return render(
     <PlayerMoneyCard
@@ -52,6 +54,8 @@ function renderCard(
       labels={labels}
       errors={errors}
       rows={rows}
+      canEdit={viewer.canEdit}
+      isOwn={viewer.isOwn}
     />,
   );
 }
@@ -115,6 +119,40 @@ describe('PlayerMoneyCard', () => {
     expect(screen.queryByText('13 €')).not.toBeInTheDocument();
     expect(screen.queryByText(labels.fine)).not.toBeInTheDocument();
     expect(screen.queryByText(labels.faults)).not.toBeInTheDocument();
+  });
+
+  it('shows the amounts and paid state read-only, with no button, when the viewer cannot edit', () => {
+    renderCard(
+      { calculated_fine: 6, streak_fine: 10, is_bonus_paid: true },
+      undefined,
+      { canEdit: false },
+    );
+
+    expect(screen.getByText('16 €')).toBeInTheDocument();
+    expect(screen.getByText('40 €')).toBeInTheDocument();
+    expect(screen.getByText(labels.unpaid)).toBeInTheDocument();
+    expect(screen.getByText(labels.paid)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('shows no pill in read-only mode for a row with nothing owed', () => {
+    renderCard(
+      { calculated_fine: 0, streak_fine: 0, bonus_received: 0 },
+      undefined,
+      { canEdit: false },
+    );
+
+    expect(screen.queryByText(labels.unpaid)).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.paid)).not.toBeInTheDocument();
+  });
+
+  it('marks the viewer\'s own card and leaves other cards unmarked', () => {
+    const { unmount } = renderCard({}, undefined, { isOwn: true });
+    expect(screen.getByText(labels.you)).toBeInTheDocument();
+    unmount();
+
+    renderCard();
+    expect(screen.queryByText(labels.you)).not.toBeInTheDocument();
   });
 
   it('shows an unpaid pill for the fine and a paid pill for the bonus in the same card', () => {

@@ -3,7 +3,9 @@ import cs from '@/locales/cs.json';
 import hu from '@/locales/hu.json';
 import sk from '@/locales/sk.json';
 import sr from '@/locales/sr.json';
-import { buildPushPayload, isPushEvent, PUSH_EVENTS } from './push-payload';
+import {
+  buildPushPayload, isPushEvent, pushPath, PUSH_EVENTS, type PushEvent,
+} from './push-payload';
 import { pluralize } from './i18n/plural';
 import type { Locale } from './i18n/config';
 import type { Dictionary } from './i18n/types';
@@ -91,6 +93,41 @@ describe('buildPushPayload', () => {
     expect(body(1)).toBe('Pribudlo 1 zápas');
     expect(body(3)).toBe('Pribudlo 3 zápasy');
     expect(body(5)).toBe('Pribudlo 5 zápasov');
+  });
+});
+
+const MATCH_EVENTS: PushEvent[] = ['finePaid', 'bonusPaid', 'trainerPaid', 'unsettledMatch'];
+const MONEY_LIST_EVENTS: PushEvent[] = [
+  'moneyUpdated', 'fineAdded', 'bonusEarned', 'streakWarning', 'debtReminder',
+];
+
+describe('buildPushPayload deep links', () => {
+  it.each(DICTIONARIES)('opens the match money sheet in %s for a single-match event', (lang, push) => {
+    MATCH_EVENTS.forEach((event) => {
+      expect(buildPushPayload(event, lang, push, { matchId: 44568 }).url).toBe(`/${lang}/money/44568`);
+    });
+  });
+
+  it.each(MATCH_EVENTS)('falls back to the money list for %s without a match id', (event) => {
+    expect(buildPushPayload(event, 'sk', sk.push).url).toBe('/sk/money');
+  });
+
+  it.each([['abc'], [0], [-1], [1.5], ['12/../admin']])(
+    'ignores the untrusted match id %o and opens the money list',
+    (matchId) => {
+      expect(pushPath('finePaid', { matchId })).toBe('money');
+    },
+  );
+
+  it.each(MONEY_LIST_EVENTS)('opens the money list for %s, even when a match id is passed', (event) => {
+    expect(buildPushPayload(event, 'sk', sk.push, { matchId: 44568 }).url).toBe('/sk/money');
+  });
+
+  it('keeps the other events where they were', () => {
+    expect(pushPath('bankWithdrawal')).toBe('withdrawals');
+    expect(pushPath('userAwaitingApproval')).toBe('admin/users');
+    expect(pushPath('matchResult', { matchId: 44568 })).toBe('');
+    expect(pushPath('scrapeFailed')).toBe('');
   });
 });
 

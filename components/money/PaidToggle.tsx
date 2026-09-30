@@ -28,6 +28,19 @@ const PILL_TONE = {
   unpaid: 'bg-red-500/15 text-red-700 dark:text-red-400',
 } as const;
 
+export interface PaidStatusPillProps {
+  isPaid: boolean;
+  labels: Pick<PaidToggleLabels, 'paid' | 'unpaid'>;
+}
+
+export function PaidStatusPill({ isPaid, labels }: PaidStatusPillProps) {
+  return (
+    <span className={`${PILL} ${isPaid ? PILL_TONE.paid : PILL_TONE.unpaid}`}>
+      {isPaid ? labels.paid : labels.unpaid}
+    </span>
+  );
+}
+
 export function PaidToggle({
   matchId,
   target,
@@ -50,9 +63,7 @@ export function PaidToggle({
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-2">
-        <span className={`${PILL} ${isPaid ? PILL_TONE.paid : PILL_TONE.unpaid}`}>
-          {isPaid ? labels.paid : labels.unpaid}
-        </span>
+        <PaidStatusPill isPaid={isPaid} labels={labels} />
         <Button
           type="button"
           size={size}

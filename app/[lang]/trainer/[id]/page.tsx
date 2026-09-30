@@ -81,7 +81,7 @@ export default async function TrainerDetailPage({ params, searchParams }: PagePr
     paidStatus: dict.playerDetail.paidStatus,
     unpaidStatus: dict.playerDetail.unpaidStatus,
     partialStatus: dict.trainerDetail.partialStatus,
-    conditions: dict.admin.money.conditions,
+    conditions: dict.money.conditions,
   };
 
   return (

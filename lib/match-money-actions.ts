@@ -10,8 +10,8 @@ import { sendPersonalMoneyPushes } from './push';
 import { applyMatchMoneyUpdates, MatchMoneyError, type MatchMoneyErrorCode } from './match-money';
 import type { MatchMoneyUpdates } from './match-money-payload';
 
-const MONEY_LIST_PATH = '/[lang]/admin/money';
-const MONEY_SHEET_PATH = '/[lang]/admin/money/[matchId]';
+const MONEY_LIST_PATH = '/[lang]/money';
+const MONEY_SHEET_PATH = '/[lang]/money/[matchId]';
 const PLAYER_PATH = '/[lang]/player/[id]';
 const TRAINER_PATH = '/[lang]/trainer/[id]';
 

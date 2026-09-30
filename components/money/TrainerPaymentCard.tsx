@@ -1,7 +1,8 @@
 import type { MatchMoneyActionError } from '@/lib/match-money-actions';
 import type { TrainerConditionType } from '@/lib/money-rules';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { PaidToggle, type PaidToggleLabels } from './PaidToggle';
+import { OWN_CARD_RING, OwnBadge } from './OwnBadge';
+import { PaidStatusPill, PaidToggle, type PaidToggleLabels } from './PaidToggle';
 
 export interface TrainerPaymentCardPayment {
   id: number;
@@ -12,12 +13,18 @@ export interface TrainerPaymentCardPayment {
   isPaid: boolean;
 }
 
+export interface TrainerPaymentCardLabels extends PaidToggleLabels {
+  you: string;
+}
+
 export interface TrainerPaymentCardProps {
   matchId: number;
   payment: TrainerPaymentCardPayment;
-  labels: PaidToggleLabels;
+  labels: TrainerPaymentCardLabels;
   conditions: Record<TrainerConditionType, string>;
   errors: Record<MatchMoneyActionError, string>;
+  canEdit?: boolean;
+  isOwn?: boolean;
 }
 
 const CARD = 'flex flex-col gap-3 rounded-xl bg-surface-2 p-4';
@@ -33,7 +40,7 @@ function isConditionType(
 }
 
 export function TrainerPaymentCard({
-  matchId, payment, labels, conditions, errors,
+  matchId, payment, labels, conditions, errors, canEdit = true, isOwn = false,
 }: TrainerPaymentCardProps) {
   const condition = isConditionType(payment.conditionType, conditions)
     ? conditions[payment.conditionType]
@@ -43,7 +50,8 @@ export function TrainerPaymentCard({
     : 'text-red-600 dark:text-red-400';
 
   return (
-    <div className={CARD}>
+    <div className={isOwn ? `${CARD} ${OWN_CARD_RING}` : CARD}>
+      {isOwn && <OwnBadge label={labels.you} />}
       <div className={HEADER}>
         <PlayerAvatar
           name={payment.userName}
@@ -59,13 +67,17 @@ export function TrainerPaymentCard({
 
       <div className={AMOUNT_ROW}>
         <span className={`text-base font-semibold tabular-nums ${amountClass}`}>{`${payment.amount} €`}</span>
-        <PaidToggle
-          matchId={matchId}
-          target={{ kind: 'trainer', paymentId: payment.id }}
-          isPaid={payment.isPaid}
-          labels={labels}
-          errors={errors}
-        />
+        {canEdit ? (
+          <PaidToggle
+            matchId={matchId}
+            target={{ kind: 'trainer', paymentId: payment.id }}
+            isPaid={payment.isPaid}
+            labels={labels}
+            errors={errors}
+          />
+        ) : (
+          <PaidStatusPill isPaid={payment.isPaid} labels={labels} />
+        )}
       </div>
     </div>
   );

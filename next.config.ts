@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   experimental: {
     useOffline: true,
   },
+  // Runs before the proxy, so a non-admin following an old admin link never hits the admin guard.
+  async redirects() {
+    return [
+      { source: '/:lang/admin/money/:path*', destination: '/:lang/money/:path*', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

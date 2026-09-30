@@ -695,6 +695,8 @@ export async function getMatchesByTeamId(
       round,
       team_total_score,
       opponent_total_score,
+      team_match_points,
+      opponent_match_points,
       league_name,
       league_id
     FROM matches
@@ -717,6 +719,10 @@ export async function getMatchesByTeamId(
         : null,
       opponentTotalScore: r.opponent_total_score != null
         ? Number(r.opponent_total_score)
+        : null,
+      teamMatchPoints: r.team_match_points != null ? Number(r.team_match_points) : null,
+      opponentMatchPoints: r.opponent_match_points != null
+        ? Number(r.opponent_match_points)
         : null,
       leagueName: String(r.league_name || ''),
       leagueId: r.league_id ? Number(r.league_id) : undefined,

@@ -13,8 +13,11 @@ import { formatDateOnly } from '@/lib/home-helpers';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { MarkAllPaidButton } from '@/components/money/MarkAllPaidButton';
 import { PlayerMoneyCard } from '@/components/money/PlayerMoneyCard';
+import { SettlementChip } from '@/components/money/SettlementChip';
 import { TrainerPaymentCard } from '@/components/money/TrainerPaymentCard';
 import { logPageView } from '@/lib/activity-log';
+import { getSession } from '@/lib/session';
+import { sheetOrder } from '@/lib/money-sheet-order';
 
 const SECTION = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg';
 const SECTION_TITLE = 'font-bold text-lg sm:text-xl leading-tight';
@@ -43,42 +46,9 @@ async function externalIdsFor(userIds: string[]): Promise<Map<string, number | n
   return new Map(rows.map((r) => [r.id, r.externalPlayerId ?? null]));
 }
 
-function openFirst<T>(
-  isOpen: (row: T) => boolean,
-  name: (row: T) => string,
-  lang: Locale,
-): (a: T, b: T) => number {
-  return (a, b) => Number(isOpen(b)) - Number(isOpen(a)) || name(a).localeCompare(name(b), lang);
-}
-
-interface TotalChipProps {
-  label: string;
-  unpaid: number;
-  total: number;
-  format: string;
-}
-
-function TotalChip({
-  label, unpaid, total, format,
-}: TotalChipProps) {
-  const tone = unpaid > 0
-    ? 'text-red-600 dark:text-red-400'
-    : 'text-emerald-600 dark:text-emerald-400';
-  return (
-    <div className="rounded-lg bg-surface-2 p-2 text-center">
-      <span className="block text-[10px] uppercase font-semibold tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <span className={`text-sm font-semibold tabular-nums ${tone}`}>
-        {interpolate(format, { unpaid, total })}
-      </span>
-    </div>
-  );
-}
-
 interface SectionProps {
   title: string;
-  action: ReactNode;
+  action?: ReactNode;
   children: ReactNode;
 }
 
@@ -94,17 +64,23 @@ function Section({ title, action, children }: SectionProps) {
   );
 }
 
-export default async function AdminMoneySheetPage({ params }: PageProps) {
+export default async function MoneySheetPage({ params }: PageProps) {
   await logPageView();
   const { lang: langParam, matchId: matchIdParam } = await params;
   const lang = langParam as Locale;
   const matchId = Number.parseInt(matchIdParam, 10);
   if (Number.isNaN(matchId)) notFound();
 
-  const [dict, sheet] = await Promise.all([getDictionary(lang), loadSheet(matchId)]);
+  const [dict, sheet, session] = await Promise.all([
+    getDictionary(lang),
+    loadSheet(matchId),
+    getSession(),
+  ]);
   if (!sheet) notFound();
 
-  const t = dict.admin.money;
+  const t = dict.money;
+  const isAdmin = session?.user.role === 'admin';
+  const viewerId = session?.user.id;
   const { match, totals } = sheet;
   const owed = (player: MatchSheet['players'][number]) => player.calculated_fine + player.streak_fine;
 
@@ -114,13 +90,23 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
     external_player_id: externalIds.get(p.user_id) ?? null,
   }));
 
-  const players = [...cardPlayers]
-    .sort(openFirst((p) => !p.is_paid && owed(p) > 0, (p) => p.user_name, lang));
+  const isOwnPlayer = (p: { user_id: string }) => p.user_id === viewerId;
+  const isOwnPayment = (p: { userId: string }) => p.userId === viewerId;
+
+  type CardPlayer = (typeof cardPlayers)[number];
+  type Payment = MatchSheet['trainer_payments'][number];
+
+  const players = [...cardPlayers].sort(sheetOrder<CardPlayer>(
+    isOwnPlayer,
+    (p) => !p.is_paid && owed(p) > 0,
+    (p) => p.user_name,
+    lang,
+  ));
   const bonusPlayers = cardPlayers
     .filter((p) => p.bonus_received > 0)
-    .sort(openFirst((p) => !p.is_bonus_paid, (p) => p.user_name, lang));
+    .sort(sheetOrder<CardPlayer>(isOwnPlayer, (p) => !p.is_bonus_paid, (p) => p.user_name, lang));
   const trainerPayments = [...sheet.trainer_payments]
-    .sort(openFirst((p) => !p.isPaid, (p) => p.userName, lang));
+    .sort(sheetOrder<Payment>(isOwnPayment, (p) => !p.isPaid, (p) => p.userName, lang));
 
   const fineTargets: PaymentTarget[] = players
     .filter((p) => !p.is_paid && owed(p) > 0)
@@ -145,10 +131,11 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
     faults: t.faults,
     fine: t.fine,
     bonus: t.bonus,
+    you: t.you,
   };
   const bulkTranslations = { cancel: dict.common.cancel, confirm: t.confirm, errors: t.errors };
 
-  const bulkButton = (targets: PaymentTarget[]) => (
+  const bulkButton = (targets: PaymentTarget[]) => isAdmin && (
     <MarkAllPaidButton
       matchId={matchId}
       targets={targets}
@@ -164,7 +151,7 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <Link
-        href={`/${lang}/admin/money`}
+        href={`/${lang}/money`}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
@@ -190,42 +177,41 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <TotalChip
+          <SettlementChip
             label={t.finesUnpaid}
             unpaid={totals.fines_unpaid}
             total={totals.fines}
-            format={t.unpaidOf}
           />
-          <TotalChip
+          <SettlementChip
             label={t.bonusesUnpaid}
             unpaid={totals.bonuses_unpaid}
             total={totals.bonuses}
-            format={t.unpaidOf}
           />
-          <TotalChip
+          <SettlementChip
             label={t.trainerUnpaid}
             unpaid={totals.trainer_unpaid}
             total={totals.trainer}
-            format={t.unpaidOf}
           />
         </div>
 
-        <div className="mt-4">
-          <MarkAllPaidButton
-            matchId={matchId}
-            targets={allTargets}
-            variant="default"
-            className="w-full sm:w-auto"
-            label={t.markMatchPaid}
-            title={t.markMatchPaidTitle}
-            description={interpolate(t.markMatchPaidDescription, {
-              fines: totals.fines_unpaid,
-              bonuses: totals.bonuses_unpaid,
-              trainer: totals.trainer_unpaid,
-            })}
-            translations={bulkTranslations}
-          />
-        </div>
+        {isAdmin && (
+          <div className="mt-4">
+            <MarkAllPaidButton
+              matchId={matchId}
+              targets={allTargets}
+              variant="default"
+              className="w-full sm:w-auto"
+              label={t.markMatchPaid}
+              title={t.markMatchPaidTitle}
+              description={interpolate(t.markMatchPaidDescription, {
+                fines: totals.fines_unpaid,
+                bonuses: totals.bonuses_unpaid,
+                trainer: totals.trainer_unpaid,
+              })}
+              translations={bulkTranslations}
+            />
+          </div>
+        )}
       </div>
 
       <Section title={t.playersTitle} action={bulkButton(fineTargets)}>
@@ -237,6 +223,8 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
             labels={cardLabels}
             errors={t.errors}
             rows={['fine', 'bonus']}
+            canEdit={isAdmin}
+            isOwn={isOwnPlayer(player)}
           />
         ))}
       </Section>
@@ -253,6 +241,8 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
               labels={cardLabels}
               errors={t.errors}
               rows={['bonus']}
+              canEdit={isAdmin}
+              isOwn={isOwnPlayer(player)}
             />
           ))
         )}
@@ -270,6 +260,8 @@ export default async function AdminMoneySheetPage({ params }: PageProps) {
               labels={cardLabels}
               conditions={t.conditions}
               errors={t.errors}
+              canEdit={isAdmin}
+              isOwn={isOwnPayment(payment)}
             />
           ))
         )}

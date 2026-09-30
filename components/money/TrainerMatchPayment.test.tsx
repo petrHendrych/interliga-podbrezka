@@ -13,7 +13,7 @@ const labels = {
   paidStatus: sk.playerDetail.paidStatus,
   unpaidStatus: sk.playerDetail.unpaidStatus,
   partialStatus: sk.trainerDetail.partialStatus,
-  conditions: sk.admin.money.conditions,
+  conditions: sk.money.conditions,
 };
 
 type Payment = Pick<TrainerPaymentRow, 'conditionType' | 'amount' | 'isPaid'>;
@@ -69,9 +69,9 @@ describe('TrainerMatchAmount', () => {
     const popup = await openTooltip('45 €');
     const items = [...popup.querySelectorAll('li')].map((li) => li.textContent);
     expect(items).toEqual([
-      `${sk.admin.money.conditions.score_bonus}15 € (${sk.playerDetail.paidStatus})`,
-      `${sk.admin.money.conditions.zero_faults}10 € (${sk.playerDetail.unpaidStatus})`,
-      `${sk.admin.money.conditions.elite_player}20 € (${sk.playerDetail.unpaidStatus})`,
+      `${sk.money.conditions.score_bonus}15 € (${sk.playerDetail.paidStatus})`,
+      `${sk.money.conditions.zero_faults}10 € (${sk.playerDetail.unpaidStatus})`,
+      `${sk.money.conditions.elite_player}20 € (${sk.playerDetail.unpaidStatus})`,
     ]);
   });
 

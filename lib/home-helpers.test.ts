@@ -4,6 +4,7 @@ import type { PlayerSeasonBalance } from '@/lib/db-utils';
 import { INTERLIGA_LEAGUE_IDS, TOURNAMENT_LEAGUE_IDS } from '@/lib/season-config';
 import {
   collectBelowLimit,
+  collectTeamLosses,
   eligibleForStats,
   pickTopDonator,
   toPlayersWithStats,
@@ -102,6 +103,59 @@ describe('collectBelowLimit', () => {
 
   it('names the opponent, not our own team', () => {
     expect(collectBelowLimit([match()], 'all', SEASON)?.[0].name).toBe('Rakovice');
+  });
+});
+
+describe('collectTeamLosses', () => {
+  const SEASON = 13;
+
+  function played(teamMatchPoints: number | null, opponentMatchPoints: number | null, id = 1) {
+    return match({
+      id, opponent: `Súper ${id}`, teamMatchPoints, opponentMatchPoints,
+    });
+  }
+
+  it('counts a loss on match points and names the opponent with the result', () => {
+    expect(collectTeamLosses([played(2, 6)], SEASON)).toEqual([
+      {
+        id: 1, name: 'Súper 1', teamPoints: 2, opponentPoints: 6,
+      },
+    ]);
+  });
+
+  it.each([
+    ['a draw', 4, 4],
+    ['a win', 6, 2],
+    ['a clean sweep', 8, 0],
+  ])('does not count %s', (_label, team, opponent) => {
+    expect(collectTeamLosses([played(team, opponent)], SEASON)).toEqual([]);
+  });
+
+  it('counts a cup loss decided by a split duel', () => {
+    expect(collectTeamLosses([played(2.5, 3.5)], SEASON)).toHaveLength(1);
+  });
+
+  it('counts away losses as well as home ones', () => {
+    const away = match({
+      id: 2, isHome: false, opponent: 'Rakovice', teamMatchPoints: 1, opponentMatchPoints: 7,
+    });
+
+    expect(collectTeamLosses([played(3, 5), away], SEASON)?.map((m) => m.id)).toEqual([1, 2]);
+  });
+
+  it.each([
+    ['our', null, 6],
+    ['the opponent\'s', 2, null],
+  ])('skips a match missing %s match points, such as an unplayed fixture', (_side, team, opponent) => {
+    expect(collectTeamLosses([played(team, opponent)], SEASON)).toEqual([]);
+  });
+
+  it('hides the counter before season 13, when losses were not charged', () => {
+    expect(collectTeamLosses([played(2, 6)], 12)).toBeNull();
+  });
+
+  it('shows an empty counter from season 13 when nothing was lost', () => {
+    expect(collectTeamLosses([], SEASON)).toEqual([]);
   });
 });
 

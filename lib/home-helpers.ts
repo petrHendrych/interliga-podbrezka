@@ -24,7 +24,7 @@ import {
   getTeamScoreLimit,
   isCurrentSeason,
 } from '@/lib/season-config';
-import { isUnderLimitEligible } from '@/lib/money-rules';
+import { TEAM_LOSS_FIRST_SEASON_ID, isTeamLoss, isUnderLimitEligible } from '@/lib/money-rules';
 
 export interface PlayerStats {
   avg: number;
@@ -64,6 +64,13 @@ export interface BelowLimitMatch {
   id: number;
   name: string;
   score: number;
+}
+
+export interface TeamLossMatch {
+  id: number;
+  name: string;
+  teamPoints: number;
+  opponentPoints: number;
 }
 
 /** Only players with an external id and a played match belong in the dashboard lists. */
@@ -129,6 +136,32 @@ export function collectBelowLimit(
     }));
 }
 
+/**
+ * Matches lost on match points, or null before the team-loss fine existed, so the counter never
+ * advertises a rule that was not charged that season.
+ */
+export function collectTeamLosses(
+  matches: MatchListItem[],
+  seasonId: number,
+): TeamLossMatch[] | null {
+  if (seasonId < TEAM_LOSS_FIRST_SEASON_ID) return null;
+
+  return matches
+    .filter((m): m is MatchListItem & { teamMatchPoints: number; opponentMatchPoints: number } => (
+      isTeamLoss({
+        seasonId,
+        teamMatchPoints: m.teamMatchPoints,
+        opponentMatchPoints: m.opponentMatchPoints,
+      })
+    ))
+    .map((m) => ({
+      id: m.id,
+      name: m.opponent ?? '',
+      teamPoints: m.teamMatchPoints,
+      opponentPoints: m.opponentMatchPoints,
+    }));
+}
+
 export interface FetchDataResult {
   upcomingMatches: MatchListItem[];
   hasFinishedMatches: boolean;
@@ -139,6 +172,7 @@ export interface FetchDataResult {
   unpaidBonusReceivers: UnpaidDebtor[];
   topDonator: TopDonator | null;
   belowLimitMatches: BelowLimitMatch[] | null;
+  teamLossMatches: TeamLossMatch[] | null;
   nextHomeMatch: MatchListItem | null;
 }
 
@@ -233,6 +267,7 @@ async function fetchHomeDataInternal(
   }
 
   const belowLimitMatches = collectBelowLimit(matchList ?? [], leagueKey, seasonId);
+  const teamLossMatches = collectTeamLosses(matchList ?? [], seasonId);
 
   const eligibleBalances = eligibleForStats(playerBalances);
   const playersWithStats = toPlayersWithStats(eligibleBalances);
@@ -261,6 +296,7 @@ async function fetchHomeDataInternal(
     unpaidBonusReceivers,
     topDonator,
     belowLimitMatches,
+    teamLossMatches,
     nextHomeMatch,
   };
 }
