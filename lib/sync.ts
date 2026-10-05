@@ -35,6 +35,12 @@ import {
 } from './money-rules';
 import { MatchListItem, parseApiDate } from './api';
 import {
+  type SubstitutionMatchInput,
+  substitutionInputFor,
+  syncSubstitutions,
+} from './match-substitutions';
+import type { SubstitutionReview, SubstitutionSource } from './substitutions';
+import {
   derivePersonalPushes,
   type NewMatchResult,
   type PersonalPush,
@@ -46,6 +52,12 @@ import {
   isOurTeam,
   toSnapshotRows,
 } from './sync-transform';
+
+/**
+ * Trainer payments count positions, not people: the minority half of a substituted position
+ * neither adds a player who played nor a second 700.
+ */
+const NOT_MINOR = sql.raw("mpr.substitution_role IS DISTINCT FROM 'minor'");
 
 /** Renders a number list for an `IN (...)` clause. */
 function idList(ids: number[]) {
@@ -86,6 +98,7 @@ export interface SyncMatchData {
   teamResult?: {
     [key: string]: { teamPoints?: number | null } | undefined;
   };
+  substitutions?: SubstitutionSource['substitutions'];
 }
 
 interface SnapshotTeam {
@@ -130,15 +143,23 @@ export async function recalculateDerivedFinancials() {
   // its row number is the streak length. Streaks restart each season, so both windows
   // partition by `season_id` — but never by league, a streak crosses competitions. From
   // season 13 the stored streak cycles 1–5, so only every 5th clean game in a row is fined.
+  // A substituted position is judged on its combined `position_total`; `position_share` hands
+  // the total-based fines and bonus to the player with more throws (1 / 0), or halves them on a
+  // switch at throw 61. Both players of the position count as having played.
   await db.execute(sql`
     WITH worst AS (
-      SELECT match_id, MIN(total) FILTER (WHERE total > 0) AS min_total
+      SELECT match_id,
+             MIN(COALESCE(position_total, total)) FILTER (
+               WHERE COALESCE(position_total, total) > 0 AND COALESCE(position_share, 1) > 0
+             ) AS min_total
       FROM match_player_results
       GROUP BY match_id
     ),
     ordered AS (
       SELECT mpr.match_id, mpr.user_id, mpr.total, mpr.faults, m.date, m.season_id,
              COALESCE(mpr.special_faults_count, 0) AS sfc,
+             COALESCE(mpr.position_total, mpr.total) AS eff_total,
+             COALESCE(mpr.position_share, 1) AS share,
              w.min_total,
              -- Parameters are bound untyped, and a CASE of untyped parameters resolves to
              -- text, which cannot compare with an integer; the ::int casts prevent that.
@@ -146,7 +167,7 @@ export async function recalculateDerivedFinancials() {
                m.team_total_score < CASE WHEN m.season_id >= ${TEAM_SCORE_LIMIT_FIRST_SEASON_ID}
                                          THEN ${TEAM_SCORE_LIMIT}::int
                                          ELSE ${LEGACY_TEAM_SCORE_LIMIT}::int END
-               AND mpr.total > 0
+               AND (mpr.total > 0 OR mpr.substitution_role IS NOT NULL)
                AND m.is_home
                AND (
                  m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)})
@@ -157,7 +178,7 @@ export async function recalculateDerivedFinancials() {
              ) AS team_under_limit,
              COALESCE(
                m.season_id >= ${TEAM_LOSS_FIRST_SEASON_ID}
-               AND mpr.total > 0
+               AND (mpr.total > 0 OR mpr.substitution_role IS NOT NULL)
                AND m.team_match_points < m.opponent_match_points,
                false
              ) AS team_loss,
@@ -188,15 +209,17 @@ export async function recalculateDerivedFinancials() {
       FROM runs
     )
     UPDATE match_player_results mpr
-    SET is_worst_player     = (s.total = s.min_total AND s.total > 0),
-        is_under_600        = (s.total < 600 AND s.total > 0),
+    SET is_worst_player     = (s.eff_total = s.min_total AND s.eff_total > 0 AND s.share > 0),
+        is_under_600        = (s.eff_total < 600 AND s.eff_total > 0 AND s.share > 0),
         is_team_under_limit = s.team_under_limit,
         is_team_loss        = s.team_loss,
         faultless_streak    = s.streak,
-        bonus_received      = CASE WHEN s.total >= 700 THEN 40 ELSE 0 END,
+        bonus_received      = CASE WHEN s.eff_total >= 700 THEN 40 * s.share ELSE 0 END,
         calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
-                            + CASE WHEN s.total = s.min_total AND s.total > 0 THEN 1 ELSE 0 END
-                            + CASE WHEN s.total < 600 AND s.total > 0 THEN 1 ELSE 0 END
+                            + CASE WHEN s.eff_total = s.min_total AND s.eff_total > 0
+                                   THEN 1 * s.share ELSE 0 END
+                            + CASE WHEN s.eff_total < 600 AND s.eff_total > 0
+                                   THEN 1 * s.share ELSE 0 END
                             + s.sfc * 5
                             + CASE WHEN s.team_under_limit
                                    THEN CASE WHEN s.season_id >= ${TEAM_SCORE_LIMIT_FIRST_SEASON_ID}
@@ -214,9 +237,9 @@ export async function recalculateDerivedFinancials() {
     WITH agg AS (
       SELECT m.external_id AS match_id, m.team_total_score, m.season_id,
              m.team_match_points, m.opponent_match_points,
-             COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
+             COUNT(*) FILTER (WHERE mpr.total > 0 AND ${NOT_MINOR}) AS active,
              SUM(mpr.faults) AS team_faults,
-             COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
+             COUNT(*) FILTER (WHERE mpr.total >= 700 AND ${NOT_MINOR}) AS elite
       FROM matches m
       JOIN match_player_results mpr ON mpr.match_id = m.external_id
       GROUP BY 1, 2, 3, 4, 5
@@ -262,9 +285,9 @@ export async function recalculateDerivedFinancials() {
       WITH agg AS (
         SELECT m.external_id AS match_id, m.team_total_score, m.season_id,
                m.team_match_points, m.opponent_match_points,
-               COUNT(*) FILTER (WHERE mpr.total > 0) AS active,
+               COUNT(*) FILTER (WHERE mpr.total > 0 AND ${NOT_MINOR}) AS active,
                SUM(mpr.faults) AS team_faults,
-               COUNT(*) FILTER (WHERE mpr.total >= 700) AS elite
+               COUNT(*) FILTER (WHERE mpr.total >= 700 AND ${NOT_MINOR}) AS elite
         FROM matches m
         JOIN match_player_results mpr ON mpr.match_id = m.external_id
         GROUP BY 1, 2, 3, 4, 5
@@ -509,6 +532,8 @@ export interface SyncOutcome {
   newResults: NewMatchResult[];
   /** Players whose own money or streak moved, one notification each at most. */
   personalPushes: PersonalPush[];
+  /** Our mid-lane switches, which the admin must review; deduplicated by the push log. */
+  substitutionsToReview: SubstitutionReview[];
 }
 
 export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> {
@@ -547,7 +572,12 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
       const teamKey = isHome ? 'home' : 'away';
       const teamLineup = data.lineUp?.[teamKey] || data.results?.[teamKey]?.players || [];
 
-      for (const p of teamLineup) {
+      // A substitute has no lineUp row, so they are provisioned from the substitution list.
+      const substitutes = (data.substitutions ?? [])
+        .filter((s) => s.teamState === teamKey)
+        .map((s) => ({ player: s.newPlayer }));
+
+      for (const p of [...teamLineup, ...substitutes]) {
         if (p.player?.id) {
           const playerFirstName = p.player?.firstName || '';
           const playerLastName = p.player?.lastName || '';
@@ -697,6 +727,7 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
       avg: string;
       faults: number;
     }> = [];
+    const substitutionInputs: SubstitutionMatchInput[] = [];
 
     for (const { matchId, data } of matchDataList) {
       const isHome = isOurTeam({
@@ -739,6 +770,13 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
       const opponentMatchPoints = data.teamResult?.[opponentKey]?.teamPoints ?? null;
 
       const existingMatch = matchesMapByExtId.get(matchId);
+
+      const substitutionInput = substitutionInputFor(
+        matchId,
+        data,
+        seasonId || existingMatch?.seasonId || null,
+      );
+      if (substitutionInput) substitutionInputs.push(substitutionInput);
 
       matchesMapByExtId.set(matchId, {
         externalId: matchId,
@@ -840,6 +878,10 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
     console.log('Syncing player results snapshots...');
     await syncAllPlayerResultsSnapshots(payloads?.playerResults);
 
+    // Last of the raw writers: both upserts above write the starter's combined row.
+    console.log('Splitting substituted positions...');
+    const substitutionsToReview = await syncSubstitutions(substitutionInputs);
+
     console.log('Recalculating fines, bonuses and trainer payments...');
     const personalPushes = await recalculateAndDiffPlayerMoney();
 
@@ -855,7 +897,7 @@ export async function syncData(payloads?: ScrapePayloads): Promise<SyncOutcome> 
       .where(inArray(matches.externalId, newResultIds));
 
     console.log(`Data sync completed successfully. ${newResults.length} new result(s).`);
-    return { newResults, personalPushes };
+    return { newResults, personalPushes, substitutionsToReview };
   } catch (error) {
     console.error('Data sync failed:', error);
     throw error;

@@ -47,6 +47,10 @@ export interface PlayerRow {
   total: number;
   faults: number | null;
   specialFaultsCount: number;
+  /** Set only on the two rows of a position shared by a substitution. */
+  substitutionRole?: 'major' | 'minor' | null;
+  positionTotal?: number | null;
+  positionShare?: number | null;
 }
 
 export interface MatchContext {
@@ -135,11 +139,31 @@ export function streakFineFor(streak: number): number {
   return streak >= STREAK_LENGTH ? STREAK_FINE : 0;
 }
 
-/** `MIN(total) FILTER (WHERE total > 0)` — the `worst` CTE in sync.ts. */
+/** `COALESCE(position_total, total)` — `eff_total` in the `ordered` CTE of sync.ts. */
+export function effectiveTotal(row: PlayerRow): number {
+  return row.positionTotal ?? row.total;
+}
+
+/** `COALESCE(position_share, 1)` — `share` in the `ordered` CTE of sync.ts. */
+export function positionShare(row: PlayerRow): number {
+  return row.positionShare ?? 1;
+}
+
+/** `(mpr.total > 0 OR mpr.substitution_role IS NOT NULL)` in sync.ts's team fines. */
+export function hasPlayed(row: PlayerRow): boolean {
+  return row.total > 0 || Boolean(row.substitutionRole);
+}
+
+/** `NOT_MINOR` in the trainer `agg` CTE of sync.ts: a trainer counts positions, not people. */
+function countsAsPosition(row: PlayerRow): boolean {
+  return row.substitutionRole !== 'minor';
+}
+
+/** The `worst` CTE in sync.ts: the lowest position total among rows holding a share of it. */
 export function worstTotal(rows: PlayerRow[]): number | null {
-  const played = rows.filter((r) => r.total > 0);
+  const played = rows.filter((r) => effectiveTotal(r) > 0 && positionShare(r) > 0);
   if (played.length === 0) return null;
-  return Math.min(...played.map((r) => r.total));
+  return Math.min(...played.map(effectiveTotal));
 }
 
 /** The `streak` CASE over `run` in the `streaks` CTE of sync.ts. */
@@ -189,11 +213,13 @@ export function derivePlayers(
   const teamLoss = isTeamLoss(match);
 
   return new Map(rows.map((row) => {
-    const played = row.total > 0;
-    const isWorstPlayer = played && row.total === minTotal;
-    const isUnder600 = played && row.total < UNDER_600_LIMIT;
-    const underLimit = played && teamUnderLimit;
-    const lost = played && teamLoss;
+    const total = effectiveTotal(row);
+    const share = positionShare(row);
+    const holdsPosition = total > 0 && share > 0;
+    const isWorstPlayer = holdsPosition && total === minTotal;
+    const isUnder600 = holdsPosition && total < UNDER_600_LIMIT;
+    const underLimit = hasPlayed(row) && teamUnderLimit;
+    const lost = hasPlayed(row) && teamLoss;
     const streak = streakByUser[row.userId] ?? 0;
 
     const derived: PlayerDerived = {
@@ -202,13 +228,13 @@ export function derivePlayers(
       isTeamUnderLimit: underLimit,
       isTeamLoss: lost,
       calculatedFine: faultFine(row.faults)
-        + (isWorstPlayer ? WORST_PLAYER_FINE : 0)
-        + (isUnder600 ? UNDER_600_FINE : 0)
+        + (isWorstPlayer ? WORST_PLAYER_FINE * share : 0)
+        + (isUnder600 ? UNDER_600_FINE * share : 0)
         + specialFaultFine(row.specialFaultsCount)
         + (underLimit ? teamUnderLimitFineFor(match.seasonId) : 0)
         + (lost ? TEAM_LOSS_FINE : 0),
       streakFine: streakFineFor(streak),
-      bonusReceived: playerBonus(row.total),
+      bonusReceived: playerBonus(total) * share,
     };
 
     return [row.userId, derived];
@@ -230,14 +256,14 @@ export function trainerZeroFaultsBonus(rows: PlayerRow[]): number | null {
   if (counted.length === 0) return null;
 
   const teamFaults = counted.reduce((sum, r) => sum + (r.faults ?? 0), 0);
-  const active = rows.filter((r) => r.total > 0).length;
+  const active = rows.filter((r) => r.total > 0 && countsAsPosition(r)).length;
   if (teamFaults !== 0 || active < TRAINER_ZERO_FAULTS_MIN_PLAYERS) return null;
   return TRAINER_ZERO_FAULTS_BONUS;
 }
 
 /** `elite_player`: one row per match worth 10 € per player on 700 or more. */
 export function trainerElitePlayerBonus(rows: PlayerRow[]): number | null {
-  const elite = rows.filter((r) => r.total >= BONUS_TOTAL_LIMIT).length;
+  const elite = rows.filter((r) => r.total >= BONUS_TOTAL_LIMIT && countsAsPosition(r)).length;
   return elite > 0 ? elite * TRAINER_ELITE_PLAYER_BONUS : null;
 }
 

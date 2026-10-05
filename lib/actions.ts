@@ -3,7 +3,12 @@
 /* eslint-disable no-console */
 import { updateSyncedData } from './cache';
 import { runScrapingJob } from './scraper';
-import { notifyAdmins, sendMatchResultsPush, sendPersonalMoneyPushes } from './push';
+import {
+  notifyAdmins,
+  notifySubstitutionReviews,
+  sendMatchResultsPush,
+  sendPersonalMoneyPushes,
+} from './push';
 import { dailyDedupeKey } from './push-digest';
 import { getSession } from './session';
 import { logActivity } from './activity-log';
@@ -28,6 +33,7 @@ export async function triggerSync() {
     // Silence when the scrape found nothing new — a sync is not news by itself.
     await sendMatchResultsPush(outcome.newResults);
     await sendPersonalMoneyPushes(outcome.personalPushes);
+    await notifySubstitutionReviews(outcome.substitutionsToReview);
 
     logActivity('admin', 'triggerSync', { newResults: outcome.newResults.length }, session.user);
     return { success: true };

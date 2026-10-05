@@ -18,6 +18,7 @@ import {
   type PersonalPushEvent,
 } from './push-digest';
 import type { Dictionary } from './i18n/types';
+import type { SubstitutionReview } from './substitutions';
 
 // Chunked so a broadcast to a large roster stays inside the Vercel function timeout.
 const BATCH_SIZE = 25;
@@ -322,6 +323,27 @@ export async function notifyAdmins(
   }
 
   return result;
+}
+
+/**
+ * Asks the admins to look at every mid-lane switch: the API has no per-throw data, so only they
+ * can say whose faults that lane's are. Keyed by the API's substitution id, so a re-scrape of the
+ * same match stays silent.
+ */
+export async function notifySubstitutionReviews(reviews: SubstitutionReview[]): Promise<void> {
+  await Promise.all(reviews.map((review) => notifyAdmins(
+    'substitutionReview',
+    {
+      matchId: review.matchId,
+      opponent: review.opponent,
+      starter: review.starterName,
+      substitute: review.substituteName,
+      throwNumber: review.throwNumber,
+      lane: review.lane,
+      faults: review.laneFaults,
+    },
+    String(review.substitutionId),
+  )));
 }
 
 /**

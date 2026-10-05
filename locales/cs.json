@@ -207,11 +207,22 @@
       "elite_player": "Hráči nad 700",
       "clean_sweep": "Výhra 8:0"
     },
+    "substitutionsTitle": "Střídání",
+    "substitutionLine": "{starter} → {substitute} od {throwNumber}. hodu",
+    "substitutionLane": "{lane}. dráha · chyby na dráze: {faults}",
+    "substitutionExact": "Střídání na začátku dráhy, chyby se rozdělily přesně podle drah.",
+    "substitutionNoLaneFaults": "Střídání uprostřed dráhy bez chyb, není co rozdělovat.",
+    "substitutionNeedsSplit": "Rozděl chyby — zatím jsou všechny u hráče {starter}.",
+    "substitutionSplitLabel": "Chyby hráče {substitute} na {lane}. dráze (0–{faults})",
+    "substitutionSplitDone": "{substitute}: {count} z {faults} chyb na dráze",
+    "save": "Uložit",
     "errors": {
       "unauthorized": "Na tuhle akci nemáš oprávnění.",
       "notFound": "Zápas nebo záznam nebyl nalezen.",
       "noBonus": "Tenhle hráč v zápase nezískal žádný bonus.",
       "invalid": "Neplatné údaje.",
+      "invalidFaultSplit": "Počet chyb musí být celé číslo od 0 do počtu chyb na dráze.",
+      "paidLocked": "Pokuta jednoho z hráčů je už zaplacená. Nejdřív zruš platbu.",
       "unknown": "Někde se stala chyba, zkus to znovu."
     }
   },
@@ -253,6 +264,7 @@
     "streakFinesCount": "{count}x série",
     "streakFinesHint": "Pokuta za sérii 5+ zápasů bez chyby. Je započítaná v této částce, ale protože se počítá napříč všemi soutěžemi sezony, v částkách za jednotlivé soutěže není.",
     "streakBadge": "{count}. bez chyby",
+    "substitution": "Střídal",
     "didNotPlay": "Nehrál",
     "notPlayedYet": "Neodehráno",
     "noResults": "Tento hráč nemá žádné výsledky.",
@@ -417,6 +429,7 @@
       "title": "Poznámky",
       "items": [
         "Pokuta za zápasy bez chyb je vedená zvlášť. V částkách za jednotlivé soutěže ji nenajdeš, protože se počítá napříč všemi soutěžemi sezony.",
+        "Střídání během zápasu: každý platí za své chyby a oba platí pokutu za prohru týmu i za tým pod limitem. Pod 600, nejhorší v týmu i bonus 700 se posuzují podle společného výsledku pozice a připadnou tomu, kdo odházel víc hodů; při střídání přesně v polovině (od 61. hodu) se dělí napůl. Do série bez chyby se každému počítá jeho vlastní část zápasu. Pokud se střídalo uprostřed dráhy, chyby z té dráhy rozdělí admin.",
         "Speciální chyby označuje admin ručně po zápase.",
         "Zaplacené pokuty a bonusy se zpětným přepočtem už nemění.",
         "Opakované nedodržení dress code nebo nadměrné používání mobilu během zápasu je speciální pokuta 10 €."
@@ -536,6 +549,10 @@
       "unsettledMatch": {
         "title": "Nevyrovnaný zápas",
         "body": "Zápas s {opponent} má pořád nezaplacených {amount} €."
+      },
+      "substitutionReview": {
+        "title": "Kontrola střídání",
+        "body": "Zápas s {opponent}: {starter} → {substitute} od {throwNumber}. hodu, uprostřed {lane}. dráhy (chyby na dráze: {faults}). Zkontroluj střídání a rozděl chyby."
       }
     },
     "counts": {

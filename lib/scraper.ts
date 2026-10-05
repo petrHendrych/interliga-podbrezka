@@ -16,6 +16,7 @@ import {
 } from './db-utils';
 import { syncData, type ScrapePayloads } from './sync';
 import type { NewMatchResult, PersonalPush } from './push-digest';
+import type { SubstitutionReview } from './substitutions';
 import { getAllTeamIds, SEASONS_CONFIG } from './season-config';
 
 export interface ScrapeOutcome {
@@ -23,9 +24,12 @@ export interface ScrapeOutcome {
   ran: boolean;
   newResults: NewMatchResult[];
   personalPushes: PersonalPush[];
+  substitutionsToReview: SubstitutionReview[];
 }
 
-const SKIPPED: ScrapeOutcome = { ran: false, newResults: [], personalPushes: [] };
+const SKIPPED: ScrapeOutcome = {
+  ran: false, newResults: [], personalPushes: [], substitutionsToReview: [],
+};
 
 /**
  * Main scraping job that fetches data from the external API and persists it to Neon DB.
@@ -111,6 +115,11 @@ export async function runScrapingJob(
               playerIds.add(p.player.id);
             }
           });
+
+          // A substitute is absent from the lineUp, so only this list brings them in.
+          (matchDetail.substitutions ?? [])
+            .filter((s) => s.teamState === teamKey && s.newPlayer?.id)
+            .forEach((s) => playerIds.add(s.newPlayer.id));
         } catch (error) {
           console.error(`Failed to scrape match ${matchId}:`, error);
         }
@@ -162,9 +171,11 @@ export async function runScrapingJob(
     }
 
     console.log(`Scraping job (${source}) completed successfully. Triggering data sync...`);
-    const { newResults, personalPushes } = await syncData(payloads);
+    const { newResults, personalPushes, substitutionsToReview } = await syncData(payloads);
     console.log(`All jobs (${source}) completed.`);
-    return { ran: true, newResults, personalPushes };
+    return {
+      ran: true, newResults, personalPushes, substitutionsToReview,
+    };
   } catch (error) {
     console.error(`Scraping job (${source}) failed:`, error);
     throw error;

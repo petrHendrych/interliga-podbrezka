@@ -1,5 +1,6 @@
 import { DEFAULT_SEASON_ID } from './season-config';
 import { normalizeMatchList } from './sync-transform';
+import type { LaneResult } from './substitutions';
 
 const BASE_URL = 'https://api.vysledky.kolky.sk';
 
@@ -47,6 +48,31 @@ export interface TeamResult {
   [key: string]: unknown;
 }
 
+export interface ApiPlayerRef {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface LineUpRow {
+  id?: number;
+  player: ApiPlayerRef;
+  /** First throw of the substitute on this position; null when nobody was substituted. */
+  changeThrow?: number | null;
+  lanes?: LaneResult[];
+}
+
+/** Only sent when `substitutions` is in the requested fields. */
+export interface MatchSubstitution {
+  id: number;
+  matchId: number;
+  teamState: 'home' | 'away';
+  /** The substitute's first throw — equals `changeThrow` on the starter's lineUp row. */
+  throwNumber: number;
+  player: ApiPlayerRef;
+  newPlayer: ApiPlayerRef;
+}
+
 export interface MatchDetail {
   id: number;
   homeTeam: {
@@ -58,9 +84,10 @@ export interface MatchDetail {
     club: { id: number };
   };
   lineUp: {
-    home: { player: { id: number } }[];
-    away: { player: { id: number } }[];
+    home: LineUpRow[];
+    away: LineUpRow[];
   };
+  substitutions?: MatchSubstitution[];
   league?: { seasonId?: number };
   [key: string]: unknown;
 }
@@ -119,11 +146,19 @@ export async function getTeamResults(teamId: number) {
   return data.list;
 }
 
+/**
+ * Only what `syncData` reads; `lineUp` is returned regardless of this list. `substitutions`
+ * names who replaced whom from which throw, and `results.lanes` puts the per-lane split on
+ * every lineUp row — neither is sent unless asked for, and the substitution money needs both.
+ */
+export const MATCH_DETAIL_FIELDS = [
+  'league', 'details', 'teams', 'teams.club', 'results', 'results.lanes', 'substitutions', 'hall',
+];
+
 export async function getMatchDetail(matchId: number) {
   return fetchLeagueApi<MatchDetail>('/match/detail', {
     id: matchId,
-    // Only what `syncData` reads; `lineUp` is returned regardless of this list.
-    fields: ['league', 'details', 'teams', 'teams.club', 'results', 'hall'],
+    fields: MATCH_DETAIL_FIELDS,
   });
 }
 

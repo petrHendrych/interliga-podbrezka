@@ -18,6 +18,8 @@ const errors: Record<MatchMoneyActionError, string> = {
   notFound: 'Záznam sa nenašiel',
   noBonus: 'Hráč nemá bonus',
   invalid: 'Neplatná hodnota',
+  invalidFaultSplit: 'Neplatné rozdelenie chýb',
+  paidLocked: 'Už zaplatené',
   unknown: 'Neznáma chyba',
 };
 

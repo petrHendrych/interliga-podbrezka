@@ -73,6 +73,21 @@ describe('buildPlayerMatchRows', () => {
     expect(rows[0].kind).toBe('result');
   });
 
+  it('shows the substitute\'s half of a shared position as a substitution, never as did-not-play', () => {
+    const rows = buildPlayerMatchRows(
+      [
+        { ...result(1, '2026-10-03T10:00:00.000Z', 155), substitutionRole: 'minor' as const },
+        { ...result(2, '2026-09-26T10:00:00.000Z', 641), substitutionRole: 'major' as const },
+      ],
+      [missing(1, '2026-10-03T10:00:00.000Z', true)],
+    );
+
+    expect(rows.map((r) => [r.match.matchId, r.kind])).toEqual([
+      [1, 'substitution'],
+      [2, 'result'],
+    ]);
+  });
+
   it('classifies by whether the match has been played', () => {
     const rows = buildPlayerMatchRows<Result>(
       [],

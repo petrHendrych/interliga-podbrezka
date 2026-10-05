@@ -72,8 +72,29 @@ export const matchPlayerResults = pgTable('match_player_results', {
   isPaid: boolean('is_paid').default(false),
   isBonusPaid: boolean('is_bonus_paid').default(false),
   teamId: integer('team_id'),
+  // A position shared by a substitution: 'major' keeps the position result, 'minor' only its
+  // own faults and team fines. NULL on every unshared row.
+  substitutionRole: text('substitution_role'),
+  positionTotal: integer('position_total'),
+  positionShare: numeric('position_share'),
 }, (table) => [
   primaryKey({ columns: [table.matchId, table.userId] }),
+]);
+
+export const matchSubstitutions = pgTable('match_substitutions', {
+  // The results API's substitution id.
+  id: bigint('id', { mode: 'number' }).primaryKey(),
+  matchId: bigint('match_id', { mode: 'number' }).notNull().references(() => matches.externalId),
+  starterUserId: uuid('starter_user_id').notNull().references(() => users.id),
+  substituteUserId: uuid('substitute_user_id').notNull().references(() => users.id),
+  throwNumber: integer('throw_number').notNull(),
+  // Faults of the lane the switch falls in; only a mid-lane switch needs them split.
+  laneFaults: integer('lane_faults').notNull().default(0),
+  // Admin-owned: how many faults of a mid-lane lane belong to the substitute. Sync never writes it.
+  splitLaneSubstituteFaults: integer('split_lane_substitute_faults'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index('idx_match_substitutions_match').on(table.matchId),
 ]);
 
 export const trainerPayments = pgTable('trainer_payments', {
@@ -178,6 +199,8 @@ export type Match = InferSelectModel<typeof matches>;
 export type NewMatch = InferInsertModel<typeof matches>;
 export type MatchPlayerResult = InferSelectModel<typeof matchPlayerResults>;
 export type NewMatchPlayerResult = InferInsertModel<typeof matchPlayerResults>;
+export type MatchSubstitutionRow = InferSelectModel<typeof matchSubstitutions>;
+export type NewMatchSubstitutionRow = InferInsertModel<typeof matchSubstitutions>;
 export type TrainerPayment = InferSelectModel<typeof trainerPayments>;
 export type NewTrainerPayment = InferInsertModel<typeof trainerPayments>;
 export type BankWithdrawal = InferSelectModel<typeof bankWithdrawals>;

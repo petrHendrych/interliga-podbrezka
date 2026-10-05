@@ -20,9 +20,11 @@ apply payload:
       { "userId": "<uuid>", "fullFaults": 1, "secondToLastFaults": 0,
         "isPaid": true, "isBonusPaid": false }
     ],
-    "trainerPayments": [ { "id": 8, "isPaid": true } ]
+    "trainerPayments": [ { "id": 8, "isPaid": true } ],
+    "substitutions": [ { "id": 8585, "substituteLaneFaults": 2 } ]
   }
-Omitted fields keep their current value.`;
+Omitted fields keep their current value. "substitutions" splits the faults of the lane a
+mid-lane switch falls in: how many of them the substitute made (0 to lane_faults).`;
 
 function flagValue(args: string[], flag: string): string | undefined {
   const index = args.indexOf(flag);
@@ -61,7 +63,14 @@ async function runList(args: string[]): Promise<void> {
   const limit = limitRaw ? Number(limitRaw) : undefined;
   const unpaidOnly = args.includes('--unpaid-only');
 
-  const played = await getPlayedMatches(unpaidOnly ? undefined : limit);
+  const { getPendingSubstitutionCounts } = await import('../lib/match-substitutions');
+
+  const matchesPlayed = await getPlayedMatches(unpaidOnly ? undefined : limit);
+  const pending = await getPendingSubstitutionCounts(matchesPlayed.map((m) => m.external_id));
+  const played = matchesPlayed.map((match) => ({
+    ...match,
+    pendingSubstitutions: pending.get(match.external_id) ?? 0,
+  }));
 
   if (!unpaidOnly) {
     console.log(JSON.stringify(played, null, 2));

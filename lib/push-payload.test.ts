@@ -96,7 +96,9 @@ describe('buildPushPayload', () => {
   });
 });
 
-const MATCH_EVENTS: PushEvent[] = ['finePaid', 'bonusPaid', 'trainerPaid', 'unsettledMatch'];
+const MATCH_EVENTS: PushEvent[] = [
+  'finePaid', 'bonusPaid', 'trainerPaid', 'unsettledMatch', 'substitutionReview',
+];
 const MONEY_LIST_EVENTS: PushEvent[] = [
   'moneyUpdated', 'fineAdded', 'bonusEarned', 'streakWarning', 'debtReminder',
 ];
