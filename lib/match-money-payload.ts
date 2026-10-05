@@ -1,3 +1,7 @@
+import type { SubstitutionSplitUpdate } from './validation/substitution';
+
+export type { SubstitutionSplitUpdate } from './validation/substitution';
+
 export interface PlayerMoneyUpdate {
   userId: string;
   fullFaults?: number;
@@ -14,6 +18,8 @@ export interface TrainerPaymentUpdate {
 export interface MatchMoneyUpdates {
   players?: PlayerMoneyUpdate[];
   trainerPayments?: TrainerPaymentUpdate[];
+  /** How many of a mid-lane lane's faults belong to the substitute. */
+  substitutions?: SubstitutionSplitUpdate[];
 }
 
 export type PaymentTarget =

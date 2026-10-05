@@ -564,3 +564,168 @@ describe('deriveTrainerPayments', () => {
     expect(deriveTrainerPayments({ teamTotalScore: 3600, isHome: true }, rows)).toEqual([]);
   });
 });
+
+describe('substituted positions', () => {
+  function shared(
+    userId: string,
+    substitutionRole: 'major' | 'minor',
+    total: number,
+    positionTotal: number,
+    share: number,
+    faults = 0,
+  ): PlayerRow {
+    return player({
+      userId, total, faults, substitutionRole, positionTotal, positionShare: share,
+    });
+  }
+
+  // 44990: Vadovič 641 over lanes 1–3 + Dubrava's lane 4; Kozma 626 is the worst.
+  const jihlava = [
+    shared('vadovic', 'major', 641, 641, 1),
+    shared('dubrava', 'minor', 155, 641, 0),
+    player({ userId: 'kozma', total: 626 }),
+    player({ userId: 'gorecky', total: 675 }),
+  ];
+
+  it('never makes the minority segment the worst in team', () => {
+    expect(worstTotal(jihlava)).toBe(626);
+    const derived = derivePlayers({ seasonId: CURRENT_SEASON }, jihlava);
+    expect(derived.get('dubrava')).toMatchObject({ isWorstPlayer: false, isUnder600: false });
+    expect(derived.get('kozma')?.isWorstPlayer).toBe(true);
+    expect(derived.get('dubrava')?.calculatedFine).toBe(0);
+  });
+
+  it.each([
+    [599, 2],
+    [600, 1],
+    [601, 1],
+  ])('judges under 600 on the position total %i, charged to the majority only', (positionTotal, majorFine) => {
+    const rows = [
+      shared('major', 'major', positionTotal, positionTotal, 1),
+      shared('minor', 'minor', 150, positionTotal, 0),
+      player({ userId: 'other', total: 650 }),
+    ];
+    const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+    // The position is also the worst in team, which adds 1 € on top of the under-600 fine.
+    expect(derived.get('major')?.calculatedFine).toBe(majorFine);
+    expect(derived.get('minor')?.calculatedFine).toBe(0);
+  });
+
+  it.each([
+    [699, 0],
+    [700, 40],
+    [701, 40],
+  ])('pays the bonus on the position total %i to the majority only', (positionTotal, bonus) => {
+    const rows = [
+      shared('major', 'major', positionTotal, positionTotal, 1),
+      shared('minor', 'minor', 180, positionTotal, 0),
+    ];
+    const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+    expect(derived.get('major')?.bonusReceived).toBe(bonus);
+    expect(derived.get('minor')?.bonusReceived).toBe(0);
+  });
+
+  describe('switch at exactly half (throw 61)', () => {
+    it('splits the under-600 and worst-in-team fines 0.50 € / 0.50 €', () => {
+      const rows = [
+        shared('starter', 'major', 590, 590, 0.5),
+        shared('substitute', 'minor', 290, 590, 0.5),
+        player({ userId: 'other', total: 640 }),
+      ];
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+      expect(derived.get('starter')).toMatchObject({
+        isWorstPlayer: true, isUnder600: true, calculatedFine: 1,
+      });
+      expect(derived.get('substitute')).toMatchObject({
+        isWorstPlayer: true, isUnder600: true, calculatedFine: 1,
+      });
+    });
+
+    it('splits a worst-in-team tie with another player, who still pays the full euro', () => {
+      const rows = [
+        shared('starter', 'major', 610, 610, 0.5),
+        shared('substitute', 'minor', 300, 610, 0.5),
+        player({ userId: 'other', total: 610 }),
+      ];
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+      expect(derived.get('starter')?.calculatedFine).toBe(0.5);
+      expect(derived.get('substitute')?.calculatedFine).toBe(0.5);
+      expect(derived.get('other')?.calculatedFine).toBe(1);
+    });
+
+    it('splits the 700 bonus 20 € / 20 €', () => {
+      const rows = [
+        shared('starter', 'major', 712, 712, 0.5),
+        shared('substitute', 'minor', 350, 712, 0.5),
+      ];
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+      expect(derived.get('starter')?.bonusReceived).toBe(20);
+      expect(derived.get('substitute')?.bonusReceived).toBe(20);
+    });
+  });
+
+  it('charges each player their own faults', () => {
+    const rows = [
+      shared('starter', 'major', 600, 610, 1, 3),
+      shared('substitute', 'minor', 0, 610, 0, 2),
+      player({ userId: 'other', total: 590 }),
+    ];
+    const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+    expect(derived.get('starter')?.calculatedFine).toBe(6);
+    expect(derived.get('substitute')?.calculatedFine).toBe(3);
+  });
+
+  it('charges the team-loss and under-limit fines to both, even a minority with no whole lane', () => {
+    const rows = [
+      shared('starter', 'major', 600, 600, 1),
+      shared('substitute', 'minor', 0, 600, 0),
+      player({ userId: 'other', total: 610 }),
+    ];
+    const match = {
+      ...homeInterliga(3600, CURRENT_SEASON), teamMatchPoints: 2, opponentMatchPoints: 6,
+    };
+    const derived = derivePlayers(match, rows);
+
+    expect(derived.get('substitute')).toMatchObject({
+      isTeamUnderLimit: true, isTeamLoss: true, calculatedFine: 10,
+    });
+    // 5 (under limit) + 5 (loss) + 1 (worst in team, on the position total of 600)
+    expect(derived.get('starter')?.calculatedFine).toBe(11);
+  });
+
+  it('counts each player\'s own segment in their streak', () => {
+    const starter = faultlessStreaks([
+      { faults: 0, seasonId: CURRENT_SEASON },
+      { faults: 0, seasonId: CURRENT_SEASON },
+      { faults: 0, seasonId: CURRENT_SEASON },
+      { faults: 0, seasonId: CURRENT_SEASON },
+      { faults: 0, seasonId: CURRENT_SEASON }, // a clean shared segment
+    ]);
+    const substitute = faultlessStreaks([
+      { faults: 0, seasonId: CURRENT_SEASON },
+      { faults: 1, seasonId: CURRENT_SEASON }, // a fault in the shared segment
+    ]);
+
+    expect(starter.at(-1)).toBe(5);
+    expect(streakFineFor(starter.at(-1)!)).toBe(10);
+    expect(substitute).toEqual([1, 0]);
+  });
+
+  it('counts the shared position once for the trainer', () => {
+    const team = [
+      ...Array.from({ length: 5 }, (_, i) => player({ userId: `p${i}`, total: 650, faults: 0 })),
+      shared('major', 'major', 720, 720, 1),
+      shared('minor', 'minor', 700, 720, 0),
+    ];
+
+    expect(trainerElitePlayerBonus(team)).toBe(10);
+    expect(trainerZeroFaultsBonus(team)).toBe(10);
+    expect(trainerZeroFaultsBonus(team.filter((r) => r.userId !== 'p0'))).toBeNull();
+  });
+});

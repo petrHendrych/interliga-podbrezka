@@ -195,6 +195,47 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
               <TableBody>
                 {matchRows.length > 0 ? (
                   matchRows.map((row) => {
+                    if (row.kind === 'substitution') {
+                      const result = row.match;
+                      return (
+                        <TableRow key={result.matchId}>
+                          <TableCell className="whitespace-nowrap">
+                            {result.date ? formatDateOnly(result.date, lang) : '-'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
+                            {leagueLabelForId(result.leagueId, result.leagueName, dict)}
+                          </TableCell>
+                          <TableCell>{matchLabel(result.opponent, result.isHome)}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          <TableCell className="text-right">{result.faults}</TableCell>
+                          <TableCell className="text-right">
+                            <span className="inline-flex items-center justify-end gap-2">
+                              <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] whitespace-nowrap text-muted-foreground">
+                                {dict.playerDetail.substitution}
+                              </span>
+                              <MatchFineTooltip
+                                calculatedFine={result.calculatedFine}
+                                streakFine={result.streakFine}
+                                isPaid={result.isPaid}
+                                faults={result.faults}
+                                isWorstPlayer={result.isWorstPlayer}
+                                isUnder600={result.isUnder600}
+                                isTeamUnderLimit={result.isTeamUnderLimit}
+                                isTeamLoss={result.isTeamLoss}
+                                fullFaultsCount={result.fullFaultsCount}
+                                secondToLastFaultsCount={result.secondToLastFaultsCount}
+                                specialFaultsCount={result.specialFaultsCount}
+                                faultlessStreak={result.faultlessStreak}
+                                labels={fineLabels}
+                              />
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
                     if (row.kind !== 'result') {
                       const { match } = row;
                       return (

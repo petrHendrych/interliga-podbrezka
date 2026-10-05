@@ -7,8 +7,15 @@ import { deriveSettlementPushes, type PersonalPush } from './push-digest';
 import { getMatchPlayers, type MatchPlayerResult } from './special-misses';
 import { getMatchTrainerPayments, type TrainerPayment } from './trainer-payments';
 import type {
-  PlayerMoneyUpdate, TrainerPaymentUpdate, MatchMoneyUpdates,
+  PlayerMoneyUpdate, TrainerPaymentUpdate, MatchMoneyUpdates, SubstitutionSplitUpdate,
 } from './match-money-payload';
+import {
+  getMatchSubstitutions,
+  resplitMatchSubstitutions,
+  setSubstituteLaneFaults,
+} from './match-substitutions';
+import type { SheetSubstitution } from './substitutions';
+import { validateSubstitutionSplit } from './validation/substitution';
 
 export type { PlayerMoneyUpdate, TrainerPaymentUpdate, MatchMoneyUpdates } from './match-money-payload';
 
@@ -27,6 +34,7 @@ export interface MatchSheet {
   };
   players: MatchPlayerResult[];
   trainer_payments: TrainerPayment[];
+  substitutions: SheetSubstitution[];
   totals: {
     fines: number;
     fines_unpaid: number;
@@ -55,7 +63,13 @@ export interface ApplyResult {
   personalPushes: PersonalPush[];
 }
 
-export type MatchMoneyErrorCode = 'notFound' | 'noBonus' | 'invalid' | 'unknown';
+export type MatchMoneyErrorCode =
+  | 'notFound'
+  | 'noBonus'
+  | 'invalid'
+  | 'invalidFaultSplit'
+  | 'paidLocked'
+  | 'unknown';
 
 export class MatchMoneyError extends Error {
   constructor(message: string, readonly code: MatchMoneyErrorCode = 'unknown') {
@@ -167,8 +181,11 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
     throw new MatchMoneyError(`No match with external id ${matchId}.`, 'notFound');
   }
 
-  const players = await getMatchPlayers(matchId);
-  const payments = await getMatchTrainerPayments(matchId);
+  const [players, payments, substitutions] = await Promise.all([
+    getMatchPlayers(matchId),
+    getMatchTrainerPayments(matchId),
+    getMatchSubstitutions(matchId),
+  ]);
 
   const sum = (values: number[]) => values.reduce((acc, value) => acc + value, 0);
   const owed = (player: MatchPlayerResult) => player.calculated_fine + player.streak_fine;
@@ -188,6 +205,7 @@ export async function getMatchSheet(matchId: number): Promise<MatchSheet> {
     },
     players,
     trainer_payments: payments,
+    substitutions,
     totals: {
       fines: sum(players.map(owed)),
       fines_unpaid: sum(players.filter((p) => !p.is_paid).map(owed)),
@@ -292,6 +310,47 @@ async function applyPlayerUpdates(
   return { changes, missesChanged: plan.some((entry) => entry.missesDiffer) };
 }
 
+async function applySubstitutionUpdates(
+  matchId: number,
+  updates: SubstitutionSplitUpdate[],
+  sheet: MatchSheet,
+): Promise<AppliedChange[]> {
+  const byId = new Map(sheet.substitutions.map((s) => [s.id, s]));
+  const paidUserIds = new Set(sheet.players.filter((p) => p.is_paid).map((p) => p.user_id));
+
+  const changed = updates.filter((update) => {
+    const current = byId.get(update.id);
+    if (current && current.substitute_lane_faults === update.substituteLaneFaults) return false;
+
+    const error = validateSubstitutionSplit(update, current, paidUserIds);
+    if (error) {
+      throw new MatchMoneyError(
+        `Substitution ${update.id} in match ${matchId}: ${error}.`,
+        error === 'notFound' ? 'notFound' : error,
+      );
+    }
+    return true;
+  });
+
+  if (changed.length === 0) return [];
+
+  await Promise.all(changed.map((update) => setSubstituteLaneFaults(
+    update.id,
+    update.substituteLaneFaults,
+  )));
+  await resplitMatchSubstitutions(matchId);
+
+  return changed.map((update) => {
+    const current = byId.get(update.id) as SheetSubstitution;
+    return {
+      who: `${current.starter_name} → ${current.substitute_name}`,
+      what: `lane ${current.lane} faults (${current.lane_faults}) of the substitute`,
+      from: current.substitute_lane_faults === null ? 'not split' : String(current.substitute_lane_faults),
+      to: String(update.substituteLaneFaults),
+    };
+  });
+}
+
 async function applyTrainerUpdates(
   matchId: number,
   updates: TrainerPaymentUpdate[],
@@ -347,6 +406,13 @@ export async function applyMatchMoneyUpdates(
 ): Promise<ApplyResult> {
   const sheet = await getMatchSheet(matchId);
 
+  // First, so a paid flag set in the same payload cannot lock the split it came with.
+  const substitutionChanges = await applySubstitutionUpdates(
+    matchId,
+    updates.substitutions ?? [],
+    sheet,
+  );
+
   const playerResult = await applyPlayerUpdates(
     matchId,
     updates.players ?? [],
@@ -360,15 +426,14 @@ export async function applyMatchMoneyUpdates(
 
   // Fines, streaks and trainer rows all derive from the miss counts, so one pass
   // after every write beats recalculating per player.
-  const moneyPushes = playerResult.missesChanged
-    ? await recalculateAndDiffPlayerMoney()
-    : [];
+  const recalculate = playerResult.missesChanged || substitutionChanges.length > 0;
+  const moneyPushes = recalculate ? await recalculateAndDiffPlayerMoney() : [];
 
   const after = await getMatchSheet(matchId);
 
   return {
-    changes: [...playerResult.changes, ...trainerChanges],
-    recalculated: playerResult.missesChanged,
+    changes: [...substitutionChanges, ...playerResult.changes, ...trainerChanges],
+    recalculated: recalculate,
     sheet: after,
     personalPushes: [...moneyPushes, ...deriveSettlementPushes(sheet, after)],
   };

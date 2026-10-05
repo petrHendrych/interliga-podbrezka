@@ -207,11 +207,22 @@
       "elite_player": "Igrači preko 700",
       "clean_sweep": "Pobeda 8:0"
     },
+    "substitutionsTitle": "Izmene",
+    "substitutionLine": "{starter} → {substitute} od {throwNumber}. bacanja",
+    "substitutionLane": "{lane}. staza · greške na stazi: {faults}",
+    "substitutionExact": "Izmena na početku staze, greške su podeljene tačno po stazama.",
+    "substitutionNoLaneFaults": "Izmena usred staze bez grešaka, nema šta da se deli.",
+    "substitutionNeedsSplit": "Podeli greške — zasad su sve kod igrača {starter}.",
+    "substitutionSplitLabel": "Greške igrača {substitute} na {lane}. stazi (0–{faults})",
+    "substitutionSplitDone": "{substitute}: {count} od {faults} grešaka na stazi",
+    "save": "Sačuvaj",
     "errors": {
       "unauthorized": "Nemaš dozvolu za ovu akciju.",
       "notFound": "Meč ili stavka nisu pronađeni.",
       "noBonus": "Ovaj igrač u meču nije osvojio bonus.",
       "invalid": "Neispravni podaci.",
+      "invalidFaultSplit": "Broj grešaka mora biti ceo broj od 0 do broja grešaka na stazi.",
+      "paidLocked": "Kazna jednog od igrača je već plaćena. Prvo poništi plaćanje.",
       "unknown": "Došlo je do greške, pokušaj ponovo."
     }
   },
@@ -253,6 +264,7 @@
     "streakFinesCount": "{count}x serija",
     "streakFinesHint": "Kazna za seriju od 5+ utakmica bez greške. Uključena je u ovaj iznos, ali pošto se računa kroz sva takmičenja sezone, nema je u iznosima za pojedinačna takmičenja.",
     "streakBadge": "{count}. bez greške",
+    "substitution": "Zamena",
     "didNotPlay": "Nije igrao",
     "notPlayedYet": "Neodigrano",
     "noResults": "Nema rezultata za ovog igrača.",
@@ -417,6 +429,7 @@
       "title": "Napomene",
       "items": [
         "Kazna za mečeve bez greške vodi se posebno. Nećeš je naći u iznosima po takmičenjima jer se računa kroz sva takmičenja sezone.",
+        "Izmena tokom utakmice: svako plaća svoje greške, a obojica plaćaju kaznu za poraz tima i za tim ispod limita. Ispod 600, najlošiji u timu i bonus 700 računaju se po zajedničkom rezultatu pozicije i pripadaju onom ko je bacio više bacanja; kod izmene tačno na polovini (od 61. bacanja) dele se napola. U seriju bez greške svakom se računa njegov deo utakmice. Ako je izmena bila usred staze, greške sa te staze deli admin.",
         "Posebne greške admin označava ručno, posle meča.",
         "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju.",
         "Ponovljeno nepoštovanje dress code-a ili preterano korišćenje mobilnog telefona tokom meča je posebna kazna od 10 €."
@@ -536,6 +549,10 @@
       "unsettledMatch": {
         "title": "Nerešena utakmica",
         "body": "Utakmica protiv {opponent} i dalje ima {amount} € neplaćenih."
+      },
+      "substitutionReview": {
+        "title": "Provera izmene",
+        "body": "Utakmica protiv {opponent}: {starter} → {substitute} od {throwNumber}. bacanja, usred {lane}. staze (greške na stazi: {faults}). Proveri izmenu i podeli greške."
       }
     },
     "counts": {
