@@ -2,7 +2,12 @@
 import { NextResponse } from 'next/server';
 import { runScrapingJob } from '@/lib/scraper';
 import { revalidateSyncedData } from '@/lib/cache';
-import { notifyAdmins, sendMatchResultsPush, sendPersonalMoneyPushes } from '@/lib/push';
+import {
+  notifyAdmins,
+  notifySubstitutionReviews,
+  sendMatchResultsPush,
+  sendPersonalMoneyPushes,
+} from '@/lib/push';
 import { dailyDedupeKey } from '@/lib/push-digest';
 
 /**
@@ -49,6 +54,7 @@ export async function GET(request: Request) {
     // Silence when the scrape found nothing new — which is most weeks.
     await sendMatchResultsPush(outcome.newResults);
     await sendPersonalMoneyPushes(outcome.personalPushes);
+    await notifySubstitutionReviews(outcome.substitutionsToReview);
 
     return NextResponse.json({
       success: true,

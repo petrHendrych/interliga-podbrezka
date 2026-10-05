@@ -224,6 +224,14 @@ export function seasonCondition(seasonId: number = DEFAULT_SEASON_ID) {
 
 /** A linked admin or trainer keeps their own role but owns the scraped
  *  `external_player_id`, so the roster is defined by that id, not by the role alone. */
+/**
+ * A row that counts as a game in the stats. The minority half of a substituted position keeps
+ * only its own faults, so it adds no game, no max and nothing to the average.
+ */
+export function statRowCondition() {
+  return sql`(m.external_id IS NOT NULL AND mpr.substitution_role IS DISTINCT FROM 'minor')`;
+}
+
 export function rosterCondition() {
   return sql`u.is_approved = true AND (u.role = 'player' OR u.external_player_id IS NOT NULL)`;
 }
@@ -377,6 +385,7 @@ export interface PlayerMatchResult {
   secondToLastFaultsCount: number;
   specialFaultsCount: number;
   faultlessStreak: number;
+  substitutionRole: 'major' | 'minor' | null;
   date: string | null;
   opponent: string | null;
   isHome: boolean | null;
@@ -417,23 +426,23 @@ export async function getPlayerBalances(
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.bonus_received ELSE 0 END), 0)::text as total_bonuses,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END), 0)::text as total_paid,
       (COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN ${fineAmount(leagueKey)} ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL AND mpr.is_paid THEN ${fineAmount(leagueKey)} ELSE 0 END), 0))::text as balance,
-      COUNT(m.external_id)::text as matches_count,
-      COALESCE(MAX(CASE WHEN m.external_id IS NOT NULL THEN mpr.total END), 0)::int as max_score,
+      COUNT(CASE WHEN ${statRowCondition()} THEN 1 END)::text as matches_count,
+      COALESCE(MAX(CASE WHEN ${statRowCondition()} THEN mpr.total END), 0)::int as max_score,
       COALESCE(SUM(CASE WHEN m.external_id IS NOT NULL THEN mpr.faults ELSE 0 END), 0)::int as total_faults,
-      CASE 
+      CASE
         WHEN (
-          (CASE WHEN COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
-          COUNT(CASE WHEN m.external_id IS NOT NULL AND (m.is_home = false OR m.is_home IS NULL) THEN 1 END)
+          (CASE WHEN COUNT(CASE WHEN ${statRowCondition()} AND m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) +
+          COUNT(CASE WHEN ${statRowCondition()} AND (m.is_home = false OR m.is_home IS NULL) THEN 1 END)
         ) > 0 THEN (
-          (CASE WHEN COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) > 0 THEN 
-            SUM(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN mpr.total ELSE 0 END)::numeric / COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) 
-          ELSE 0 END) + 
-          SUM(CASE WHEN m.external_id IS NOT NULL AND (m.is_home = false OR m.is_home IS NULL) THEN mpr.total ELSE 0 END)::numeric
+          (CASE WHEN COUNT(CASE WHEN ${statRowCondition()} AND m.is_home = true THEN 1 END) > 0 THEN
+            SUM(CASE WHEN ${statRowCondition()} AND m.is_home = true THEN mpr.total ELSE 0 END)::numeric / COUNT(CASE WHEN ${statRowCondition()} AND m.is_home = true THEN 1 END)
+          ELSE 0 END) +
+          SUM(CASE WHEN ${statRowCondition()} AND (m.is_home = false OR m.is_home IS NULL) THEN mpr.total ELSE 0 END)::numeric
         ) / (
-          (CASE WHEN COUNT(CASE WHEN m.external_id IS NOT NULL AND m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) + 
-          COUNT(CASE WHEN m.external_id IS NOT NULL AND (m.is_home = false OR m.is_home IS NULL) THEN 1 END)
+          (CASE WHEN COUNT(CASE WHEN ${statRowCondition()} AND m.is_home = true THEN 1 END) > 0 THEN 1 ELSE 0 END) +
+          COUNT(CASE WHEN ${statRowCondition()} AND (m.is_home = false OR m.is_home IS NULL) THEN 1 END)
         )
-        ELSE 0 
+        ELSE 0
       END::numeric as avg_score
     FROM users u
     LEFT JOIN LATERAL (
@@ -569,6 +578,7 @@ export async function getPlayerMatchResultsByExternalId(
       COALESCE(mpr.second_to_last_faults_count, 0) as second_to_last_faults_count,
       COALESCE(mpr.special_faults_count, 0) as special_faults_count,
       COALESCE(mpr.faultless_streak, 0) as faultless_streak,
+      mpr.substitution_role,
       m.date,
       m.opponent,
       m.is_home,
@@ -605,6 +615,9 @@ export async function getPlayerMatchResultsByExternalId(
       secondToLastFaultsCount: Number(r.second_to_last_faults_count || 0),
       specialFaultsCount: Number(r.special_faults_count || 0),
       faultlessStreak: Number(r.faultless_streak || 0),
+      substitutionRole: r.substitution_role === 'major' || r.substitution_role === 'minor'
+        ? r.substitution_role
+        : null,
       date: r.date ? new Date(r.date as string | Date).toISOString() : null,
       opponent: (r.opponent as string) || null,
       isHome: r.is_home === null ? null : Boolean(r.is_home),

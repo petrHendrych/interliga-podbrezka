@@ -55,6 +55,11 @@ describe('the amount shown', () => {
     expect(screen.getByText(/22/)).toBeInTheDocument();
   });
 
+  it('shows the half euro of a fine split by a switch at throw 61', () => {
+    renderTooltip({ calculatedFine: 1.5, isWorstPlayer: true });
+    expect(screen.getByText('1.5 €')).toBeInTheDocument();
+  });
+
   it('renders a plain zero with no tooltip when nothing is owed', () => {
     renderTooltip();
 

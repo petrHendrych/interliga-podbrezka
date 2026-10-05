@@ -14,6 +14,8 @@ const errors: Record<MatchMoneyActionError, string> = {
   notFound: 'Záznam sa nenašiel',
   noBonus: 'Hráč nemá bonus',
   invalid: 'Neplatná hodnota',
+  invalidFaultSplit: 'Neplatné rozdelenie chýb',
+  paidLocked: 'Už zaplatené',
   unknown: 'Neznáma chyba',
 };
 
@@ -59,6 +61,39 @@ function renderCard(
     />,
   );
 }
+
+describe('PlayerMoneyCard for a substitute', () => {
+  it('shows the substitute\'s own faults and fine, with no total and a substitution badge', () => {
+    render(
+      <PlayerMoneyCard
+        matchId={44990}
+        player={{
+          ...basePlayer,
+          total: 155,
+          faults: 2,
+          calculated_fine: 8,
+          streak_fine: 0,
+          bonus_received: 0,
+          substitution_role: 'minor',
+        }}
+        labels={{ ...labels, substitution: 'Striedal' }}
+        errors={errors}
+        rows={['fine']}
+      />,
+    );
+
+    expect(screen.getByText('Striedal')).toBeInTheDocument();
+    expect(screen.queryByText('155')).not.toBeInTheDocument();
+    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('8 €')).toBeInTheDocument();
+  });
+
+  it('shows the position total for the player who held it', () => {
+    renderCard({ substitution_role: 'major', total: 641 });
+    expect(screen.getByText('641')).toBeInTheDocument();
+  });
+});
 
 describe('PlayerMoneyCard', () => {
   it('shows the fine as calculated_fine + streak_fine, the bonus, total and faults', () => {

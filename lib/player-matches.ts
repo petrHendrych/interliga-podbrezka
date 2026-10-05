@@ -1,6 +1,8 @@
 export interface DatedMatch {
   matchId: number;
   date: string | null;
+  /** 'minor' marks the substitute's half of a shared position: misses only, no game result. */
+  substitutionRole?: 'major' | 'minor' | null;
 }
 
 /** A season match the player has no result row for — either already played, or still ahead. */
@@ -14,6 +16,7 @@ export interface MissingMatch extends DatedMatch {
 
 export type PlayerMatchRow<TResult extends DatedMatch> =
   | { kind: 'result'; match: TResult }
+  | { kind: 'substitution'; match: TResult }
   | { kind: 'didNotPlay'; match: MissingMatch }
   | { kind: 'notPlayedYet'; match: MissingMatch };
 
@@ -44,7 +47,9 @@ export function buildPlayerMatchRows<TResult extends DatedMatch>(
   const unseen = missing.filter((m) => !resultIds.has(m.matchId));
 
   const past: PlayerMatchRow<TResult>[] = [
-    ...results.map((match) => ({ kind: 'result' as const, match })),
+    ...results.map((match) => (match.substitutionRole === 'minor'
+      ? { kind: 'substitution' as const, match }
+      : { kind: 'result' as const, match })),
     ...unseen
       .filter((m) => m.isPlayed)
       .map((match) => ({ kind: 'didNotPlay' as const, match })),

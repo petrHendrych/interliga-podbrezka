@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { parseApiDate } from '@/lib/api';
+import { MATCH_DETAIL_FIELDS, parseApiDate } from '@/lib/api';
+
+describe('MATCH_DETAIL_FIELDS', () => {
+  it('asks for the substitutions and the lane split the substitution money needs', () => {
+    expect(MATCH_DETAIL_FIELDS).toEqual(expect.arrayContaining(['substitutions', 'results.lanes']));
+  });
+});
 
 describe('parseApiDate', () => {
   it('treats a naive results-API timestamp as UTC', () => {

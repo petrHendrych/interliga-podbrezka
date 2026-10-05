@@ -14,6 +14,7 @@ import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { MarkAllPaidButton } from '@/components/money/MarkAllPaidButton';
 import { PlayerMoneyCard } from '@/components/money/PlayerMoneyCard';
 import { SettlementChip } from '@/components/money/SettlementChip';
+import { SubstitutionCard } from '@/components/money/SubstitutionCard';
 import { TrainerPaymentCard } from '@/components/money/TrainerPaymentCard';
 import { logPageView } from '@/lib/activity-log';
 import { getSession } from '@/lib/session';
@@ -132,6 +133,7 @@ export default async function MoneySheetPage({ params }: PageProps) {
     fine: t.fine,
     bonus: t.bonus,
     you: t.you,
+    substitution: dict.playerDetail.substitution,
   };
   const bulkTranslations = { cancel: dict.common.cancel, confirm: t.confirm, errors: t.errors };
 
@@ -213,6 +215,21 @@ export default async function MoneySheetPage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      {sheet.substitutions.length > 0 && (
+        <Section title={t.substitutionsTitle}>
+          {sheet.substitutions.map((substitution) => (
+            <SubstitutionCard
+              key={substitution.id}
+              matchId={matchId}
+              substitution={substitution}
+              labels={t}
+              errors={t.errors}
+              canEdit={isAdmin}
+            />
+          ))}
+        </Section>
+      )}
 
       <Section title={t.playersTitle} action={bulkButton(fineTargets)}>
         {players.map((player) => (

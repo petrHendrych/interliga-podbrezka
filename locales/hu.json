@@ -208,11 +208,22 @@
       "elite_player": "700 feletti játékosok",
       "clean_sweep": "8:0-s győzelem"
     },
+    "substitutionsTitle": "Cserék",
+    "substitutionLine": "{starter} → {substitute} a(z) {throwNumber}. dobástól",
+    "substitutionLane": "{lane}. pálya · hibák a pályán: {faults}",
+    "substitutionExact": "A csere pálya elején volt, a hibák pályánként pontosan oszlanak el.",
+    "substitutionNoLaneFaults": "A csere pálya közepén volt, de hiba nélkül, nincs mit elosztani.",
+    "substitutionNeedsSplit": "Oszd el a hibákat — egyelőre mind {starter} játékosnál vannak.",
+    "substitutionSplitLabel": "{substitute} hibái a(z) {lane}. pályán (0–{faults})",
+    "substitutionSplitDone": "{substitute}: {count} / {faults} hiba a pályán",
+    "save": "Mentés",
     "errors": {
       "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
       "notFound": "A meccs vagy a tétel nem található.",
       "noBonus": "Ez a játékos ezen a meccsen nem szerzett bónuszt.",
       "invalid": "Érvénytelen adatok.",
+      "invalidFaultSplit": "A hibák száma egész szám legyen 0 és a pálya hibáinak száma között.",
+      "paidLocked": "Az egyik játékos büntetése már ki van fizetve. Előbb vond vissza a fizetést.",
       "unknown": "Hiba történt, próbáld újra."
     }
   },
@@ -254,6 +265,7 @@
     "streakFinesCount": "{count}x sorozat",
     "streakFinesHint": "Büntetés 5+ hibátlan mérkőzés sorozatért. Ebben az összegben benne van, de mivel a szezon összes versenye együtt számít, az egyes versenyek összegeiben nem szerepel.",
     "streakBadge": "{count}. hibátlan",
+    "substitution": "Csere",
     "didNotPlay": "Nem játszott",
     "notPlayedYet": "Még nem játszott",
     "noResults": "Nincs eredmény ehhez a játékoshoz.",
@@ -418,6 +430,7 @@
       "title": "Megjegyzések",
       "items": [
         "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert a szezon minden versenyén át számoljuk.",
+        "Csere meccs közben: mindenki a saját hibáiért fizet, és mindketten fizetik a csapat vereségéért és a limit alatti csapateredményért járó büntetést. A 600 alattit, a csapat legrosszabbját és a 700-as bónuszt a pozíció közös eredménye alapján ítéljük meg, és az kapja, aki több dobást dobott; pontosan félidős cserénél (a 61. dobástól) fele-fele arányban oszlik. A hibátlan sorozatba mindenkinek a saját meccsrésze számít. Ha a csere pálya közepén történt, annak a pályának a hibáit az admin osztja el.",
         "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
         "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg.",
         "A dress code ismételt be nem tartása vagy a mobil túlzott használata a meccs alatt 10 € különleges büntetés."
@@ -537,6 +550,10 @@
       "unsettledMatch": {
         "title": "Rendezetlen meccs",
         "body": "A(z) {opponent} elleni meccsen még {amount} € kifizetetlen."
+      },
+      "substitutionReview": {
+        "title": "Csere ellenőrzése",
+        "body": "{opponent} elleni meccs: {starter} → {substitute} a(z) {throwNumber}. dobástól, a(z) {lane}. pálya közepén (hibák a pályán: {faults}). Ellenőrizd a cserét, és oszd el a hibákat."
       }
     },
     "counts": {

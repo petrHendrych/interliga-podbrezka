@@ -10,6 +10,7 @@ export interface PlayerMoneyCardLabels extends PaidToggleLabels {
   fine: string;
   bonus: string;
   you: string;
+  substitution?: string;
 }
 
 export type PlayerMoneyRow = 'fine' | 'bonus';
@@ -25,6 +26,8 @@ export interface PlayerMoneyCardPlayer {
   bonus_received: number;
   is_paid: boolean;
   is_bonus_paid: boolean;
+  /** The minority half of a substituted position: its pins are no game result. */
+  substitution_role?: 'major' | 'minor' | null;
 }
 
 export interface PlayerMoneyCardProps {
@@ -83,6 +86,7 @@ export function PlayerMoneyCard({
   const showFine = rows.includes('fine');
   const showBonus = rows.includes('bonus');
   const fine = player.calculated_fine + player.streak_fine;
+  const isMinor = player.substitution_role === 'minor';
   const toggleLabels: PaidToggleLabels = {
     paid: labels.paid,
     unpaid: labels.unpaid,
@@ -112,11 +116,18 @@ export function PlayerMoneyCard({
           className={AVATAR}
           fallbackClassName="text-sm"
         />
-        <span className="min-w-0 flex-1 truncate font-bold leading-tight">{player.user_name}</span>
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <span className="w-full truncate font-bold leading-tight">{player.user_name}</span>
+          {isMinor && labels.substitution && (
+            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] whitespace-nowrap text-muted-foreground">
+              {labels.substitution}
+            </span>
+          )}
+        </div>
         <div className="flex shrink-0 gap-1.5">
           <div className={STAT_TILE}>
             <span className={STAT_LABEL}>{labels.total}</span>
-            <span className={STAT_VALUE}>{player.total}</span>
+            <span className={STAT_VALUE}>{isMinor ? '–' : player.total}</span>
           </div>
           {showFine && (
             <div className={STAT_TILE}>

@@ -29,6 +29,8 @@ export interface MatchPlayerResult {
   bonus_received: number;
   is_paid: boolean;
   is_bonus_paid: boolean;
+  /** 'major' keeps a substituted position's result, 'minor' only its own faults; else null. */
+  substitution_role: 'major' | 'minor' | null;
 }
 
 async function selectMatches(limit?: number): Promise<PlayedMatch[]> {
@@ -88,6 +90,7 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
       bonusReceived: matchPlayerResults.bonusReceived,
       isPaid: matchPlayerResults.isPaid,
       isBonusPaid: matchPlayerResults.isBonusPaid,
+      substitutionRole: matchPlayerResults.substitutionRole,
     })
     .from(matchPlayerResults)
     .innerJoin(users, eq(matchPlayerResults.userId, users.id))
@@ -109,5 +112,8 @@ export async function getMatchPlayers(matchId: number): Promise<MatchPlayerResul
     bonus_received: Number(r.bonusReceived || 0),
     is_paid: Boolean(r.isPaid),
     is_bonus_paid: Boolean(r.isBonusPaid),
+    substitution_role: r.substitutionRole === 'major' || r.substitutionRole === 'minor'
+      ? r.substitutionRole
+      : null,
   }));
 }
