@@ -63,7 +63,8 @@
     "toggleTheme": "Prepnúť tému",
     "rules": "Pravidlá pokút",
     "withdrawals": "Výbery z banky",
-    "settings": "Nastavenia"
+    "settings": "Nastavenia",
+    "version": "Verzia: {version}"
   },
   "admin": {
     "users": {

@@ -63,7 +63,8 @@
     "toggleTheme": "Promeni temu",
     "rules": "Pravila kazni",
     "withdrawals": "Podizanja iz banke",
-    "settings": "Podešavanja"
+    "settings": "Podešavanja",
+    "version": "Verzija: {version}"
   },
   "admin": {
     "users": {

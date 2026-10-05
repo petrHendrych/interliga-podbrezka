@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Montserrat } from 'next/font/google';
 import '../globals.css';
 import { Header } from '@/components/layout/Header';
 import { BackgroundDots } from '@/components/layout/BackgroundDots';
+import { AppFooter } from '@/components/layout/AppFooter';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { LiveDataRefresher } from '@/components/pwa/LiveDataRefresher';
@@ -107,7 +108,8 @@ export default async function RootLayout({
           <Header lang={lang} />
           <OfflineBanner message={dict.pwa.offlineBanner} />
           <InstallPrompt translations={dict.pwa} />
-          <main className="flex flex-1 flex-col pb-[var(--app-safe-bottom)]">{children}</main>
+          <main className="flex flex-1 flex-col">{children}</main>
+          <AppFooter label={dict.common.version} />
         </ThemeProvider>
       </body>
     </html>

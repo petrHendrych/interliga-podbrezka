@@ -63,7 +63,8 @@
     "toggleTheme": "Téma váltása",
     "rules": "Büntetések szabályai",
     "withdrawals": "Kivétek a kasszából",
-    "settings": "Beállítások"
+    "settings": "Beállítások",
+    "version": "Verzió: {version}"
   },
   "admin": {
     "users": {
