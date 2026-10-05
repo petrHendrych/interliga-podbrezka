@@ -1,6 +1,7 @@
 // Imported by next.config.ts through a relative path, so it must stay free of `@/` aliases.
 
-const DEPLOYMENTS_URL = 'https://api.vercel.com/v6/deployments';
+const DEPLOYMENTS_URL = 'https://api.vercel.com/v7/deployments';
+const REQUIRED_VARS = ['VERCEL_TOKEN', 'VERCEL_TEAM_ID', 'VERCEL_PROJECT_ID'] as const;
 const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -37,6 +38,15 @@ export function fallbackVersion(major: number, sha: string | undefined): string 
   return sha ? `${major}.x.x+${sha.slice(0, 7)}` : `${major}.0.0-dev`;
 }
 
+async function apiErrorReason(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: { message?: string } };
+    return body.error?.message ? `${response.status}: ${body.error.message}` : `${response.status}`;
+  } catch {
+    return `${response.status}`;
+  }
+}
+
 async function fetchReadyDeployments(
   token: string,
   teamId: string,
@@ -59,7 +69,10 @@ async function fetchReadyDeployments(
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    if (!response.ok) throw new Error(`Vercel API responded ${response.status}`);
+    if (!response.ok) {
+      // eslint-disable-next-line no-await-in-loop
+      throw new Error(`Vercel API responded ${await apiErrorReason(response)}`);
+    }
 
     // eslint-disable-next-line no-await-in-loop
     const page = (await response.json()) as DeploymentsPage;
@@ -76,11 +89,17 @@ export async function resolveAppVersion(
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
   if (!env.VERCEL) return `${major}.0.0-dev`;
+  // next build loads the config again in each build worker; reusing the main process's
+  // result keeps one version per build and one round of API calls.
+  if (env.APP_VERSION) return env.APP_VERSION;
 
   const {
     VERCEL_TOKEN, VERCEL_TEAM_ID, VERCEL_PROJECT_ID, VERCEL_GIT_COMMIT_SHA,
   } = env;
   if (!VERCEL_TOKEN || !VERCEL_TEAM_ID || !VERCEL_PROJECT_ID) {
+    const missing = REQUIRED_VARS.filter((name) => !env[name]);
+    // eslint-disable-next-line no-console
+    console.warn(`Could not count Vercel deployments for the app version: ${missing.join(', ')} not set`);
     return fallbackVersion(major, VERCEL_GIT_COMMIT_SHA);
   }
 

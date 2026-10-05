@@ -90,14 +90,25 @@ describe('resolveAppVersion', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it('reuses a version an earlier config load already resolved', async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    await expect(
+      resolveAppVersion({ ...VERCEL_ENV, APP_VERSION: '1.4.11' }, 1, fetchImpl),
+    ).resolves.toBe('1.4.11');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it.each(['VERCEL_TOKEN', 'VERCEL_TEAM_ID', 'VERCEL_PROJECT_ID'])(
-    'falls back to the commit when %s is missing',
+    'falls back to the commit and names the variable when %s is missing',
     async (key) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const fetchImpl = vi.fn<typeof fetch>();
       const env = { ...VERCEL_ENV, [key]: undefined };
 
       await expect(resolveAppVersion(env, 1, fetchImpl)).resolves.toBe('1.x.x+abc1234');
       expect(fetchImpl).not.toHaveBeenCalled();
+      expect(String(warn.mock.calls[0])).toContain(key);
     },
   );
 
@@ -126,18 +137,31 @@ describe('resolveAppVersion', () => {
     await resolveAppVersion(VERCEL_ENV, 1, fetchImpl);
 
     const [url, init] = fetchImpl.mock.calls[0];
-    const params = new URL(String(url)).searchParams;
+    const { pathname, searchParams: params } = new URL(String(url));
+    expect(pathname).toBe('/v7/deployments');
     expect(params.get('projectId')).toBe('prj_1');
     expect(params.get('teamId')).toBe('team_1');
     expect(params.get('state')).toBe('READY');
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
   });
 
-  it('falls back to the commit on an error response', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ error: 'forbidden' }, 403));
+  it('falls back to the commit on an error response and logs the API reason', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(
+      { error: { code: 'forbidden', message: 'Not authorized: Trying to access resource' } },
+      403,
+    ));
 
     await expect(resolveAppVersion(VERCEL_ENV, 1, fetchImpl)).resolves.toBe('1.x.x+abc1234');
+    expect(String(warn.mock.calls[0])).toContain('403: Not authorized: Trying to access resource');
+  });
+
+  it('still falls back on an error response whose body is not JSON', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response('Bad Gateway', { status: 502 }));
+
+    await expect(resolveAppVersion(VERCEL_ENV, 1, fetchImpl)).resolves.toBe('1.x.x+abc1234');
+    expect(String(warn.mock.calls[0])).toContain('502');
   });
 
   it('falls back to the commit when the request throws', async () => {

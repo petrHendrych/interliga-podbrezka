@@ -34,5 +34,7 @@ export default async function config(): Promise<NextConfig> {
     process.env,
     majorFromPackageVersion(packageJson.version),
   );
+  // Build workers inherit process.env, so they reuse this instead of asking the API again.
+  process.env.APP_VERSION = appVersion;
   return { ...nextConfig, env: { APP_VERSION: appVersion } };
 }
