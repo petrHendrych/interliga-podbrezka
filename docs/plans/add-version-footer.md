@@ -156,22 +156,22 @@ flowchart LR
 
 # Delivery Steps
 
-### Step 1: Write the version tests first
+### ✓ Step 1: Write the version tests first
 Create `lib/app-version.test.ts`. Touches only that new file. Run it and confirm it fails because the module is missing.
 
-### Step 2: Implement `lib/app-version.ts`
+### ✓ Step 2: Implement `lib/app-version.ts`
 Make the Step 1 tests pass. Touches `lib/app-version.ts`.
 
-### Step 3: Inject the version at build
+### ✓ Step 3: Inject the version at build
 Touches `next.config.ts` and `package.json` (`1.0.0`). Verify with `pnpm dev`: `process.env.APP_VERSION` resolves to `1.0.0-dev`.
 
-### Step 4: Add the footer and its labels
+### ✓ Step 4: Add the footer and its labels
 Touches `components/layout/AppFooter.tsx`, `app/[lang]/layout.tsx` and `locales/{sk,cs,hu,sr}.json`. Check it in the browser at phone width in light and dark mode.
 
 ### Step 5: Set the Vercel env vars (you)
 Add `VERCEL_TOKEN` and `VERCEL_TEAM_ID` in the Vercel dashboard. After the next deploy, the footer shows `1.<prod>.<total>`.
 
-### Step 6: Quality check
+### ✓ Step 6: Quality check
 Run `pnpm check` (lint, type check, tests). Everything must pass.
 
 # Testing

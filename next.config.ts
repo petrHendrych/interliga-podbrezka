@@ -1,4 +1,6 @@
 import type { NextConfig } from 'next';
+import packageJson from './package.json';
+import { majorFromPackageVersion, resolveAppVersion } from './lib/app-version';
 
 const nextConfig: NextConfig = {
   // Keeps a navigation or a server action pending and retries it when the connection returns,
@@ -27,4 +29,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default async function config(): Promise<NextConfig> {
+  const appVersion = await resolveAppVersion(
+    process.env,
+    majorFromPackageVersion(packageJson.version),
+  );
+  return { ...nextConfig, env: { APP_VERSION: appVersion } };
+}

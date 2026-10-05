@@ -63,7 +63,8 @@
     "toggleTheme": "Přepnout téma",
     "rules": "Pravidla pokut",
     "withdrawals": "Výběry z banky",
-    "settings": "Nastavení"
+    "settings": "Nastavení",
+    "version": "Verze: {version}"
   },
   "admin": {
     "users": {
