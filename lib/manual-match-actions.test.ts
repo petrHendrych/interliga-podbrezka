@@ -12,6 +12,20 @@ import {
 const session = vi.hoisted(() => ({ current: null as unknown }));
 const existingMatches = vi.hoisted(() => ({ current: [] as { externalId: number }[] }));
 const inserted = vi.hoisted(() => ({ current: [] as { table: unknown; values: unknown }[] }));
+const writes = vi.hoisted(() => ({
+  /** Statements awaited on their own instead of going through `db.batch`. */
+  direct: 0,
+  batches: [] as unknown[][],
+  failBatch: false,
+}));
+
+// A write that is awaited directly runs `then`; one handed to `db.batch` never does.
+const statement = vi.hoisted(() => () => ({
+  then: (resolve: (value: undefined) => void) => {
+    writes.direct += 1;
+    resolve(undefined);
+  },
+}));
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('./session', () => ({ getSession: async () => session.current }));
@@ -28,11 +42,15 @@ vi.mock('./db', () => ({
     insert: (table: unknown) => ({
       values: (values: unknown) => {
         inserted.current.push({ table, values });
-        return { onConflictDoUpdate: async () => undefined };
+        return { ...statement(), onConflictDoUpdate: statement };
       },
     }),
-    delete: () => ({ where: async () => undefined }),
-    batch: async () => [],
+    delete: () => ({ where: statement }),
+    batch: async (items: unknown[]) => {
+      if (writes.failBatch) throw new Error('duplicate key value violates unique constraint');
+      writes.batches.push(items);
+      return [];
+    },
   },
   sql: async () => [{ id: MANUAL_MATCH_ID_BASE + 7 }],
 }));
@@ -73,7 +91,50 @@ beforeEach(() => {
   session.current = { user: admin };
   existingMatches.current = [{ externalId: editedId }];
   inserted.current = [];
+  writes.direct = 0;
+  writes.batches = [];
+  writes.failBatch = false;
   vi.mocked(logActivity).mockClear();
+});
+
+describe('saveManualMatch atomicity', () => {
+  function withSubstitution(): ManualMatchInput {
+    const [first, ...rest] = input().positions;
+    return input({
+      positions: [{
+        ...first,
+        substitutions: [{
+          userId: 'u-sub', full: 250, clean: 110, faults: 1, fromThrow: 61,
+        }],
+      }, ...rest],
+    });
+  }
+
+  it('writes the match, its players and its links in one batch', async () => {
+    expect(await saveManualMatch(withSubstitution()))
+      .toEqual({ success: true, matchId: MANUAL_MATCH_ID_BASE + 7 });
+
+    expect(writes.direct).toBe(0);
+    expect(writes.batches).toHaveLength(1);
+    // match upsert, link delete, dropped-player delete, player upsert, link insert
+    expect(writes.batches[0]).toHaveLength(5);
+  });
+
+  it('skips the link insert when no position was substituted', async () => {
+    await saveManualMatch(input());
+
+    expect(writes.direct).toBe(0);
+    expect(writes.batches[0]).toHaveLength(4);
+  });
+
+  it('reports a failed batch as an error code instead of a half-saved match', async () => {
+    writes.failBatch = true;
+
+    expect(await saveManualMatch(withSubstitution()))
+      .toEqual({ success: false, error: 'unknown' });
+    expect(writes.direct).toBe(0);
+    expect(logActivity).not.toHaveBeenCalled();
+  });
 });
 
 describe('saveManualMatch substitutions', () => {

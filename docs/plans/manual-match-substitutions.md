@@ -372,7 +372,10 @@ flowchart TD
   out of scope).
 - **Edit changing who holds the position**, e.g. a throw moving from 91 to 31: rebuilding from
   own values plus the new throw re-derives everything. Covered by round-trip tests.
-- **A three-way ⅓ share** sums to 0.99€ / 39.99€: accepted by the user.
+- **A three-way ⅓ share**: the minor rows get the rounded third and the holder the rest, so
+  it adds up to exactly 1€ / 40€ (changed after review; plain rounding paid 0.99€ / 39.99€).
+- **A failed save** (e.g. a link id clash) must not leave roles without links: every write
+  goes in one `db.batch` transaction (added after review).
 - **Season switched to < 13 with sections open**: the form clears them, and the server rejects
   with `substitutionNotAllowed` anyway.
 - **`toSheetSubstitution` callers** (CLI / skill output): the new `manual` field is additive.

@@ -438,7 +438,7 @@
       "title": "Poznámky",
       "items": [
         "Pokuta za zápasy bez chyb je vedená zvlášť. V částkách za jednotlivé soutěže ji nenajdeš, protože se počítá napříč všemi soutěžemi sezony.",
-        "Střídání během zápasu: každý platí za své chyby a všichni na pozici platí pokutu za prohru týmu i za tým pod limitem. Pod 600, nejhorší v týmu i bonus 700 se posuzují podle společného výsledku pozice a připadnou tomu, kdo odházel nejvíc hodů; pokud jich víc odházelo stejně (např. při střídání od 61. hodu), dělí se rovným dílem, zaokrouhleně na centy. Na jedné pozici můžou být i dvě střídání. Do série bez chyby se každému počítá jeho vlastní část zápasu. Pokud se střídalo uprostřed dráhy, chyby z té dráhy rozdělí admin.",
+        "Střídání během zápasu: každý platí za své chyby a všichni na pozici platí pokutu za prohru týmu i za tým pod limitem. Pod 600, nejhorší v týmu i bonus 700 se posuzují podle společného výsledku pozice a připadnou tomu, kdo odházel nejvíc hodů; pokud jich víc odházelo stejně (např. při střídání od 61. hodu), dělí se rovným dílem na celé centy a zbylý cent dostane ten, kdo házel dřív. Na jedné pozici můžou být i dvě střídání. Do série bez chyby se každému počítá jeho vlastní část zápasu. Pokud se střídalo uprostřed dráhy, chyby z té dráhy rozdělí admin.",
         "Speciální chyby označuje admin ručně po zápase.",
         "Zaplacené pokuty a bonusy se zpětným přepočtem už nemění.",
         "Opakované nedodržení dress code nebo nadměrné používání mobilu během zápasu je speciální pokuta 10 €."

@@ -438,7 +438,7 @@
       "title": "Megjegyzések",
       "items": [
         "A hibátlan meccsek büntetése külön szerepel. Az egyes versenyek összegeiben nem találod, mert a szezon minden versenyén át számoljuk.",
-        "Csere meccs közben: mindenki a saját hibáiért fizet, és a pozíció minden játékosa fizeti a csapat vereségéért és a limit alatti csapateredményért járó büntetést. A 600 alattit, a csapat legrosszabbját és a 700-as bónuszt a pozíció közös eredménye alapján ítéljük meg, és az kapja, aki a legtöbb dobást dobott; ha többen ugyanannyit dobtak (pl. a 61. dobástól történő cserénél), egyenlő arányban oszlik, centre kerekítve. Egy pozíción két csere is lehet. A hibátlan sorozatba mindenkinek a saját meccsrésze számít. Ha a csere pálya közepén történt, annak a pályának a hibáit az admin osztja el.",
+        "Csere meccs közben: mindenki a saját hibáiért fizet, és a pozíció minden játékosa fizeti a csapat vereségéért és a limit alatti csapateredményért járó büntetést. A 600 alattit, a csapat legrosszabbját és a 700-as bónuszt a pozíció közös eredménye alapján ítéljük meg, és az kapja, aki a legtöbb dobást dobott; ha többen ugyanannyit dobtak (pl. a 61. dobástól történő cserénél), egyenlő arányban, egész centekre oszlik, és a maradék cent azé, aki korábban dobott. Egy pozíción két csere is lehet. A hibátlan sorozatba mindenkinek a saját meccsrésze számít. Ha a csere pálya közepén történt, annak a pályának a hibáit az admin osztja el.",
         "A különleges hibákat az admin jelöli be kézzel, a meccs után.",
         "A már kifizetett büntetéseket és bónuszokat az újraszámolás nem változtatja meg.",
         "A dress code ismételt be nem tartása vagy a mobil túlzott használata a meccs alatt 10 € különleges büntetés."

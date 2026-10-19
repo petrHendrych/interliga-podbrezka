@@ -85,9 +85,6 @@ export function toManualPositions(
 ): ManualPositionDetail[] {
   const byUser = new Map(players.map((p) => [p.userId, p]));
   const substituteIds = new Set(links.map((l) => l.substituteUserId));
-  const rows = new Map(players.map((p) => [p.userId, {
-    full: p.full, clean: p.clean, faults: p.faults, role: p.substitutionRole,
-  }]));
 
   return players
     .filter((p) => !substituteIds.has(p.userId))
@@ -100,7 +97,7 @@ export function toManualPositions(
         next = links.find((l) => l.starterUserId === substituteUserId);
       }
 
-      const [own, ...subs] = manualSegmentsFromRows(chain, rows).map((s) => ({
+      const [own, ...subs] = manualSegmentsFromRows(chain, byUser).map((s) => ({
         userId: s.userId,
         name: byUser.get(s.userId)?.name ?? '',
         full: s.full,

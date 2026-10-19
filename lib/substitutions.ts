@@ -400,18 +400,18 @@ export function splitManualPosition(segments: ManualSegment[]): ManualPositionRo
 export function manualSegmentsFromRows(
   chain: { userId: string; fromThrow: number }[],
   rows: Map<string, {
-    full: number; clean: number; faults: number; role: SubstitutionRole | null;
+    full: number; clean: number; faults: number; substitutionRole: SubstitutionRole | null;
   }>,
 ): ManualSegment[] {
   const others = chain
     .map((link) => rows.get(link.userId))
-    .filter((row) => row && row.role !== 'major');
+    .filter((row) => row && row.substitutionRole !== 'major');
   const othersFull = others.reduce((sum, row) => sum + (row?.full ?? 0), 0);
   const othersClean = others.reduce((sum, row) => sum + (row?.clean ?? 0), 0);
 
   return chain.map(({ userId, fromThrow }) => {
     const row = rows.get(userId);
-    const isHolder = row?.role === 'major';
+    const isHolder = row?.substitutionRole === 'major';
     return {
       userId,
       fromThrow,

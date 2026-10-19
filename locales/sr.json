@@ -438,7 +438,7 @@
       "title": "Napomene",
       "items": [
         "Kazna za mečeve bez greške vodi se posebno. Nećeš je naći u iznosima po takmičenjima jer se računa kroz sva takmičenja sezone.",
-        "Izmena tokom utakmice: svako plaća svoje greške, a svi na poziciji plaćaju kaznu za poraz tima i za tim ispod limita. Ispod 600, najlošiji u timu i bonus 700 računaju se po zajedničkom rezultatu pozicije i pripadaju onom ko je bacio najviše bacanja; ako ih je više bacilo isto (npr. kod izmene od 61. bacanja), dele se na jednake delove, zaokruženo na cente. Na jednoj poziciji mogu biti i dve izmene. U seriju bez greške svakom se računa njegov deo utakmice. Ako je izmena bila usred staze, greške sa te staze deli admin.",
+        "Izmena tokom utakmice: svako plaća svoje greške, a svi na poziciji plaćaju kaznu za poraz tima i za tim ispod limita. Ispod 600, najlošiji u timu i bonus 700 računaju se po zajedničkom rezultatu pozicije i pripadaju onom ko je bacio najviše bacanja; ako ih je više bacilo isto (npr. kod izmene od 61. bacanja), dele se na jednake delove u celim centima, a preostali cent dobija onaj ko je bacao ranije. Na jednoj poziciji mogu biti i dve izmene. U seriju bez greške svakom se računa njegov deo utakmice. Ako je izmena bila usred staze, greške sa te staze deli admin.",
         "Posebne greške admin označava ručno, posle meča.",
         "Već plaćene kazne i bonusi se naknadnim preračunom ne menjaju.",
         "Ponovljeno nepoštovanje dress code-a ili preterano korišćenje mobilnog telefona tokom meča je posebna kazna od 10 €."

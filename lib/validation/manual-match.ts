@@ -70,6 +70,20 @@ export function isMatchPoints(value: number): boolean {
     && Number.isInteger(value * 2);
 }
 
+/** Server actions take whatever the client sends; a stale form must get a code, not a throw. */
+function hasPositionsShape(positions: unknown): positions is ManualMatchPositionInput[] {
+  return Array.isArray(positions) && positions.every((p: unknown) => (
+    typeof p === 'object'
+    && p !== null
+    && 'starter' in p
+    && typeof p.starter === 'object'
+    && p.starter !== null
+    && 'substitutions' in p
+    && Array.isArray(p.substitutions)
+    && p.substitutions.every((s: unknown) => typeof s === 'object' && s !== null)
+  ));
+}
+
 function hasValidThrows(substitutions: ManualMatchSubstitutionInput[]): boolean {
   return substitutions.every((s, i) => (
     Number.isInteger(s.fromThrow)
@@ -86,6 +100,7 @@ export function validateManualMatch(input: ManualMatchInput): ManualMatchError |
   const date = new Date(`${input.date}T12:00:00Z`);
   if (!input.date || Number.isNaN(date.getTime())) return 'invalidDate';
 
+  if (!hasPositionsShape(input.positions)) return 'incompletePositions';
   const people = input.positions.flatMap((p) => [p.starter, ...p.substitutions]);
   if (input.positions.length !== POSITION_COUNT) return 'incompletePositions';
   if (people.some((p) => !p.userId)) return 'incompletePositions';

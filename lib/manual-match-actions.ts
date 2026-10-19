@@ -122,11 +122,26 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
       updatedAt: new Date(),
     };
 
-    // Unlike the sync, an edit must be able to clear a field, so no COALESCE here.
-    await db
-      .insert(matches)
-      .values(matchRow)
-      .onConflictDoUpdate({
+    const firstSubstitutionId = built.substitutions.length > 0
+      ? await allocateSubstitutionId()
+      : 0;
+    const linkInsert = built.substitutions.length > 0
+      ? [db.insert(matchSubstitutions).values(built.substitutions.map((s, i) => ({
+        id: firstSubstitutionId + i,
+        matchId,
+        ...s,
+        // Each player's faults are entered on their own; there is no lane to split.
+        laneFaults: 0,
+      })))]
+      : [];
+
+    const keptIds = playerRows.map((p) => p.userId);
+
+    // One transaction: player rows marked 'major' / 'minor' without their links would read back
+    // as separate positions, the holder's combined total counted twice.
+    await db.batch([
+      // Unlike the sync, an edit must be able to clear a field, so no COALESCE here.
+      db.insert(matches).values(matchRow).onConflictDoUpdate({
         target: matches.externalId,
         set: {
           date: drizzleSql`EXCLUDED.date`,
@@ -143,26 +158,19 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
           leagueId: drizzleSql`EXCLUDED.league_id`,
           updatedAt: drizzleSql`NOW()`,
         },
-      });
-
-    // Rewritten whole on every save, so a removed substitution leaves no link behind.
-    await db.delete(matchSubstitutions).where(eq(matchSubstitutions.matchId, matchId));
-
-    // Players dropped from the lineup during an edit must lose their result row.
-    const keptIds = playerRows.map((p) => p.userId);
-    await db.delete(matchPlayerResults).where(and(
-      eq(matchPlayerResults.matchId, matchId),
-      drizzleSql`${matchPlayerResults.userId} NOT IN (${drizzleSql.join(
-        keptIds.map((id) => drizzleSql`${id}::uuid`),
-        drizzleSql`, `,
-      )})`,
-    ));
-
-    // Derived money columns are left untouched; the recalculation below owns them.
-    await db
-      .insert(matchPlayerResults)
-      .values(playerRows)
-      .onConflictDoUpdate({
+      }),
+      // Rewritten whole on every save, so a removed substitution leaves no link behind.
+      db.delete(matchSubstitutions).where(eq(matchSubstitutions.matchId, matchId)),
+      // Players dropped from the lineup during an edit must lose their result row.
+      db.delete(matchPlayerResults).where(and(
+        eq(matchPlayerResults.matchId, matchId),
+        drizzleSql`${matchPlayerResults.userId} NOT IN (${drizzleSql.join(
+          keptIds.map((id) => drizzleSql`${id}::uuid`),
+          drizzleSql`, `,
+        )})`,
+      )),
+      // Derived money columns are left untouched; the recalculation below owns them.
+      db.insert(matchPlayerResults).values(playerRows).onConflictDoUpdate({
         target: [matchPlayerResults.matchId, matchPlayerResults.userId],
         set: {
           full: drizzleSql`EXCLUDED.full`,
@@ -175,18 +183,9 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
           positionTotal: drizzleSql`EXCLUDED.position_total`,
           positionShare: drizzleSql`EXCLUDED.position_share`,
         },
-      });
-
-    if (built.substitutions.length > 0) {
-      const firstId = await allocateSubstitutionId();
-      await db.insert(matchSubstitutions).values(built.substitutions.map((s, i) => ({
-        id: firstId + i,
-        matchId,
-        ...s,
-        // Each player's faults are entered on their own; there is no lane to split.
-        laneFaults: 0,
-      })));
-    }
+      }),
+      ...linkInsert,
+    ]);
 
     const personalPushes = await recalculateAndDiffPlayerMoney();
 

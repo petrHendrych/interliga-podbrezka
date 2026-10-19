@@ -539,9 +539,7 @@ describe('manualSegmentsFromRows', () => {
       segment('u-sub2', 81, 150, 80, 1),
     ]],
   ])('recovers every player\'s own part after %s', (_, segments) => {
-    const rows = new Map(splitManualPosition(segments).map((r) => [r.userId, {
-      full: r.full, clean: r.clean, faults: r.faults, role: r.substitutionRole,
-    }]));
+    const rows = new Map(splitManualPosition(segments).map((r) => [r.userId, r]));
     const chain = segments.map(({ userId, fromThrow }) => ({ userId, fromThrow }));
     expect(manualSegmentsFromRows(chain, rows)).toEqual(segments);
   });

@@ -66,9 +66,11 @@ export async function listManualMatches(): Promise<ManualMatchListItem[]> {
       opponentTotalScore: matches.opponentTotalScore,
       teamMatchPoints: matches.teamMatchPoints,
       opponentMatchPoints: matches.opponentMatchPoints,
+      // Positions, not people: a substitute shares a position with the player they replaced.
       playersCount: sql<number>`(
         SELECT COUNT(*)::int FROM match_player_results mpr
         WHERE mpr.match_id = ${matches.externalId}
+          AND mpr.substitution_role IS DISTINCT FROM 'minor'
       )`,
     })
     .from(matches)

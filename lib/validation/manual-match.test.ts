@@ -92,6 +92,25 @@ describe('date', () => {
   });
 });
 
+describe('malformed input', () => {
+  function broken(shape: unknown): ManualMatchPositionInput {
+    return shape as ManualMatchPositionInput;
+  }
+
+  // A form loaded before the deploy still sends the old `players` shape.
+  it.each([
+    ['the old players shape', { players: [player()] }],
+    ['positions that are not a list', { positions: 'six' }],
+    ['a position without a starter', { positions: positions(broken({ substitutions: [] })) }],
+    ['a position without substitutions', { positions: positions(broken({ starter: player() })) }],
+    ['a null position', { positions: positions(broken(null)) }],
+  ])('returns an error code for %s instead of throwing', (_label, overrides) => {
+    const malformed = { ...input(), positions: undefined, ...overrides };
+    expect(validateManualMatch(malformed as unknown as ManualMatchInput))
+      .toBe('incompletePositions');
+  });
+});
+
 describe('positions', () => {
   it(`accepts exactly ${POSITION_COUNT} positions`, () => {
     expect(validateManualMatch(input())).toBeNull();
