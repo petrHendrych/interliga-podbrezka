@@ -162,12 +162,21 @@ throw they bowled (`throwNumber`); `results.lanes` gives the four 30-throw lanes
   through the skill). Every mid-lane switch sends the admins a `substitutionReview` push.
 - **Under 600 / worst in team / 700 bonus**: judged on the combined `position_total`, and
   charged or credited by `position_share` — 1 / 0 to the player with more throws, 0.5 / 0.5
-  on a switch at throw 61.
-- **Team loss / team under the limit**: both players pay in full — a `'minor'` row counts as
-  having played even with no whole lane (`total = 0`).
+  on a switch at throw 61. Every share-based amount is `ROUND(…, 2)`, so a ⅓ share pays
+  0.33 € / 13.33 € (the three add up to a cent less).
+- **Team loss / team under the limit**: everyone on the position pays in full — a `'minor'`
+  row counts as having played even with no whole lane (`total = 0`).
 - **Faultless streak**: each player's own segment is a game of theirs — clean extends, a fault
   resets only that player's run.
 - **Trainer**: positions, not people — `active` and `elite` skip the `'minor'` row.
+- **Manual matches**: the form always has 6 positions. The admin opens "Striedanie hráča" in
+  a card and enters the substitute's from-throw (2–120) and each player's **own** full /
+  clean / faults; no lanes. A substitute can be replaced again (chain, increasing throws),
+  but a match holds at most 2 substitutions (`MAX_SUBSTITUTIONS`), from season 13 only.
+  `splitManualPosition()` (`lib/substitutions.ts`) applies the same rules for up to three
+  players: the most throws holds the position (`'major'`, combined full / clean / total), the
+  earliest on a tie, and the total-based share is split equally among the tied — ½ / ½ at 61,
+  ⅓ each on a 41 → 81 chain. Faults stay each player's own, so there is no lane split.
 
 ### Role: Trainer
 **Payments (to be paid by trainer)** — rows in `trainer_payments`, one per
@@ -302,7 +311,11 @@ at, and above the boundary:
   `lib/money-rules.test.ts`): a switch at 31 / 61 / 91, mid-lane with and without lane
   faults, before and after the admin split, at throw 1; the 0.5 / 0.5 share at 61; the
   minority row never worst / under 600 / bonus and never a trainer position, but paying the
-  team fines; the streak per segment.
+  team fines; the streak per segment. Manual positions (`lib/substitutions.test.ts`,
+  `lib/manual-match-rows.test.ts`, the "three-way tie" block of `lib/money-rules.test.ts`):
+  a switch at 2 / 31 / 61 / 91 / 120, the chains 61 → 91, 31 → 61 and 41 → 81, the ⅓ share
+  rounded to cents at 599 / 600 / 601 and 699 / 700 / 701, the team total counting a
+  position once, and the round trip back into the form.
 
 ### Frontend tests
 
@@ -363,7 +376,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Rows already marked paid are never deleted or overwritten by a recalculation — money that changed hands must survive.
 - The SQL is not unit testable, so its thresholds and formulas are mirrored by pure functions in `lib/money-rules.ts`, which is what the tests exercise. SQL and mirror change in the same commit — see the Testing Rules.
 - Trainer payments are fanned out over `role = 'trainer' AND is_approved`, so approving a trainer must recalculate: their rows for matches already played do not exist until it runs. `approveUser()` does this; anything else that flips `is_approved` or a role must too.
-- Substitutions: two raw writers (`syncData()` from `match_detail`, `syncAllPlayerResultsSnapshots()` from `player_results`) both write the starter's **combined** row, so `syncSubstitutions()` (`lib/match-substitutions.ts`) must run after both and before the recalculation — it is the only writer of `substitution_role`, `position_total`, `position_share` and the substitute's row. It never un-splits on a payload without a `substitutions` field (an old snapshot), and never deletes a paid row. `split_lane_substitute_faults` is admin-owned; sync never writes it. `getMatchDetail()` must keep requesting `substitutions` and `results.lanes`, or every split silently stops.
+- Substitutions: two raw writers (`syncData()` from `match_detail`, `syncAllPlayerResultsSnapshots()` from `player_results`) both write the starter's **combined** row, so `syncSubstitutions()` (`lib/match-substitutions.ts`) must run after both and before the recalculation — it is the only writer of `substitution_role`, `position_total`, `position_share` and the substitute's row for a scraped match. A manual match gets them from `saveManualMatch()` through `buildManualMatchRows()` (`lib/manual-match-rows.ts`), which also rewrites its `match_substitutions` links; their ids are allocated from `MANUAL_MATCH_ID_BASE` up, apart from the API's ids, and `deleteManualMatch()` deletes them first (no cascade). Its `team_total_score` sums each player's own part, because the holder's row already carries the whole position. It never un-splits on a payload without a `substitutions` field (an old snapshot), and never deletes a paid row. `split_lane_substitute_faults` is admin-owned; sync never writes it. `getMatchDetail()` must keep requesting `substitutions` and `results.lanes`, or every split silently stops.
 - `applyMatchMoneyUpdates()` (`lib/match-money.ts`) recalculates but deliberately never invalidates — it runs from `scripts/match-money.ts`, outside Next, where `updateSyncedData()` throws. The caller owns invalidation: the CLI calls `requestSyncedDataRevalidation()`; the in-app caller, `applyMatchMoney()` in `lib/match-money-actions.ts` (admin-only server action behind the `/money` sheet, whose paid buttons render for the admin only), calls `updateSyncedData()` and `revalidatePath` after every successful write. Any new in-app caller must do the same.
 
 ### Match Points

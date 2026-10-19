@@ -149,6 +149,11 @@ export function positionShare(row: PlayerRow): number {
   return row.positionShare ?? 1;
 }
 
+/** `ROUND(… * s.share, 2)` in sync.ts: a third of a share is not a whole cent. */
+export function roundCents(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
 /** `(mpr.total > 0 OR mpr.substitution_role IS NOT NULL)` in sync.ts's team fines. */
 export function hasPlayed(row: PlayerRow): boolean {
   return row.total > 0 || Boolean(row.substitutionRole);
@@ -228,13 +233,13 @@ export function derivePlayers(
       isTeamUnderLimit: underLimit,
       isTeamLoss: lost,
       calculatedFine: faultFine(row.faults)
-        + (isWorstPlayer ? WORST_PLAYER_FINE * share : 0)
-        + (isUnder600 ? UNDER_600_FINE * share : 0)
+        + (isWorstPlayer ? roundCents(WORST_PLAYER_FINE * share) : 0)
+        + (isUnder600 ? roundCents(UNDER_600_FINE * share) : 0)
         + specialFaultFine(row.specialFaultsCount)
         + (underLimit ? teamUnderLimitFineFor(match.seasonId) : 0)
         + (lost ? TEAM_LOSS_FINE : 0),
       streakFine: streakFineFor(streak),
-      bonusReceived: playerBonus(total) * share,
+      bonusReceived: roundCents(playerBonus(total) * share),
     };
 
     return [row.userId, derived];

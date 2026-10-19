@@ -728,4 +728,68 @@ describe('substituted positions', () => {
     expect(trainerZeroFaultsBonus(team)).toBe(10);
     expect(trainerZeroFaultsBonus(team.filter((r) => r.userId !== 'p0'))).toBeNull();
   });
+
+  // A manual position with two substitutions, at 41 and 81: 40 / 40 / 40 throws.
+  describe('three-way tie (manual chain 41 → 81)', () => {
+    const third = 1 / 3;
+
+    function threeWay(positionTotal: number): PlayerRow[] {
+      return [
+        shared('starter', 'major', positionTotal, positionTotal, third),
+        shared('sub1', 'minor', 200, positionTotal, third),
+        shared('sub2', 'minor', 200, positionTotal, third),
+      ];
+    }
+
+    it.each([
+      [599, 0.66],
+      [600, 0.33],
+      [601, 0.33],
+    ])('rounds a third of the fines on the position total %i to cents', (positionTotal, fine) => {
+      const rows = [...threeWay(positionTotal), player({ userId: 'other', total: 650 })];
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+      ['starter', 'sub1', 'sub2'].forEach((userId) => {
+        expect(derived.get(userId)?.calculatedFine).toBe(fine);
+      });
+      expect(derived.get('other')?.calculatedFine).toBe(0);
+    });
+
+    it.each([
+      [699, 0],
+      [700, 13.33],
+      [701, 13.33],
+    ])('rounds a third of the bonus on the position total %i to cents', (positionTotal, bonus) => {
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, threeWay(positionTotal));
+
+      ['starter', 'sub1', 'sub2'].forEach((userId) => {
+        expect(derived.get(userId)?.bonusReceived).toBe(bonus);
+      });
+    });
+
+    it('charges the team fines to all three in full', () => {
+      const match = {
+        ...homeInterliga(3600, CURRENT_SEASON), teamMatchPoints: 2, opponentMatchPoints: 6,
+      };
+      const derived = derivePlayers(match, [
+        shared('starter', 'major', 650, 650, 1),
+        shared('sub1', 'minor', 150, 650, 0),
+        shared('sub2', 'minor', 160, 650, 0),
+        player({ userId: 'other', total: 610 }),
+      ]);
+
+      expect(derived.get('sub1')?.calculatedFine).toBe(10);
+      expect(derived.get('sub2')?.calculatedFine).toBe(10);
+    });
+
+    it('counts the position once for the trainer', () => {
+      const team = [
+        ...Array.from({ length: 5 }, (_, i) => player({ userId: `p${i}`, total: 650, faults: 0 })),
+        ...threeWay(720),
+      ];
+
+      expect(trainerElitePlayerBonus(team)).toBe(10);
+      expect(trainerZeroFaultsBonus(team)).toBe(10);
+    });
+  });
 });

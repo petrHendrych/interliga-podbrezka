@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   type LaneResult,
+  type ManualSegment,
   changeLaneFaults,
   extractSubstitutionCandidates,
   isLaneStart,
   isSubstitutionThrow,
+  manualSegmentsFromRows,
+  splitManualPosition,
   splitPosition,
   toSheetSubstitution,
   toSubstitutionReview,
@@ -363,6 +366,7 @@ describe('toSheetSubstitution', () => {
     throwNumber: 103,
     laneFaults: 5,
     splitLaneSubstituteFaults: null,
+    manual: false,
   };
 
   it('flags a mid-lane switch with faults as waiting for the split', () => {
@@ -381,5 +385,164 @@ describe('toSheetSubstitution', () => {
     expect(toSheetSubstitution({ ...row, throwNumber: 91 })).toMatchObject({
       mid_lane: false, lane_faults: 0, needs_fault_split: false,
     });
+  });
+});
+
+function segment(
+  userId: string,
+  fromThrow: number,
+  full: number,
+  clean: number,
+  faults = 0,
+): ManualSegment {
+  return {
+    userId, fromThrow, full, clean, faults,
+  };
+}
+
+const STARTER = segment('u-starter', 1, 260, 120, 2);
+const SUB_61 = segment('u-sub', 61, 250, 110, 1);
+
+describe('splitManualPosition', () => {
+  it('keeps a position without a substitution as a plain row', () => {
+    expect(splitManualPosition([segment('u-a', 1, 400, 210, 3)])).toEqual([{
+      userId: 'u-a',
+      full: 400,
+      clean: 210,
+      total: 610,
+      faults: 3,
+      substitutionRole: null,
+      positionTotal: null,
+      positionShare: null,
+    }]);
+  });
+
+  it('halves the share on a switch at 61, the starter holding the position', () => {
+    const [starter, sub] = splitManualPosition([STARTER, SUB_61]);
+    expect(starter).toEqual({
+      userId: 'u-starter',
+      full: 510,
+      clean: 230,
+      total: 740,
+      faults: 2,
+      substitutionRole: 'major',
+      positionTotal: 740,
+      positionShare: 0.5,
+    });
+    expect(sub).toEqual({
+      userId: 'u-sub',
+      full: 250,
+      clean: 110,
+      total: 360,
+      faults: 1,
+      substitutionRole: 'minor',
+      positionTotal: 740,
+      positionShare: 0.5,
+    });
+  });
+
+  it('hands the position to the substitute on a switch at 31', () => {
+    const [starter, sub] = splitManualPosition([
+      segment('u-starter', 1, 90, 40, 1),
+      segment('u-sub', 31, 330, 160, 4),
+    ]);
+    expect(starter).toMatchObject({
+      substitutionRole: 'minor', total: 130, faults: 1, positionTotal: 620, positionShare: 0,
+    });
+    expect(sub).toMatchObject({
+      substitutionRole: 'major', full: 420, clean: 200, total: 620, faults: 4, positionShare: 1,
+    });
+  });
+
+  it('keeps the position on the starter on a switch at 91', () => {
+    const rows = splitManualPosition([
+      segment('u-starter', 1, 330, 160),
+      segment('u-sub', 91, 90, 40),
+    ]);
+    expect(rows.map((r) => [r.substitutionRole, r.positionShare]))
+      .toEqual([['major', 1], ['minor', 0]]);
+  });
+
+  it.each([
+    [2, ['minor', 'major']],
+    [120, ['major', 'minor']],
+  ])('gives one throw the minor row on a switch at %i', (fromThrow, roles) => {
+    const rows = splitManualPosition([
+      segment('u-starter', 1, 100, 50),
+      segment('u-sub', fromThrow, 100, 50),
+    ]);
+    expect(rows.map((r) => r.substitutionRole)).toEqual(roles);
+  });
+
+  it('keeps the position on a starter of 60 throws in a chain 61 → 91', () => {
+    const rows = splitManualPosition([
+      segment('u-starter', 1, 250, 120, 1),
+      segment('u-sub1', 61, 120, 60, 0),
+      segment('u-sub2', 91, 125, 55, 2),
+    ]);
+    expect(rows.map((r) => [r.substitutionRole, r.positionShare, r.total, r.faults])).toEqual([
+      ['major', 1, 730, 1],
+      ['minor', 0, 180, 0],
+      ['minor', 0, 180, 2],
+    ]);
+    expect(rows.every((r) => r.positionTotal === 730)).toBe(true);
+  });
+
+  it('hands the position to the second substitute with 60 throws in a chain 31 → 61', () => {
+    const rows = splitManualPosition([
+      segment('u-starter', 1, 120, 60),
+      segment('u-sub1', 31, 125, 55),
+      segment('u-sub2', 61, 250, 120),
+    ]);
+    expect(rows.map((r) => [r.userId, r.substitutionRole, r.positionShare])).toEqual([
+      ['u-starter', 'minor', 0],
+      ['u-sub1', 'minor', 0],
+      ['u-sub2', 'major', 1],
+    ]);
+    expect(rows[2].total).toBe(730);
+  });
+
+  it('splits a three-way tie (41 → 81) in thirds, the starter holding the stats', () => {
+    const rows = splitManualPosition([
+      segment('u-starter', 1, 160, 80),
+      segment('u-sub1', 41, 160, 70),
+      segment('u-sub2', 81, 150, 80),
+    ]);
+    expect(rows.map((r) => [r.substitutionRole, r.positionShare])).toEqual([
+      ['major', 1 / 3],
+      ['minor', 1 / 3],
+      ['minor', 1 / 3],
+    ]);
+    expect(rows[0].total).toBe(700);
+  });
+});
+
+describe('manualSegmentsFromRows', () => {
+  it.each([
+    ['no substitution', [segment('u-a', 1, 400, 210, 3)]],
+    ['a switch at 61', [STARTER, SUB_61]],
+    ['a switch at 31', [segment('u-starter', 1, 90, 40, 1), segment('u-sub', 31, 330, 160, 4)]],
+    ['a switch at 91', [segment('u-starter', 1, 330, 160), segment('u-sub', 91, 90, 40, 2)]],
+    ['a chain 61 → 91', [
+      segment('u-starter', 1, 250, 120, 1),
+      segment('u-sub1', 61, 120, 60),
+      segment('u-sub2', 91, 125, 55, 2),
+    ]],
+    ['a chain 31 → 61', [
+      segment('u-starter', 1, 120, 60),
+      segment('u-sub1', 31, 125, 55, 1),
+      segment('u-sub2', 61, 250, 120),
+    ]],
+    ['a chain 41 → 81', [
+      segment('u-starter', 1, 160, 80),
+      segment('u-sub1', 41, 160, 70),
+      segment('u-sub2', 81, 150, 80, 1),
+    ]],
+  ])('recovers every player\'s own part after %s', (_, segments) => {
+    const rows = new Map(splitManualPosition(segments).map((r) => [r.userId, {
+      full: r.full, clean: r.clean, faults: r.faults, role: r.substitutionRole,
+    }]));
+    const chain = segments.map(({ userId, fromThrow }) => ({ userId, fromThrow }));
+    expect(manualSegmentsFromRows(chain, rows)).toEqual(segments);
   });
 });

@@ -5,7 +5,9 @@
 import { revalidatePath } from 'next/cache';
 import { and, eq, sql as drizzleSql } from 'drizzle-orm';
 import { db, sql } from './db';
-import { matches, matchPlayerResults, trainerPayments } from './db/schema';
+import {
+  matches, matchPlayerResults, matchSubstitutions, trainerPayments,
+} from './db/schema';
 import { getSession } from './session';
 import { logActivity } from './activity-log';
 import { updateSyncedData } from './cache';
@@ -21,13 +23,21 @@ import {
   type ManualMatchError,
   type ManualMatchInput,
   type ManualMatchPlayerInput,
+  type ManualMatchPositionInput,
+  type ManualMatchSubstitutionInput,
   validateManualMatch,
 } from './validation/manual-match';
-import { computeAverage } from './sync-transform';
+import { buildManualMatchRows } from './manual-match-rows';
 
 const MATCHES_PATH = '/[lang]/admin/matches';
 
-export type { ManualMatchError, ManualMatchInput, ManualMatchPlayerInput };
+export type {
+  ManualMatchError,
+  ManualMatchInput,
+  ManualMatchPlayerInput,
+  ManualMatchPositionInput,
+  ManualMatchSubstitutionInput,
+};
 
 export type ManualMatchResult =
   | { success: true; matchId: number }
@@ -39,6 +49,19 @@ async function allocateMatchId(): Promise<number> {
     SELECT COALESCE(MAX(external_id), ${MANUAL_MATCH_ID_BASE}) + 1 AS id
     FROM matches
     WHERE external_id >= ${MANUAL_MATCH_ID_BASE}
+  `;
+  return Number(rows[0].id);
+}
+
+/**
+ * Manual substitutions share `match_substitutions` with the scraped ones, whose ids come from the
+ * results API; the manual range keeps the two apart.
+ */
+async function allocateSubstitutionId(): Promise<number> {
+  const rows = await sql`
+    SELECT COALESCE(MAX(id), ${MANUAL_MATCH_ID_BASE}) + 1 AS id
+    FROM match_substitutions
+    WHERE id >= ${MANUAL_MATCH_ID_BASE}
   `;
   return Number(rows[0].id);
 }
@@ -76,21 +99,10 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
     const league = getManualLeagues(input.seasonId)
       .find((l) => l.leagueId === input.leagueId)!;
 
-    const playerRows = input.players.map((p) => {
-      const total = p.full + p.clean;
-      return {
-        matchId,
-        userId: p.userId,
-        full: p.full,
-        clean: p.clean,
-        total,
-        avg: String(computeAverage(total)),
-        faults: p.faults,
-        teamId: getTeamIdsForSeason(input.seasonId)[0] ?? null,
-      };
-    });
-
-    const teamTotalScore = playerRows.reduce((sum, p) => sum + p.total, 0);
+    const built = buildManualMatchRows(input.positions);
+    const teamId = getTeamIdsForSeason(input.seasonId)[0] ?? null;
+    const playerRows = built.players.map((p) => ({ ...p, matchId, teamId }));
+    const { teamTotalScore } = built;
 
     const matchRow = {
       externalId: matchId,
@@ -133,6 +145,9 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
         },
       });
 
+    // Rewritten whole on every save, so a removed substitution leaves no link behind.
+    await db.delete(matchSubstitutions).where(eq(matchSubstitutions.matchId, matchId));
+
     // Players dropped from the lineup during an edit must lose their result row.
     const keptIds = playerRows.map((p) => p.userId);
     await db.delete(matchPlayerResults).where(and(
@@ -156,8 +171,22 @@ export async function saveManualMatch(input: ManualMatchInput): Promise<ManualMa
           avg: drizzleSql`EXCLUDED.avg`,
           faults: drizzleSql`EXCLUDED.faults`,
           teamId: drizzleSql`EXCLUDED.team_id`,
+          substitutionRole: drizzleSql`EXCLUDED.substitution_role`,
+          positionTotal: drizzleSql`EXCLUDED.position_total`,
+          positionShare: drizzleSql`EXCLUDED.position_share`,
         },
       });
+
+    if (built.substitutions.length > 0) {
+      const firstId = await allocateSubstitutionId();
+      await db.insert(matchSubstitutions).values(built.substitutions.map((s, i) => ({
+        id: firstId + i,
+        matchId,
+        ...s,
+        // Each player's faults are entered on their own; there is no lane to split.
+        laneFaults: 0,
+      })));
+    }
 
     const personalPushes = await recalculateAndDiffPlayerMoney();
 
@@ -195,6 +224,7 @@ export async function deleteManualMatch(externalId: number): Promise<ManualMatch
 
     // Neither foreign key cascades, so the children go first.
     await db.batch([
+      db.delete(matchSubstitutions).where(eq(matchSubstitutions.matchId, externalId)),
       db.delete(trainerPayments).where(eq(trainerPayments.matchId, externalId)),
       db.delete(matchPlayerResults).where(eq(matchPlayerResults.matchId, externalId)),
       db.delete(matches).where(eq(matches.externalId, externalId)),

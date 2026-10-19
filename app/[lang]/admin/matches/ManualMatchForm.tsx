@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Loader2, Plus, Save, X,
+  ArrowRightLeft, Loader2, Save, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,14 @@ import {
 } from '@/components/ui/select';
 import { saveManualMatch, type ManualMatchError } from '@/lib/manual-match-actions';
 import type { ManualMatchDetail, SelectablePlayer } from '@/lib/manual-matches';
-import { MAX_MATCH_POINTS } from '@/lib/validation/manual-match';
+import { interpolate } from '@/lib/i18n/config';
+import { SUBSTITUTION_FIRST_SEASON_ID, THROWS_PER_GAME } from '@/lib/substitutions';
+import {
+  MAX_MATCH_POINTS,
+  MAX_SUBSTITUTIONS,
+  MIN_SUBSTITUTION_THROW,
+  POSITION_COUNT,
+} from '@/lib/validation/manual-match';
 
 /** Season and its manual competitions, flattened for the client. */
 export interface ManualSeasonOption {
@@ -44,14 +51,19 @@ export interface ManualMatchFormTranslations {
   optional: string;
   players: string;
   playersHint: string;
-  player: string;
   playerPlaceholder: string;
   full: string;
   clean: string;
   total: string;
   faults: string;
-  addPlayer: string;
-  removePlayer: string;
+  /** `{n}`: the position's number. */
+  position: string;
+  addSubstitution: string;
+  substitute: string;
+  fromThrow: string;
+  fromThrowHint: string;
+  removeSubstitution: string;
+  positionTotal: string;
   teamTotal: string;
   save: string;
   saving: string;
@@ -68,7 +80,7 @@ interface ManualMatchFormProps {
   translations: ManualMatchFormTranslations;
 }
 
-interface PlayerRow {
+interface PlayerFields {
   /** Stable across re-renders so React keys survive removals. */
   key: string;
   userId: string;
@@ -77,7 +89,16 @@ interface PlayerRow {
   faults: string;
 }
 
-const DEFAULT_ROWS = 6;
+interface SubstituteFields extends PlayerFields {
+  fromThrow: string;
+}
+
+interface PositionCard {
+  key: string;
+  starter: PlayerFields;
+  /** In order: each one replaces the player before it. */
+  substitutions: SubstituteFields[];
+}
 
 const LABEL = 'text-xs font-semibold uppercase tracking-wider text-muted-foreground leading-4';
 // Every field is label-on-top-of-a-36px-control, so cells line up across a row.
@@ -86,24 +107,50 @@ const CARD = 'rounded-2xl bg-surface p-4 sm:p-6 shadow-lift-lg';
 const READONLY_VALUE = 'flex h-9 items-center justify-center rounded-lg bg-surface px-3 text-sm font-bold tabular-nums';
 
 let rowCounter = 0;
-function emptyRow(): PlayerRow {
+function nextKey(): string {
   rowCounter += 1;
+  return `row-${rowCounter}`;
+}
+
+function emptyFields(): PlayerFields {
   return {
-    key: `row-${rowCounter}`, userId: '', full: '', clean: '', faults: '',
+    key: nextKey(), userId: '', full: '', clean: '', faults: '',
   };
 }
 
-function toRows(initial: ManualMatchDetail | null): PlayerRow[] {
-  if (!initial || initial.players.length === 0) {
-    return Array.from({ length: DEFAULT_ROWS }, emptyRow);
-  }
-  return initial.players.map((p) => ({
-    ...emptyRow(),
-    userId: p.userId,
-    full: String(p.full),
-    clean: String(p.clean),
-    faults: String(p.faults),
+function emptyCard(): PositionCard {
+  return { key: nextKey(), starter: emptyFields(), substitutions: [] };
+}
+
+function emptyCards(): PositionCard[] {
+  return Array.from({ length: POSITION_COUNT }, emptyCard);
+}
+
+function toFields(player: {
+  userId: string; full: number; clean: number; faults: number;
+}): PlayerFields {
+  return {
+    key: nextKey(),
+    userId: player.userId,
+    full: String(player.full),
+    clean: String(player.clean),
+    faults: String(player.faults),
+  };
+}
+
+function toCards(initial: ManualMatchDetail | null): PositionCard[] {
+  if (!initial || initial.positions.length === 0) return emptyCards();
+  const cards = initial.positions.map((p) => ({
+    key: nextKey(),
+    starter: toFields(p.starter),
+    substitutions: p.substitutions.map((s) => ({
+      ...toFields(s), fromThrow: String(s.fromThrow),
+    })),
   }));
+  return [
+    ...cards,
+    ...Array.from({ length: Math.max(POSITION_COUNT - cards.length, 0) }, emptyCard),
+  ];
 }
 
 function toCount(value: string): number {
@@ -118,6 +165,92 @@ function toPoints(value: string): number | null {
 
 function fromPoints(value: number | null | undefined): string {
   return value != null ? String(value) : '';
+}
+
+function fieldsTotal(fields: PlayerFields): number {
+  return toCount(fields.full) + toCount(fields.clean);
+}
+
+function cardTotal(card: PositionCard): number {
+  return [card.starter, ...card.substitutions].reduce((sum, f) => sum + fieldsTotal(f), 0);
+}
+
+function toPlayerInput(fields: PlayerFields) {
+  return {
+    userId: fields.userId,
+    full: toCount(fields.full),
+    clean: toCount(fields.clean),
+    faults: toCount(fields.faults),
+  };
+}
+
+interface PlayerFieldsRowProps {
+  fields: PlayerFields;
+  playerLabel: string;
+  /** Everyone else's pick, so nobody is entered twice. */
+  takenIds: Set<string>;
+  players: SelectablePlayer[];
+  translations: ManualMatchFormTranslations;
+  disabled: boolean;
+  onChange: (patch: Partial<PlayerFields>) => void;
+}
+
+function PlayerFieldsRow({
+  fields, playerLabel, takenIds, players, translations, disabled, onChange,
+}: PlayerFieldsRowProps) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className={`${FIELD} sm:flex-1 sm:min-w-0`}>
+        <span className={LABEL}>{playerLabel}</span>
+        <Select
+          value={fields.userId || null}
+          onValueChange={(value: string | null) => onChange({ userId: value ?? '' })}
+          disabled={disabled}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={translations.playerPlaceholder}>
+              {players.find((p) => p.id === fields.userId)?.name
+                ?? translations.playerPlaceholder}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="w-[var(--anchor-width)]">
+            {players
+              .filter((p) => p.id === fields.userId || !takenIds.has(p.id))
+              .map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 sm:w-auto">
+        {([
+          { field: 'full' as const, label: translations.full },
+          { field: 'clean' as const, label: translations.clean },
+          { field: 'faults' as const, label: translations.faults },
+        ]).map(({ field, label }) => (
+          <label key={field} htmlFor={`${fields.key}-${field}`} className={FIELD}>
+            <span className={LABEL}>{label}</span>
+            <Input
+              id={`${fields.key}-${field}`}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={fields[field]}
+              onChange={(e) => onChange({ [field]: e.target.value })}
+              disabled={disabled}
+              className="sm:w-20 text-center tabular-nums"
+            />
+          </label>
+        ))}
+
+        <div className={FIELD}>
+          <span className={LABEL}>{translations.total}</span>
+          <span className={`${READONLY_VALUE} sm:w-20`}>{fieldsTotal(fields)}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function ManualMatchForm({
@@ -143,14 +276,17 @@ export function ManualMatchForm({
   );
   const [teamPoints, setTeamPoints] = useState(fromPoints(initial?.teamMatchPoints));
   const [opponentPoints, setOpponentPoints] = useState(fromPoints(initial?.opponentMatchPoints));
-  const [rows, setRows] = useState<PlayerRow[]>(() => toRows(initial));
+  const [cards, setCards] = useState<PositionCard[]>(() => toCards(initial));
 
   const leagues = useMemo(
     () => seasons.find((s) => s.id === seasonId)?.leagues ?? [],
     [seasons, seasonId],
   );
 
-  const teamTotal = rows.reduce((sum, r) => sum + toCount(r.full) + toCount(r.clean), 0);
+  const teamTotal = cards.reduce((sum, c) => sum + cardTotal(c), 0);
+  const substitutionCount = cards.reduce((sum, c) => sum + c.substitutions.length, 0);
+  const canSubstitute = seasonId >= SUBSTITUTION_FIRST_SEASON_ID
+    && substitutionCount < MAX_SUBSTITUTIONS;
 
   const handleSeasonChange = (value: string) => {
     const nextSeasonId = Number(value);
@@ -158,14 +294,36 @@ export function ManualMatchForm({
     // The previous competition belongs to the previous season's id space.
     const nextLeagues = seasons.find((s) => s.id === nextSeasonId)?.leagues ?? [];
     setLeagueId(nextLeagues[0]?.leagueId ?? 0);
+    if (nextSeasonId < SUBSTITUTION_FIRST_SEASON_ID) {
+      setCards((current) => current.map((c) => ({ ...c, substitutions: [] })));
+    }
   };
 
-  const updateRow = (key: string, patch: Partial<PlayerRow>) => {
-    setRows((current) => current.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const updateCard = (key: string, update: (card: PositionCard) => PositionCard) => {
+    setCards((current) => current.map((c) => (c.key === key ? update(c) : c)));
   };
 
-  const removeRow = (key: string) => {
-    setRows((current) => current.filter((r) => r.key !== key));
+  const updateStarter = (cardKey: string, patch: Partial<PlayerFields>) => {
+    updateCard(cardKey, (c) => ({ ...c, starter: { ...c.starter, ...patch } }));
+  };
+
+  const updateSubstitute = (cardKey: string, subKey: string, patch: Partial<SubstituteFields>) => {
+    updateCard(cardKey, (c) => ({
+      ...c,
+      substitutions: c.substitutions.map((s) => (s.key === subKey ? { ...s, ...patch } : s)),
+    }));
+  };
+
+  const addSubstitute = (cardKey: string) => {
+    updateCard(cardKey, (c) => ({
+      ...c,
+      substitutions: [...c.substitutions, { ...emptyFields(), fromThrow: '' }],
+    }));
+  };
+
+  // The next substitute replaced this one, so they go together.
+  const removeSubstitute = (cardKey: string, index: number) => {
+    updateCard(cardKey, (c) => ({ ...c, substitutions: c.substitutions.slice(0, index) }));
   };
 
   const handleSubmit = () => {
@@ -181,15 +339,13 @@ export function ManualMatchForm({
         opponentTotalScore: opponentTotal.trim() === '' ? null : toCount(opponentTotal),
         teamMatchPoints: toPoints(teamPoints),
         opponentMatchPoints: toPoints(opponentPoints),
-        // Rows left blank are just unused slots, not an error.
-        players: rows
-          .filter((r) => r.userId !== '')
-          .map((r) => ({
-            userId: r.userId,
-            full: toCount(r.full),
-            clean: toCount(r.clean),
-            faults: toCount(r.faults),
+        positions: cards.map((c) => ({
+          starter: toPlayerInput(c.starter),
+          substitutions: c.substitutions.map((s) => ({
+            ...toPlayerInput(s),
+            fromThrow: toCount(s.fromThrow),
           })),
+        })),
       });
 
       if (result.success) {
@@ -197,7 +353,7 @@ export function ManualMatchForm({
         if (initial) {
           router.push(`/${lang}/admin/matches`);
         } else {
-          setRows(Array.from({ length: DEFAULT_ROWS }, emptyRow));
+          setCards(emptyCards());
           setOpponent('');
           setOpponentTotal('');
           setTeamPoints('');
@@ -211,7 +367,10 @@ export function ManualMatchForm({
     });
   };
 
-  const usedIds = new Set(rows.map((r) => r.userId).filter(Boolean));
+  const usedIds = new Set(cards
+    .flatMap((c) => [c.starter, ...c.substitutions])
+    .map((f) => f.userId)
+    .filter(Boolean));
   const seasonName = seasons.find((s) => s.id === seasonId)?.name ?? '';
   const leagueName = leagues.find((l) => l.leagueId === leagueId)?.name ?? '';
 
@@ -377,88 +536,102 @@ export function ManualMatchForm({
         </div>
 
         <div className="mt-3 flex flex-col gap-3">
-          {rows.map((row) => {
-            const rowTotal = toCount(row.full) + toCount(row.clean);
+          {cards.map((card, cardIndex) => {
+            const showAdd = canSubstitute && card.substitutions.length < MAX_SUBSTITUTIONS;
+            const hasSubstitutions = card.substitutions.length > 0;
             return (
-              <div
-                key={row.key}
-                className="rounded-xl bg-surface-2 p-3 flex flex-col gap-3 sm:flex-row sm:items-end"
+              <section
+                key={card.key}
+                aria-label={interpolate(translations.position, { n: cardIndex + 1 })}
+                className="rounded-xl bg-surface-2 p-3 flex flex-col gap-3"
               >
-                <div className={`${FIELD} sm:flex-1 sm:min-w-0`}>
-                  <span className={LABEL}>{translations.player}</span>
-                  <Select
-                    value={row.userId || null}
-                    onValueChange={(value: string | null) => updateRow(row.key, { userId: value ?? '' })}
-                    disabled={isPending}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={translations.playerPlaceholder}>
-                        {players.find((p) => p.id === row.userId)?.name
-                          ?? translations.playerPlaceholder}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="w-[var(--anchor-width)]">
-                      {players
-                        .filter((p) => p.id === row.userId || !usedIds.has(p.id))
-                        .map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 sm:w-auto">
-                  {([
-                    { field: 'full' as const, label: translations.full },
-                    { field: 'clean' as const, label: translations.clean },
-                    { field: 'faults' as const, label: translations.faults },
-                  ]).map(({ field, label }) => (
-                    <label key={field} htmlFor={`${row.key}-${field}`} className={FIELD}>
-                      <span className={LABEL}>{label}</span>
-                      <Input
-                        id={`${row.key}-${field}`}
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        value={row[field]}
-                        onChange={(e) => updateRow(row.key, { [field]: e.target.value })}
-                        disabled={isPending}
-                        className="sm:w-20 text-center tabular-nums"
-                      />
-                    </label>
-                  ))}
-
-                  <div className={FIELD}>
-                    <span className={LABEL}>{translations.total}</span>
-                    <span className={`${READONLY_VALUE} sm:w-20`}>{rowTotal}</span>
-                  </div>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon-lg"
-                  aria-label={translations.removePlayer}
-                  onClick={() => removeRow(row.key)}
+                <PlayerFieldsRow
+                  fields={card.starter}
+                  playerLabel={interpolate(translations.position, { n: cardIndex + 1 })}
+                  takenIds={usedIds}
+                  players={players}
+                  translations={translations}
                   disabled={isPending}
-                  className="self-end"
-                >
-                  <X />
-                </Button>
-              </div>
+                  onChange={(patch) => updateStarter(card.key, patch)}
+                />
+
+                {card.substitutions.map((sub, subIndex) => (
+                  <div key={sub.key} className="flex flex-col gap-3 border-l-2 border-primary/40 pl-3">
+                    <div className="flex items-end justify-between gap-3">
+                      <div className={FIELD}>
+                        <label htmlFor={`${sub.key}-fromThrow`} className={LABEL}>
+                          {translations.fromThrow}
+                        </label>
+                        <Input
+                          id={`${sub.key}-fromThrow`}
+                          type="number"
+                          inputMode="numeric"
+                          min={MIN_SUBSTITUTION_THROW}
+                          max={THROWS_PER_GAME}
+                          value={sub.fromThrow}
+                          onChange={(e) => updateSubstitute(
+                            card.key,
+                            sub.key,
+                            { fromThrow: e.target.value },
+                          )}
+                          aria-describedby={`${sub.key}-fromThrowHint`}
+                          disabled={isPending}
+                          className="w-24 text-center tabular-nums"
+                        />
+                        <span id={`${sub.key}-fromThrowHint`} className="text-xs text-muted-foreground">
+                          {translations.fromThrowHint}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon-lg"
+                        aria-label={translations.removeSubstitution}
+                        onClick={() => removeSubstitute(card.key, subIndex)}
+                        disabled={isPending}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+
+                    <PlayerFieldsRow
+                      fields={sub}
+                      playerLabel={translations.substitute}
+                      takenIds={usedIds}
+                      players={players}
+                      translations={translations}
+                      disabled={isPending}
+                      onChange={(patch) => updateSubstitute(card.key, sub.key, patch)}
+                    />
+                  </div>
+                ))}
+
+                {(showAdd || hasSubstitutions) && (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    {showAdd ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addSubstitute(card.key)}
+                        disabled={isPending}
+                      >
+                        <ArrowRightLeft />
+                        {translations.addSubstitution}
+                      </Button>
+                    ) : <span />}
+                    {hasSubstitutions && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">{`${translations.positionTotal}: `}</span>
+                        <span className="font-bold tabular-nums">{cardTotal(card)}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
             );
           })}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRows((current) => [...current, emptyRow()])}
-            disabled={isPending}
-          >
-            <Plus />
-            {translations.addPlayer}
-          </Button>
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
           <p className="text-sm">
             <span className="text-muted-foreground">{`${translations.teamTotal}: `}</span>
             <span className="font-bold tabular-nums">{teamTotal}</span>

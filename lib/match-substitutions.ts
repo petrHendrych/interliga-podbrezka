@@ -8,6 +8,7 @@ import {
   matchPlayerResults, matchSubstitutions, matches, scrapedData, users,
 } from './db/schema';
 import { computeAverage, isOurTeam } from './sync-transform';
+import { isManualMatchId } from './season-config';
 import {
   SUBSTITUTION_FIRST_SEASON_ID,
   THROWS_PER_LANE,
@@ -282,7 +283,8 @@ export async function getMatchSubstitutions(matchId: number): Promise<SheetSubst
     .where(eq(matchSubstitutions.matchId, matchId))
     .orderBy(matchSubstitutions.throwNumber);
 
-  return rows.map((row) => toSheetSubstitution({ ...row, id: Number(row.id) }));
+  const manual = isManualMatchId(matchId);
+  return rows.map((row) => toSheetSubstitution({ ...row, id: Number(row.id), manual }));
 }
 
 /** Per match, the mid-lane switches whose lane faults still wait for the admin's split. */
