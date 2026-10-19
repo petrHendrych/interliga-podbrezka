@@ -13,6 +13,7 @@ import {
   scrapedData,
 } from './db/schema';
 import {
+  DEFAULT_SEASON_ID,
   getAllTeamIds,
   getSeasonAndLeagueConfig,
   INTERLIGA_LEAGUE_IDS,
@@ -328,14 +329,16 @@ export async function recalculateDerivedFinancials() {
 /**
  * Every player's outstanding money and current streak, read either side of a recalculation so
  * the diff can tell who has something new to hear about. Unpaid only: a settled row is money
- * that already changed hands and must never resurface as a notification.
+ * that already changed hands and must never resurface as a notification. Fines count the
+ * current season only, so the "you owe" total matches what the app shows rather than adding
+ * old seasons' rows nobody ticked off.
  */
 async function readPlayerMoneySnapshot(): Promise<PlayerMoneySnapshot[]> {
   const rows = await neonSql`
     SELECT
       mpr.user_id::text AS user_id,
       COALESCE(SUM(
-        CASE WHEN NOT mpr.is_paid
+        CASE WHEN NOT mpr.is_paid AND m.season_id = ${DEFAULT_SEASON_ID}
           THEN COALESCE(mpr.calculated_fine, 0) + COALESCE(mpr.streak_fine, 0)
           ELSE 0 END
       ), 0)::numeric AS unpaid_fines,
@@ -351,6 +354,7 @@ async function readPlayerMoneySnapshot(): Promise<PlayerMoneySnapshot[]> {
         LIMIT 1
       ), 0) AS faultless_streak
     FROM match_player_results mpr
+    JOIN matches m ON mpr.match_id = m.external_id
     GROUP BY mpr.user_id
   `;
 
