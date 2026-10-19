@@ -29,8 +29,9 @@ cache and send notifications over HTTP. It runs on the repo's pinned Node.
 ## The three commands
 
 ```bash
-# Played matches, newest first. Unplayed fixtures are already filtered out.
-npx tsx scripts/match-money.ts list --limit 4
+# Played matches that still have money open, newest first. Unplayed fixtures are
+# already filtered out. Drop --unpaid-only to list every played match.
+npx tsx scripts/match-money.ts list --limit 4 --unpaid-only
 
 # Everything about one match: match info, every player row, trainer payments, totals.
 npx tsx scripts/match-money.ts sheet --match-id 44568
@@ -49,7 +50,9 @@ JSON
 ```
 
 `list` rows carry `pendingSubstitutions`: how many mid-lane switches in that match
-still wait for their miss split. `sheet` carries `substitutions`, one entry per shared
+still wait for their miss split. With `--unpaid-only` they also carry `totals`, and
+a match is kept only while `fines_unpaid`, `bonuses_unpaid` or `trainer_unpaid` is
+above 0. A match where every row is settled drops out of the list. `sheet` carries `substitutions`, one entry per shared
 position: `starter_name → substitute_name`, `throw_number`, `lane`, `lane_faults`,
 `mid_lane`, `substitute_lane_faults` (null until split), `needs_fault_split` and `manual`
 (entered in the manual-match form with each player's own misses, never split). Each
@@ -65,10 +68,15 @@ the one `apply` of a match, never on a `--dry-run`.
 
 ## Workflow
 
-1. **Pick the match.** Run `list --limit 4` and offer the four newest played
-   matches through `AskUserQuestion`, labelled with date, opponent and score. Mark
-   any match with `pendingSubstitutions > 0` in its label ("striedanie čaká na
-   rozdelenie chýb"). Older matches: the user gives the `external_id` directly.
+1. **Pick the match.** Run `list --limit 4 --unpaid-only` and offer the matches it
+   returns through `AskUserQuestion`, labelled with date, opponent and score; put
+   the unpaid fines € in the description. Mark any match with
+   `pendingSubstitutions > 0` in its label ("striedanie čaká na rozdelenie chýb").
+   `AskUserQuestion` needs at least 2 options, so if the list has 0 or 1 matches,
+   ask in plain text instead: name the one match, if there is one, and ask for an
+   `external_id`. Settled or older matches: the user gives the `external_id`
+   directly. A settled match is rarely the right target, though: see the paid-row
+   gotcha below.
 2. **Show the roster once.** Run `sheet --match-id <id>` and render a compact
    markdown table: player, total, faults, special misses (full / 2nd-to-last),
    fine €, fine paid?. Mark shared positions: `major` / `minor` rows get a
@@ -119,8 +127,12 @@ the one `apply` of a match, never on a `--dry-run`.
 - **`list` returns played matches only.** The `matches` table also holds
   scheduled fixtures, and they sort to the top. `getPlayedMatches()` filters on
   `team_total_score IS NOT NULL`; do not reintroduce an unfiltered listing.
-- **`AskUserQuestion` caps at 4 options.** Offer the 4 newest; anything older
-  comes in as an explicit match id.
+- **`--unpaid-only` reads every played match's sheet** before it applies
+  `--limit`, so the 4 it returns can come from any season. A match that has
+  nothing unpaid is left out, including one where nobody owes anything. If the
+  user is looking for a match that is not in the list, ask for its `external_id`.
+- **`AskUserQuestion` takes 2–4 options.** Offer the 4 newest unpaid matches;
+  anything older or already settled comes in as an explicit match id.
 - **One `apply` call = at most one recalculation**, and only when a miss count
   or a substitution split actually changed (`recalculated` in the response says
   so). Splitting a match across many calls re-runs a full cross-season
