@@ -69,11 +69,14 @@ describe('ApproveUserButton', () => {
     vi.mocked(approveUser).mockResolvedValueOnce({ success: false, error: 'unknown' });
     renderButton();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Schváliť' }));
+    const button = screen.getByRole('button', { name: 'Schváliť' });
+    fireEvent.click(button);
     await screen.findByText(errors.unknown);
+    // The error commits before the transition ends; clicking the still-disabled button is a no-op.
+    await vi.waitFor(() => expect(button).toBeEnabled());
 
     vi.mocked(approveUser).mockResolvedValueOnce({ success: true });
-    fireEvent.click(screen.getByRole('button', { name: 'Schváliť' }));
+    fireEvent.click(button);
 
     await vi.waitFor(() => expect(screen.queryByText(errors.unknown)).not.toBeInTheDocument());
   });
