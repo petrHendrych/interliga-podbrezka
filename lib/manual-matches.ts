@@ -2,8 +2,14 @@ import {
   asc, desc, eq, gte, sql,
 } from 'drizzle-orm';
 import { db } from './db';
-import { matches, matchPlayerResults, users } from './db/schema';
+import {
+  matches, matchPlayerResults, matchSubstitutions, users,
+} from './db/schema';
 import { MANUAL_MATCH_ID_BASE } from './season-config';
+import { type ManualPositionDetail, toManualPositions } from './manual-match-rows';
+import type { SubstitutionRole } from './substitutions';
+
+export type { ManualPositionDetail };
 
 export interface ManualMatchListItem {
   externalId: number;
@@ -20,14 +26,6 @@ export interface ManualMatchListItem {
   playersCount: number;
 }
 
-export interface ManualMatchPlayer {
-  userId: string;
-  name: string;
-  full: number;
-  clean: number;
-  faults: number;
-}
-
 export interface ManualMatchDetail {
   externalId: number;
   /** `YYYY-MM-DD`, ready for an `<input type="date">`. */
@@ -39,7 +37,7 @@ export interface ManualMatchDetail {
   opponentTotalScore: number | null;
   teamMatchPoints: number | null;
   opponentMatchPoints: number | null;
-  players: ManualMatchPlayer[];
+  positions: ManualPositionDetail[];
 }
 
 export interface SelectablePlayer {
@@ -68,9 +66,11 @@ export async function listManualMatches(): Promise<ManualMatchListItem[]> {
       opponentTotalScore: matches.opponentTotalScore,
       teamMatchPoints: matches.teamMatchPoints,
       opponentMatchPoints: matches.opponentMatchPoints,
+      // Positions, not people: a substitute shares a position with the player they replaced.
       playersCount: sql<number>`(
         SELECT COUNT(*)::int FROM match_player_results mpr
         WHERE mpr.match_id = ${matches.externalId}
+          AND mpr.substitution_role IS DISTINCT FROM 'minor'
       )`,
     })
     .from(matches)
@@ -96,7 +96,7 @@ export async function listManualMatches(): Promise<ManualMatchListItem[]> {
 export async function getManualMatch(externalId: number): Promise<ManualMatchDetail | null> {
   if (externalId < MANUAL_MATCH_ID_BASE) return null;
 
-  const [matchRows, playerRows] = await db.batch([
+  const [matchRows, playerRows, linkRows] = await db.batch([
     db.select().from(matches).where(eq(matches.externalId, externalId)),
     db
       .select({
@@ -105,11 +105,21 @@ export async function getManualMatch(externalId: number): Promise<ManualMatchDet
         full: matchPlayerResults.full,
         clean: matchPlayerResults.clean,
         faults: matchPlayerResults.faults,
+        substitutionRole: matchPlayerResults.substitutionRole,
       })
       .from(matchPlayerResults)
       .innerJoin(users, eq(matchPlayerResults.userId, users.id))
       .where(eq(matchPlayerResults.matchId, externalId))
       .orderBy(asc(users.name)),
+    db
+      .select({
+        starterUserId: matchSubstitutions.starterUserId,
+        substituteUserId: matchSubstitutions.substituteUserId,
+        throwNumber: matchSubstitutions.throwNumber,
+      })
+      .from(matchSubstitutions)
+      .where(eq(matchSubstitutions.matchId, externalId))
+      .orderBy(asc(matchSubstitutions.throwNumber)),
   ]);
 
   const match = matchRows[0];
@@ -125,13 +135,17 @@ export async function getManualMatch(externalId: number): Promise<ManualMatchDet
     opponentTotalScore: match.opponentTotalScore ?? null,
     teamMatchPoints: match.teamMatchPoints ?? null,
     opponentMatchPoints: match.opponentMatchPoints ?? null,
-    players: playerRows.map((p) => ({
-      userId: String(p.userId),
-      name: String(p.name),
-      full: Number(p.full || 0),
-      clean: Number(p.clean || 0),
-      faults: Number(p.faults || 0),
-    })),
+    positions: toManualPositions(
+      playerRows.map((p) => ({
+        userId: String(p.userId),
+        name: String(p.name),
+        full: Number(p.full || 0),
+        clean: Number(p.clean || 0),
+        faults: Number(p.faults || 0),
+        substitutionRole: (p.substitutionRole as SubstitutionRole | null) ?? null,
+      })),
+      linkRows,
+    ),
   };
 }
 

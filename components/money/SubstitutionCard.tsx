@@ -16,6 +16,7 @@ export interface SubstitutionCardLabels {
   substitutionNeedsSplit: string;
   substitutionSplitLabel: string;
   substitutionSplitDone: string;
+  substitutionManual: string;
   save: string;
 }
 
@@ -30,6 +31,7 @@ export interface SubstitutionCardProps {
 const CARD = 'flex flex-col gap-3 rounded-xl bg-surface-2 p-4';
 
 function statusText(substitution: SheetSubstitution, labels: SubstitutionCardLabels): string {
+  if (substitution.manual) return labels.substitutionManual;
   if (!substitution.mid_lane) return labels.substitutionExact;
   if (substitution.lane_faults === 0) return labels.substitutionNoLaneFaults;
   if (substitution.substitute_lane_faults === null) {
@@ -49,7 +51,9 @@ export function SubstitutionCard({
   const [error, setError] = useState<MatchMoneyActionError | null>(null);
   const [value, setValue] = useState(String(substitution.substitute_lane_faults ?? ''));
 
-  const splittable = substitution.mid_lane && substitution.lane_faults > 0;
+  const splittable = !substitution.manual
+    && substitution.mid_lane
+    && substitution.lane_faults > 0;
   const inputId = `substitution-${substitution.id}`;
 
   const handleSave = () => {
@@ -74,12 +78,14 @@ export function SubstitutionCard({
               throwNumber: substitution.throw_number,
             })}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {interpolate(labels.substitutionLane, {
-              lane: substitution.lane,
-              faults: substitution.lane_faults,
-            })}
-          </p>
+          {!substitution.manual && (
+            <p className="text-sm text-muted-foreground">
+              {interpolate(labels.substitutionLane, {
+                lane: substitution.lane,
+                faults: substitution.lane_faults,
+              })}
+            </p>
+          )}
         </div>
       </div>
 

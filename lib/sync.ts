@@ -25,6 +25,7 @@ import {
   CLEAN_SWEEP_FIRST_SEASON_ID,
   CLEAN_SWEEP_TEAM_POINTS,
   LEGACY_TEAM_UNDER_LIMIT_FINE,
+  PLAYER_BONUS,
   STREAK_FINE,
   STREAK_LENGTH,
   STREAK_RESET_FIRST_SEASON_ID,
@@ -32,6 +33,8 @@ import {
   TEAM_LOSS_FIRST_SEASON_ID,
   TEAM_UNDER_LIMIT_FINE,
   TRAINER_CLEAN_SWEEP_FINE,
+  UNDER_600_FINE,
+  WORST_PLAYER_FINE,
 } from './money-rules';
 import { MatchListItem, parseApiDate } from './api';
 import {
@@ -58,6 +61,18 @@ import {
  * neither adds a player who played nor a second 700.
  */
 const NOT_MINOR = sql.raw("mpr.substitution_role IS DISTINCT FROM 'minor'");
+
+/**
+ * A position's amount split into whole cents by `s.share`. A ⅓ share is not a whole cent, so the
+ * holder takes what the others' rounded shares leave and the split adds up to the full amount;
+ * shares of 1 and ½ are unchanged. Mirrored by `shareAmount()` in money-rules.ts.
+ */
+function sharedAmount(amount: number) {
+  return sql`CASE WHEN s.role = 'minor' OR s.share = 0
+                  THEN ROUND(${amount}::numeric * s.share, 2)
+                  ELSE ${amount}::numeric
+                       - ROUND(${amount}::numeric * s.share, 2) * (ROUND(1 / s.share) - 1) END`;
+}
 
 /** Renders a number list for an `IN (...)` clause. */
 function idList(ids: number[]) {
@@ -144,8 +159,9 @@ export async function recalculateDerivedFinancials() {
   // partition by `season_id` — but never by league, a streak crosses competitions. From
   // season 13 the stored streak cycles 1–5, so only every 5th clean game in a row is fined.
   // A substituted position is judged on its combined `position_total`; `position_share` hands
-  // the total-based fines and bonus to the player with more throws (1 / 0), or halves them on a
-  // switch at throw 61. Both players of the position count as having played.
+  // the total-based fines and bonus to the player with the most throws (1 / 0), or splits them
+  // equally on a tie — halves at throw 61, thirds on a manual 41 → 81 chain (see sharedAmount).
+  // Every player of the position counts as having played.
   await db.execute(sql`
     WITH worst AS (
       SELECT match_id,
@@ -160,6 +176,7 @@ export async function recalculateDerivedFinancials() {
              COALESCE(mpr.special_faults_count, 0) AS sfc,
              COALESCE(mpr.position_total, mpr.total) AS eff_total,
              COALESCE(mpr.position_share, 1) AS share,
+             mpr.substitution_role AS role,
              w.min_total,
              -- Parameters are bound untyped, and a CASE of untyped parameters resolves to
              -- text, which cannot compare with an integer; the ::int casts prevent that.
@@ -214,12 +231,13 @@ export async function recalculateDerivedFinancials() {
         is_team_under_limit = s.team_under_limit,
         is_team_loss        = s.team_loss,
         faultless_streak    = s.streak,
-        bonus_received      = CASE WHEN s.eff_total >= 700 THEN 40 * s.share ELSE 0 END,
+        bonus_received      = CASE WHEN s.eff_total >= 700
+                                   THEN ${sharedAmount(PLAYER_BONUS)} ELSE 0 END,
         calculated_fine     = (COALESCE(s.faults, 0) * (COALESCE(s.faults, 0) + 1)) / 2
                             + CASE WHEN s.eff_total = s.min_total AND s.eff_total > 0
-                                   THEN 1 * s.share ELSE 0 END
+                                   THEN ${sharedAmount(WORST_PLAYER_FINE)} ELSE 0 END
                             + CASE WHEN s.eff_total < 600 AND s.eff_total > 0
-                                   THEN 1 * s.share ELSE 0 END
+                                   THEN ${sharedAmount(UNDER_600_FINE)} ELSE 0 END
                             + s.sfc * 5
                             + CASE WHEN s.team_under_limit
                                    THEN CASE WHEN s.season_id >= ${TEAM_SCORE_LIMIT_FIRST_SEASON_ID}

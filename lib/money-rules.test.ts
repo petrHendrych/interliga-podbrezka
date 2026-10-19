@@ -16,6 +16,7 @@ import {
   isTeamUnderLimit,
   isUnderLimitEligible,
   playerBonus,
+  shareAmount,
   specialFaultFine,
   storedStreak,
   streakFineFor,
@@ -727,5 +728,97 @@ describe('substituted positions', () => {
     expect(trainerElitePlayerBonus(team)).toBe(10);
     expect(trainerZeroFaultsBonus(team)).toBe(10);
     expect(trainerZeroFaultsBonus(team.filter((r) => r.userId !== 'p0'))).toBeNull();
+  });
+
+  // A manual position with two substitutions, at 41 and 81: 40 / 40 / 40 throws.
+  describe('three-way tie (manual chain 41 → 81)', () => {
+    const third = 1 / 3;
+
+    function threeWay(positionTotal: number): PlayerRow[] {
+      return [
+        shared('starter', 'major', positionTotal, positionTotal, third),
+        shared('sub1', 'minor', 200, positionTotal, third),
+        shared('sub2', 'minor', 200, positionTotal, third),
+      ];
+    }
+
+    function amounts(
+      derived: ReturnType<typeof derivePlayers>,
+      field: 'calculatedFine' | 'bonusReceived',
+    ): number[] {
+      return ['starter', 'sub1', 'sub2'].map((userId) => derived.get(userId)![field]);
+    }
+
+    it.each([
+      // Worst in team and under 600 each split 0.34 / 0.33 / 0.33.
+      [599, [0.68, 0.66, 0.66]],
+      [600, [0.34, 0.33, 0.33]],
+      [601, [0.34, 0.33, 0.33]],
+    ])('splits the fines on the position total %i into cents that add up, the holder taking the odd cent', (positionTotal, fines) => {
+      const rows = [...threeWay(positionTotal), player({ userId: 'other', total: 650 })];
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, rows);
+
+      expect(amounts(derived, 'calculatedFine')).toEqual(fines);
+      expect(derived.get('other')?.calculatedFine).toBe(0);
+    });
+
+    it.each([
+      [699, [0, 0, 0]],
+      [700, [13.34, 13.33, 13.33]],
+      [701, [13.34, 13.33, 13.33]],
+    ])('splits the bonus on the position total %i into exactly 40 €', (positionTotal, bonuses) => {
+      const derived = derivePlayers({ seasonId: CURRENT_SEASON }, threeWay(positionTotal));
+
+      expect(amounts(derived, 'bonusReceived')).toEqual(bonuses);
+    });
+
+    it.each([
+      [40, 0.5, 20],
+      [40, 1, 40],
+      [1, 0.5, 0.5],
+      [40, third, 13.34],
+      [1, third, 0.34],
+    ])('gives the holder of %i € at share %d exactly %d €', (amount, share, expected) => {
+      expect(shareAmount(amount, { ...player({ userId: 'h' }), substitutionRole: 'major', positionShare: share }))
+        .toBe(expected);
+    });
+
+    it.each([
+      [40, third, 13.33],
+      [40, 0.5, 20],
+      [40, 0, 0],
+    ])('gives a minor row of %i € at share %d exactly %d €', (amount, share, expected) => {
+      expect(shareAmount(amount, { ...player({ userId: 'm' }), substitutionRole: 'minor', positionShare: share }))
+        .toBe(expected);
+    });
+
+    it('leaves a row without a substitution the whole amount', () => {
+      expect(shareAmount(40, player({ userId: 'p' }))).toBe(40);
+    });
+
+    it('charges the team fines to all three in full', () => {
+      const match = {
+        ...homeInterliga(3600, CURRENT_SEASON), teamMatchPoints: 2, opponentMatchPoints: 6,
+      };
+      const derived = derivePlayers(match, [
+        shared('starter', 'major', 650, 650, 1),
+        shared('sub1', 'minor', 150, 650, 0),
+        shared('sub2', 'minor', 160, 650, 0),
+        player({ userId: 'other', total: 610 }),
+      ]);
+
+      expect(derived.get('sub1')?.calculatedFine).toBe(10);
+      expect(derived.get('sub2')?.calculatedFine).toBe(10);
+    });
+
+    it('counts the position once for the trainer', () => {
+      const team = [
+        ...Array.from({ length: 5 }, (_, i) => player({ userId: `p${i}`, total: 650, faults: 0 })),
+        ...threeWay(720),
+      ];
+
+      expect(trainerElitePlayerBonus(team)).toBe(10);
+      expect(trainerZeroFaultsBonus(team)).toBe(10);
+    });
   });
 });

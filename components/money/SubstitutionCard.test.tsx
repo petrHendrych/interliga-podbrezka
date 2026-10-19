@@ -26,6 +26,7 @@ const MID_LANE: SheetSubstitution = {
   mid_lane: true,
   substitute_lane_faults: null,
   needs_fault_split: true,
+  manual: false,
 };
 
 function renderCard(substitution: SheetSubstitution, canEdit = true) {
@@ -93,6 +94,18 @@ describe('SubstitutionCard', () => {
     });
 
     expect(screen.getByText(t.substitutionExact)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('shows a manual substitution without a lane or a split', () => {
+    renderCard({
+      ...MID_LANE, lane_faults: 0, needs_fault_split: false, manual: true,
+    });
+
+    expect(screen.getByText('Bystrík Vadovič → Šimon Dubrava od 103. hodu')).toBeInTheDocument();
+    expect(screen.getByText(t.substitutionManual)).toBeInTheDocument();
+    expect(screen.queryByText(t.substitutionNoLaneFaults)).not.toBeInTheDocument();
+    expect(screen.queryByText(/dráha/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

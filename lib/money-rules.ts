@@ -149,6 +149,21 @@ export function positionShare(row: PlayerRow): number {
   return row.positionShare ?? 1;
 }
 
+function roundCents(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+/**
+ * `sharedAmount()` in sync.ts: a position's amount split into whole cents. A ⅓ share is not a
+ * whole cent, so the holder takes what the others' rounded shares leave, and the split adds up.
+ */
+export function shareAmount(amount: number, row: PlayerRow): number {
+  const share = positionShare(row);
+  const rounded = roundCents(amount * share);
+  if (row.substitutionRole === 'minor' || share === 0) return rounded;
+  return roundCents(amount - rounded * (Math.round(1 / share) - 1));
+}
+
 /** `(mpr.total > 0 OR mpr.substitution_role IS NOT NULL)` in sync.ts's team fines. */
 export function hasPlayed(row: PlayerRow): boolean {
   return row.total > 0 || Boolean(row.substitutionRole);
@@ -228,13 +243,13 @@ export function derivePlayers(
       isTeamUnderLimit: underLimit,
       isTeamLoss: lost,
       calculatedFine: faultFine(row.faults)
-        + (isWorstPlayer ? WORST_PLAYER_FINE * share : 0)
-        + (isUnder600 ? UNDER_600_FINE * share : 0)
+        + (isWorstPlayer ? shareAmount(WORST_PLAYER_FINE, row) : 0)
+        + (isUnder600 ? shareAmount(UNDER_600_FINE, row) : 0)
         + specialFaultFine(row.specialFaultsCount)
         + (underLimit ? teamUnderLimitFineFor(match.seasonId) : 0)
         + (lost ? TEAM_LOSS_FINE : 0),
       streakFine: streakFineFor(streak),
-      bonusReceived: playerBonus(total) * share,
+      bonusReceived: shareAmount(playerBonus(total), row),
     };
 
     return [row.userId, derived];

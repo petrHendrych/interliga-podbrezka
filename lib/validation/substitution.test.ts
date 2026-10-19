@@ -14,6 +14,7 @@ const MID_LANE: SheetSubstitution = {
   mid_lane: true,
   substitute_lane_faults: null,
   needs_fault_split: true,
+  manual: false,
 };
 
 const NONE_PAID = new Set<string>();

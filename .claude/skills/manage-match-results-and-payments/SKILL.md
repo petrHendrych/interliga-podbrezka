@@ -51,7 +51,8 @@ JSON
 `list` rows carry `pendingSubstitutions`: how many mid-lane switches in that match
 still wait for their miss split. `sheet` carries `substitutions`, one entry per shared
 position: `starter_name → substitute_name`, `throw_number`, `lane`, `lane_faults`,
-`mid_lane`, `substitute_lane_faults` (null until split) and `needs_fault_split`. Each
+`mid_lane`, `substitute_lane_faults` (null until split), `needs_fault_split` and `manual`
+(entered in the manual-match form with each player's own misses, never split). Each
 player row carries `substitution_role`: `major` holds the position's result, `minor`
 only its own misses.
 
@@ -79,6 +80,8 @@ the one `apply` of a match, never on a `--dry-run`.
    - `mid_lane: true`, `lane_faults: 0` → a note that the switch was mid-lane but
      the lane was clean, so nothing to split.
    - `mid_lane: false` → a note that the split by lanes is exact.
+   - `manual: true` → a note that each player's misses were entered on their own, so
+     there is nothing to split. Check this first: it wins over the two notes above.
 3. **Ask for everything in one message**: the special misses and, for every
    `needs_fault_split` (or a split the user wants to change), the substitute's share
    of that lane's misses — e.g. `Magala 1 full; Bína 1 2nd; Dubrava 2 of 5`. Do

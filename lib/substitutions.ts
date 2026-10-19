@@ -220,6 +220,8 @@ export interface SheetSubstitution {
   /** The admin's split; null until entered, and the lane's faults stay with the starter. */
   substitute_lane_faults: number | null;
   needs_fault_split: boolean;
+  /** Entered in the manual-match form, each player's faults on their own: no lane to split. */
+  manual: boolean;
 }
 
 export function toSheetSubstitution(row: {
@@ -231,9 +233,11 @@ export function toSheetSubstitution(row: {
   throwNumber: number;
   laneFaults: number;
   splitLaneSubstituteFaults: number | null;
+  manual: boolean;
 }): SheetSubstitution {
   const midLane = !isLaneStart(row.throwNumber);
   return {
+    manual: row.manual,
     id: row.id,
     starter_user_id: row.starterUserId,
     starter_name: row.starterName,
@@ -321,4 +325,99 @@ export function splitPosition({
     starter: segment(starterIsMajor, starterThrows, starterLanes, starterFaults),
     substitute: segment(!starterIsMajor, substituteThrows, substituteLanes, substituteFaults),
   };
+}
+
+/** One player's own part of a manually entered position. */
+export interface ManualSegment {
+  userId: string;
+  /** First throw this player bowled; the starter's is 1. */
+  fromThrow: number;
+  full: number;
+  clean: number;
+  faults: number;
+}
+
+export interface ManualPositionRow {
+  userId: string;
+  /** The whole position for the holder, the player's own part for everyone else. */
+  full: number;
+  clean: number;
+  total: number;
+  faults: number;
+  substitutionRole: SubstitutionRole | null;
+  positionTotal: number | null;
+  positionShare: number | null;
+}
+
+function throwsOf(segments: { fromThrow: number }[]): number[] {
+  return segments.map((s, i) => (segments[i + 1]?.fromThrow ?? THROWS_PER_GAME + 1) - s.fromThrow);
+}
+
+/**
+ * Splits one manually entered position (the starter, then up to two substitutes in order) into
+ * result rows, as `splitPosition()` does for a scraped one. The player with the most throws
+ * holds the position; on a tie the earliest of them does, and the total-based fines and bonus
+ * are shared equally among the tied players.
+ */
+export function splitManualPosition(segments: ManualSegment[]): ManualPositionRow[] {
+  if (segments.length === 1) {
+    const [only] = segments;
+    return [{
+      userId: only.userId,
+      full: only.full,
+      clean: only.clean,
+      total: only.full + only.clean,
+      faults: only.faults,
+      substitutionRole: null,
+      positionTotal: null,
+      positionShare: null,
+    }];
+  }
+
+  const throws = throwsOf(segments);
+  const maxThrows = Math.max(...throws);
+  const tiedCount = throws.filter((t) => t === maxThrows).length;
+  const holderIndex = throws.indexOf(maxThrows);
+  const full = segments.reduce((sum, s) => sum + s.full, 0);
+  const clean = segments.reduce((sum, s) => sum + s.clean, 0);
+
+  return segments.map((s, i) => {
+    const isHolder = i === holderIndex;
+    return {
+      userId: s.userId,
+      full: isHolder ? full : s.full,
+      clean: isHolder ? clean : s.clean,
+      total: isHolder ? full + clean : s.full + s.clean,
+      faults: s.faults,
+      substitutionRole: isHolder ? 'major' : 'minor',
+      positionTotal: full + clean,
+      positionShare: throws[i] === maxThrows ? 1 / tiedCount : 0,
+    };
+  });
+}
+
+/** Inverse of `splitManualPosition()`: the holder's own part is the position minus the rest. */
+export function manualSegmentsFromRows(
+  chain: { userId: string; fromThrow: number }[],
+  rows: Map<string, {
+    full: number; clean: number; faults: number; substitutionRole: SubstitutionRole | null;
+  }>,
+): ManualSegment[] {
+  const others = chain
+    .map((link) => rows.get(link.userId))
+    .filter((row) => row && row.substitutionRole !== 'major');
+  const othersFull = others.reduce((sum, row) => sum + (row?.full ?? 0), 0);
+  const othersClean = others.reduce((sum, row) => sum + (row?.clean ?? 0), 0);
+
+  return chain.map(({ userId, fromThrow }) => {
+    const row = rows.get(userId);
+    const isHolder = row?.substitutionRole === 'major';
+    return {
+      userId,
+      fromThrow,
+      full: (row?.full ?? 0) - (isHolder ? othersFull : 0),
+      clean: (row?.clean ?? 0) - (isHolder ? othersClean : 0),
+      faults: row?.faults ?? 0,
+    };
+  });
 }
