@@ -42,7 +42,7 @@ const publicRoutes = ['/sign-in', '/sign-up', '/opengraph-image', '/offline'];
 // API routes carry no locale segment, so without this the proxy redirects them to
 // /sk/api/... instead of running them. Each one authenticates itself, with the cron
 // secret or a session.
-const publicApiPrefixes = ['/api/cron/', '/api/revalidate', '/api/push/'];
+const publicApiPrefixes = ['/api/cron/', '/api/revalidate', '/api/push/', '/api/release'];
 
 // Re-issued only once the token is past the halfway mark, so a Set-Cookie is not attached to
 // every single response. The attributes must match the ones setSession() writes.

@@ -562,6 +562,10 @@
       "substitutionReview": {
         "title": "Provera izmene",
         "body": "Utakmica protiv {opponent}: {starter} → {substitute} od {throwNumber}. bacanja, usred {lane}. staze (greške na stazi: {faults}). Proveri izmenu i podeli greške."
+      },
+      "appUpdated": {
+        "title": "Nova verzija aplikacije",
+        "body": "Postavljena je nova verzija. Otvori aplikaciju i pogledaj šta je novo."
       }
     },
     "counts": {
@@ -617,5 +621,18 @@
         "saveFailed": "Obaveštenja nije moguće uključiti, pokušaj ponovo."
       }
     }
+  },
+  "changelog": {
+    "title": "Šta je novo",
+    "releaseHeader": "Verzija {version} · {date}",
+    "types": {
+      "feature": "Novosti",
+      "improvement": "Poboljšanja",
+      "fix": "Ispravke"
+    },
+    "confirm": "Razumem",
+    "pageTitle": "Pregled promena",
+    "pageDescription": "Šta je dodato i šta smo popravili u pojedinim verzijama aplikacije.",
+    "empty": "Još nema promena."
   }
 }
