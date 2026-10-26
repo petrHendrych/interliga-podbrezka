@@ -1,3 +1,16 @@
 {
-  "plansDirectory": "docs/plans"
+  "plansDirectory": "docs/plans",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Before starting any work in this session, invoke the changelog skill in classify mode and ask the developer what type of work this is (feature / improvement / fix / internal / no work).'"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -9,6 +9,19 @@ results of ninepin bowling games and mainly faults money gathering accounting.
 
 Project is deployed on Vercel with URL: https://interliga-podbrezka.vercel.app/. 
 
+### Deploying and releases
+
+Merging to `main` does **not** deploy production; pull requests still get preview deployments.
+Production ships only through the **Deploy** GitHub workflow (Actions → Deploy → Run workflow on
+`main`). It runs `vercel deploy --prod` and then calls `POST /api/release`, which bundles every
+changelog entry (`lib/changelog/entries/`) merged since the last release into a new release,
+shows it to users in the "What's new" dialog, and sends the `appUpdated` push.
+
+The workflow needs these repository settings:
+- secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `CRON_SECRET` (the same value as
+  in the Vercel project)
+- variable `PRODUCTION_URL` = `https://interliga-podbrezka.vercel.app`
+
 **Each player can watch there his annual results and faults money gathering fines for the accounting. Money is gathered by the following rules:**
 - score under 600 -> 1€
 - last from the team -> 1€

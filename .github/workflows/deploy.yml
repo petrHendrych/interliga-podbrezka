@@ -1,0 +1,32 @@
+name: Deploy
+
+# Merging to main does not deploy (vercel.json turns that off); production ships only from here,
+# and every run cuts a changelog release from the entries merged since the last one.
+on: workflow_dispatch
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy production
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Built remotely on Vercel, so next.config.ts counts deployments with the project's env.
+      - name: Deploy to Vercel
+        run: npx --yes vercel@latest deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+
+      # The production domain, not the deployment URL: that one sits behind Vercel Authentication.
+      # Safe to re-run on its own; with nothing new it creates nothing and sends nothing.
+      - name: Cut changelog release
+        run: |
+          curl --fail-with-body --silent --show-error -X POST \
+            "${{ vars.PRODUCTION_URL }}/api/release" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

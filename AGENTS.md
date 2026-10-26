@@ -65,6 +65,8 @@ When working in plan mode, the plan must be detailed and written to a file — n
 ```markdown
 # Requirements
 
+Changelog: <feature | improvement | fix> (<all | admin>)   — or `Changelog: internal`
+
 ### Overview & Goals
 ### Scope            (explicit In Scope / Out of Scope lists)
 ### User Stories     (or Functional Requirements)
@@ -91,7 +93,34 @@ When working in plan mode, the plan must be detailed and written to a file — n
 - **Testing** must state how the change is validated (lint, type check, manual flows to click through, data to verify).
 - Every plan ends with the mandatory lint, type check, and test run from the Quality Check Rules as the final step.
 - If the plan touches money or any other calculation, the **Testing** section must list the concrete test files and the boundary cases they cover (see Testing Rules), and writing those tests must be its own numbered Delivery Step, placed before the final check step.
+- The `Changelog:` line is mandatory: it is the session's classification from the `changelog` skill (see Changelog Rules).
 <!-- END:plan-rules -->
+
+<!-- BEGIN:changelog-rules -->
+# Changelog Rules
+
+Users see a "What's new" dialog after each production release, built from the entries in
+`lib/changelog/entries/`. The `changelog` skill (`.claude/skills/changelog/`) drives this; a
+`SessionStart` hook in `.claude/settings.json` asks for it at the start of every session.
+
+- **Classify every session** as feature / improvement / fix / internal / no work, with audience
+  `all` or `admin` for the first three. Internal work (refactor, tests, CI, tooling, docs) never
+  gets an entry.
+- **Every user-visible change ships an entry** in the same branch: one file per entry,
+  `lib/changelog/entries/<yyyy-mm-dd>-<slug>.ts`, whose `id` equals the file name, registered in
+  `lib/changelog/entries/index.ts`. One short sentence per locale (sk, cs, hu, sr), in plain
+  language a non-player understands — what changed for them, never how it was built.
+- **The developer approves the text** before the file is written.
+- **An entry's id never changes** once merged: a renamed id is a new entry and would be
+  released a second time.
+- **`admin` entries** cover only what admins can see; they are hidden from players, and a release
+  made only of them pushes to admins only.
+- **Releases are cut only by the Deploy workflow** (`.github/workflows/deploy.yml`, manual
+  `workflow_dispatch`). Merging to `main` does not deploy (`vercel.json`
+  `git.deploymentEnabled.main = false`); the workflow deploys production and then calls
+  `POST /api/release`, which bundles every entry not yet in `app_releases` into a new release
+  and sends the `appUpdated` push.
+<!-- END:changelog-rules -->
 
 <!-- BEGIN:money-rules -->
 # Money Calculation Rules
@@ -428,4 +457,11 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 ### UI
 - Portalled popups (tooltip, popover, select) must carry a z-index on the **Positioner**, above the header (`z-50`); the blurred sticky filter bar makes its own stacking context and will otherwise paint over them.
 - Tooltips toggle on click as well as hover — touch devices have no hover.
-- Dialogs that can fail stay open on failure, so the reason is visible instead of silently swallowed.
+- Dialogs that can fail stay open on failure, so the reason is visible instead of silently swallowed. The one exception is the changelog dialog: it opens by itself, so a failed "seen" save closes it anyway and it simply returns on the next visit, rather than trapping the user.
+
+### Changelog
+- `app_releases` is written only by `cutRelease()` (`lib/changelog/releases.ts`), reached only through `POST /api/release`, which refuses outside `VERCEL_ENV=production` because preview deployments share the production database.
+- Entry texts live in the code, never in the database; a release stores only entry ids. Ids missing from the running code (after a rollback) are silently dropped from what users see.
+- `users.last_seen_release_id` only moves up (`GREATEST` in `markChangelogSeen()`), so a stale tab cannot bring old releases back.
+- A user never sees releases cut before their account was created (`released_at > users.created_at`), so no user-insert path has to set anything.
+- `lib/changelog/types.ts`, `release-logic.ts` and `entries/` are db-free: the client dialog imports their types and the tests exercise the logic. Queries live in `lib/changelog/releases.ts` (server-only).
