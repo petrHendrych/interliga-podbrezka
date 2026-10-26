@@ -564,6 +564,10 @@
       "substitutionReview": {
         "title": "Csere ellenőrzése",
         "body": "{opponent} elleni meccs: {starter} → {substitute} a(z) {throwNumber}. dobástól, a(z) {lane}. pálya közepén (hibák a pályán: {faults}). Ellenőrizd a cserét, és oszd el a hibákat."
+      },
+      "appUpdated": {
+        "title": "Új alkalmazásverzió",
+        "body": "Feltöltöttünk egy új verziót. Nyisd meg az alkalmazást, és nézd meg, mi az újdonság."
       }
     },
     "counts": {
@@ -619,5 +623,18 @@
         "saveFailed": "Az értesítéseket nem sikerült bekapcsolni, próbáld újra."
       }
     }
+  },
+  "changelog": {
+    "title": "Újdonságok",
+    "releaseHeader": "{version} verzió · {date}",
+    "types": {
+      "feature": "Újdonságok",
+      "improvement": "Fejlesztések",
+      "fix": "Javítások"
+    },
+    "confirm": "Értem",
+    "pageTitle": "Változásnapló",
+    "pageDescription": "Mi került be és mit javítottunk az alkalmazás egyes verzióiban.",
+    "empty": "Még nincsenek változások."
   }
 }

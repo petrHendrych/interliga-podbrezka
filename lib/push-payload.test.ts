@@ -131,6 +131,10 @@ describe('buildPushPayload deep links', () => {
     expect(pushPath('matchResult', { matchId: 44568 })).toBe('');
     expect(pushPath('scrapeFailed')).toBe('');
   });
+
+  it('opens the home page for a new release, where the changelog dialog waits', () => {
+    expect(buildPushPayload('appUpdated', 'cs', cs.push).url).toBe('/cs/');
+  });
 });
 
 describe('isPushEvent', () => {

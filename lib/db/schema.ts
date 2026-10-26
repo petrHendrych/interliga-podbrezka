@@ -15,6 +15,15 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 
+// Written only by POST /api/release; the entry texts themselves live in lib/changelog/entries.
+export const appReleases = pgTable('app_releases', {
+  id: serial('id').primaryKey(),
+  version: text('version').notNull(),
+  entryIds: jsonb('entry_ids').$type<string[]>().notNull(),
+  audience: text('audience').notNull(),
+  releasedAt: timestamp('released_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const users = pgTable('users', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   name: text('name').notNull(),
@@ -24,6 +33,7 @@ export const users = pgTable('users', {
   externalPlayerId: bigint('external_player_id', { mode: 'number' }).unique(),
   role: text('role').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  lastSeenReleaseId: integer('last_seen_release_id').references(() => appReleases.id),
 }, (table) => [
   uniqueIndex('idx_users_external_id').on(table.externalPlayerId),
 ]);

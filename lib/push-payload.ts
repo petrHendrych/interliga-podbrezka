@@ -18,6 +18,7 @@ export const PUSH_EVENTS = [
   'scrapeStuck',
   'unsettledMatch',
   'substitutionReview',
+  'appUpdated',
 ] as const;
 
 export type PushEvent = (typeof PUSH_EVENTS)[number];
@@ -49,6 +50,7 @@ const EVENT_PATHS: Record<PushEvent, string> = {
   scrapeStuck: '',
   unsettledMatch: 'money',
   substitutionReview: 'money',
+  appUpdated: '',
 };
 
 const MATCH_EVENTS: ReadonlySet<PushEvent> = new Set<PushEvent>([

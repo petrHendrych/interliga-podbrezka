@@ -10,6 +10,7 @@ import { LiveDataRefresher } from '@/components/pwa/LiveDataRefresher';
 import { PullToRefresh } from '@/components/pwa/PullToRefresh';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { ChangelogGate } from '@/components/changelog/ChangelogGate';
 import { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
@@ -108,8 +109,9 @@ export default async function RootLayout({
           <Header lang={lang} />
           <OfflineBanner message={dict.pwa.offlineBanner} />
           <InstallPrompt translations={dict.pwa} />
+          <ChangelogGate lang={lang} translations={dict.changelog} />
           <main className="flex flex-1 flex-col">{children}</main>
-          <AppFooter label={dict.common.version} />
+          <AppFooter lang={lang} label={dict.common.version} />
         </ThemeProvider>
       </body>
     </html>

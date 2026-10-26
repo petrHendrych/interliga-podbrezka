@@ -564,6 +564,10 @@
       "substitutionReview": {
         "title": "Kontrola střídání",
         "body": "Zápas s {opponent}: {starter} → {substitute} od {throwNumber}. hodu, uprostřed {lane}. dráhy (chyby na dráze: {faults}). Zkontroluj střídání a rozděl chyby."
+      },
+      "appUpdated": {
+        "title": "Nová verze aplikace",
+        "body": "Byla nahrána nová verze. Otevři aplikaci a podívej se, co je nového."
       }
     },
     "counts": {
@@ -619,5 +623,18 @@
         "saveFailed": "Upozornění se nepodařilo zapnout, zkus to znovu."
       }
     }
+  },
+  "changelog": {
+    "title": "Co je nového",
+    "releaseHeader": "Verze {version} · {date}",
+    "types": {
+      "feature": "Novinky",
+      "improvement": "Vylepšení",
+      "fix": "Opravy"
+    },
+    "confirm": "Rozumím",
+    "pageTitle": "Přehled změn",
+    "pageDescription": "Co přibylo a co jsme opravili v jednotlivých verzích aplikace.",
+    "empty": "Zatím tu nejsou žádné změny."
   }
 }
