@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CalendarDays, Pencil, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { SEASONS_CONFIG } from '@/lib/season-config';
@@ -176,16 +176,13 @@ export default async function AdminMatchesPage({ params, searchParams }: PagePro
                   </dl>
 
                   <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={(
-                        <Link href={`/${lang}/admin/matches?edit=${match.externalId}`} />
-                      )}
+                    <Link
+                      href={`/${lang}/admin/matches?edit=${match.externalId}`}
+                      className={buttonVariants({ variant: 'outline', size: 'sm' })}
                     >
                       <Pencil />
                       {t.edit}
-                    </Button>
+                    </Link>
                     <DeleteMatchButton
                       matchId={match.externalId}
                       label={dict.common.delete}

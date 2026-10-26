@@ -208,7 +208,10 @@ export function leagueCondition(
     return sql`AND (${unassigned}m.league_id IN (${idList(INTERLIGA_LEAGUE_IDS)}) OR m.league_name ILIKE '%interliga%')`;
   }
   if (leagueKey === 'pohar') {
-    return sql`AND (${unassigned}m.league_id IN (${idList(POHAR_LEAGUE_IDS)}) OR m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')`;
+    // "Svetový pohár" contains "pohár", so the name fallback must skip our tournament ids.
+    // COALESCE keeps a NULL id in the fallback, where a bare NOT IN would drop it.
+    const notTournament = sql`COALESCE(m.league_id, 0) NOT IN (${idList(TOURNAMENT_LEAGUE_IDS)})`;
+    return sql`AND (${unassigned}m.league_id IN (${idList(POHAR_LEAGUE_IDS)}) OR (${notTournament} AND (m.league_name ILIKE '%pohár%' OR m.league_name ILIKE '%pohar%' OR m.league_name ILIKE '%finále%' OR m.league_name ILIKE '%finale%')))`;
   }
   // Manual competitions are always stamped by us, so no name fallback is needed.
   if (leagueKey === TOURNAMENT_FILTER_KEY) {
