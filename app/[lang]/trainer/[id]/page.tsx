@@ -14,8 +14,10 @@ import {
 import { TRAINER_SCORE_LIMIT } from '@/lib/money-rules';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
-import { formatDateOnly } from '@/lib/home-helpers';
+import { formatDateOnly, formatShortDate } from '@/lib/home-helpers';
+import { buildTrainerChartPoints } from '@/lib/trainer-payment-chart';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
+import { TrainerPaymentChart } from '@/components/trainer/TrainerPaymentChart';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { TrainerMatchAmount, TrainerMatchStatusBadge } from '@/components/money/TrainerMatchPayment';
 import { TrainerPaymentSummary } from '@/components/money/TrainerPaymentSummary';
@@ -84,6 +86,13 @@ export default async function TrainerDetailPage({ params, searchParams }: PagePr
     conditions: dict.money.conditions,
   };
 
+  const chartPoints = buildTrainerChartPoints(matches, {
+    date: (iso) => formatDateOnly(iso, lang),
+    shortDate: (iso) => formatShortDate(iso, lang),
+    match: (m) => matchLabel(m.opponent, m.isHome),
+    league: (m) => leagueLabelForId(m.leagueId, m.leagueName, dict),
+  });
+
   return (
     <div className="mx-auto py-8 px-4 max-w-4xl w-full">
       <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start mb-8">
@@ -124,6 +133,13 @@ export default async function TrainerDetailPage({ params, searchParams }: PagePr
           }}
         />
       </div>
+
+      {chartPoints.length > 0 ? (
+        <TrainerPaymentChart
+          points={chartPoints}
+          labels={{ ...paymentLabels, title: dict.trainerDetail.paymentChartTitle }}
+        />
+      ) : null}
 
       <Card>
         <CardHeader>

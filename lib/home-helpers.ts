@@ -178,6 +178,7 @@ export interface FetchDataResult {
 
 export {
   parseUtcDate, getStartOfBratislavaToday, isNextDay, formatMatchDate, formatDateOnly,
+  formatShortDate,
 } from '@/lib/dates';
 
 async function fetchHomeDataInternal(

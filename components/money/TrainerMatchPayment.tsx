@@ -1,7 +1,11 @@
 'use client';
 
 import type { TrainerConditionType } from '@/lib/money-rules';
-import type { TrainerMatchRow, TrainerMatchStatus } from '@/lib/trainer-matches';
+import type {
+  TrainerMatchPayment,
+  TrainerMatchRow,
+  TrainerMatchStatus,
+} from '@/lib/trainer-matches';
 import { interpolate } from '@/lib/i18n/config';
 import { Tooltip } from '@/components/ui/tooltip';
 
@@ -46,14 +50,17 @@ function conditionLabel(
     : conditionType;
 }
 
-export function TrainerMatchAmount({ row, labels }: TrainerMatchPaymentProps) {
-  if (row.total <= 0) {
-    return <span className="text-muted-foreground font-normal">0 €</span>;
-  }
-
-  const content = (
+/** One line per condition the trainer owes on a match, each with its own paid flag. */
+export function TrainerPaymentBreakdown({
+  payments,
+  labels,
+}: {
+  payments: TrainerMatchPayment[];
+  labels: TrainerMatchPaymentLabels;
+}) {
+  return (
     <ul className="flex min-w-44 flex-col gap-1 text-left text-[11px]">
-      {row.payments.map((payment) => (
+      {payments.map((payment) => (
         <li key={payment.conditionType} className="flex items-baseline justify-between gap-4">
           <span>{conditionLabel(payment.conditionType, labels.conditions)}</span>
           <span className="whitespace-nowrap tabular-nums">
@@ -67,9 +74,15 @@ export function TrainerMatchAmount({ row, labels }: TrainerMatchPaymentProps) {
       ))}
     </ul>
   );
+}
+
+export function TrainerMatchAmount({ row, labels }: TrainerMatchPaymentProps) {
+  if (row.total <= 0) {
+    return <span className="text-muted-foreground font-normal">0 €</span>;
+  }
 
   return (
-    <Tooltip content={content}>
+    <Tooltip content={<TrainerPaymentBreakdown payments={row.payments} labels={labels} />}>
       <span className={`cursor-pointer font-semibold hover:underline focus:outline-none ${STATUS_TEXT[row.status]}`}>
         {`${row.total} €`}
       </span>
@@ -77,7 +90,13 @@ export function TrainerMatchAmount({ row, labels }: TrainerMatchPaymentProps) {
   );
 }
 
-export function TrainerMatchStatusBadge({ row, labels }: TrainerMatchPaymentProps) {
+export function TrainerMatchStatusBadge({
+  row,
+  labels,
+}: {
+  row: Pick<TrainerMatchRow, 'status' | 'unpaid'>;
+  labels: TrainerMatchPaymentLabels;
+}) {
   if (row.status === 'none') {
     return <span className="text-muted-foreground">-</span>;
   }
