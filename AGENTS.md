@@ -368,6 +368,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 - Manually entered matches get external ids `>= 900_000_000` (`MANUAL_MATCH_ID_BASE`), so the id range alone says "not scraped".
 - `POHAR_LEAGUE_IDS` keeps the retired id `366` ("Finále") because rows in the database still carry it.
 - Manual leagues are excluded from every scrape-side lookup, so a scrape can never stamp a tournament id onto a match.
+- The cup filter's name fallback (`'%pohár%'` in `leagueCondition()`) skips tournament ids, because "Svetový pohár" contains "pohár". Any new name-based league match must exclude manual leagues the same way.
 - The team score limit is per season — `getTeamScoreLimit()`: 3750 from season 13, 3700 before. Never compare against `TEAM_SCORE_LIMIT` alone. Only **home** matches are penalised under it — Interliga and tournaments alike; every away match and the Slovak Cup are not.
 
 ### Matching Our Team

@@ -3,7 +3,7 @@ import {
   fineAmount, isAllLeagues, leagueCondition, openingBalance, rosterCondition, seasonCondition,
   withdrawalTotal,
 } from '@/lib/db-utils';
-import { DEFAULT_SEASON_ID } from '@/lib/season-config';
+import { DEFAULT_SEASON_ID, TOURNAMENT_LEAGUE_IDS } from '@/lib/season-config';
 
 interface NeonFragment {
   queryData: { strings: string[]; values: unknown[] };
@@ -17,6 +17,12 @@ function isFragment(value: unknown): value is NeonFragment {
   return typeof value === 'object' && value !== null && 'queryData' in value;
 }
 
+/** `sql.unsafe()` carries its text inline, which is how the id lists are spliced in. */
+function isRawSql(value: unknown): value is { sql: string } {
+  return typeof value === 'object' && value !== null && 'sql' in value
+    && typeof value.sql === 'string';
+}
+
 function render(fragment: unknown): string {
   const { strings, values } = (fragment as NeonFragment).queryData;
   return strings
@@ -24,7 +30,9 @@ function render(fragment: unknown): string {
       if (i >= values.length) return part;
       const value = values[i];
       // A condition composed of other conditions nests fragments rather than strings.
-      return part + (isFragment(value) ? render(value) : String(value));
+      if (isFragment(value)) return part + render(value);
+      if (isRawSql(value)) return part + value.sql;
+      return part + String(value);
     })
     .join('')
     .replace(/\s+/g, ' ')
@@ -94,6 +102,14 @@ describe('leagueCondition', () => {
 
     expect(condition).toContain("ILIKE '%finále%'");
     expect(condition).toContain("ILIKE '%pohar%'");
+  });
+
+  it('keeps tournaments out of the cup name fallback, because "Svetový pohár" contains "pohár"', () => {
+    const condition = render(leagueCondition('pohar'));
+
+    expect(condition).toContain(
+      `(COALESCE(m.league_id, 0) NOT IN (${TOURNAMENT_LEAGUE_IDS.join(', ')}) AND (m.league_name ILIKE '%pohár%'`,
+    );
   });
 
   it('matches tournaments by id only, because we stamp those ids ourselves', () => {

@@ -62,6 +62,16 @@ describe('league ids', () => {
     expect(getLeagueByLeagueId(366)).toBeUndefined();
   });
 
+  it('gives each season its own cup league', () => {
+    expect(getLeagueConfig(13, 'pohar')?.leagueId).toBe(379);
+    expect(getLeagueConfig(12, 'pohar')?.leagueId).toBe(364);
+    expect(POHAR_LEAGUE_IDS).toEqual(expect.arrayContaining([379, 364, 366]));
+  });
+
+  it('never lists a tournament among the cup ids', () => {
+    TOURNAMENT_LEAGUE_IDS.forEach((id) => expect(POHAR_LEAGUE_IDS).not.toContain(id));
+  });
+
   it('returns an empty list for an unknown key', () => {
     expect(getLeagueIdsForKey('nonsense' as never)).toEqual([]);
   });
@@ -76,6 +86,10 @@ describe('team ids', () => {
 
     expect(manualTeamIds).toEqual([]);
     expect(getAllTeamIds().length).toBeGreaterThan(0);
+  });
+
+  it('adds no team for a cup league whose team is not registered yet', () => {
+    expect(getTeamIdsForSeason(13)).toEqual([5008]);
   });
 
   it('returns an empty list for an unknown season', () => {
@@ -94,6 +108,12 @@ describe('getSeasonAndLeagueConfig', () => {
   it('matches by league id when no team id is given', () => {
     const [leagueId] = INTERLIGA_LEAGUE_IDS;
     expect(getSeasonAndLeagueConfig(undefined, leagueId)?.leagueId).toBe(leagueId);
+  });
+
+  it('stamps a cup match by its league id while the cup has no team id', () => {
+    expect(getSeasonAndLeagueConfig(undefined, 379)).toEqual({
+      seasonId: 13, leagueId: 379, leagueName: 'Slovenský pohár',
+    });
   });
 
   it('falls back to a case-insensitive league name', () => {

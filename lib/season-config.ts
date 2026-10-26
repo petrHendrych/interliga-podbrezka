@@ -53,6 +53,13 @@ export const SEASONS_CONFIG: SeasonConfig[] = [
         key: 'interliga',
         name: 'Interliga',
       },
+      {
+        leagueId: 379,
+        // The cup registers our team only once the first round is drawn.
+        teamIds: [],
+        key: 'pohar',
+        name: 'Slovenský pohár',
+      },
       worldCup(13),
       championsLeague(13),
     ],
