@@ -66,3 +66,17 @@ export function formatDateOnly(dateString: string, lang: string): string {
     return dateString;
   }
 }
+
+export function formatShortDate(dateString: string, lang: string): string {
+  try {
+    const date = parseUtcDate(dateString);
+    if (Number.isNaN(date.getTime())) return dateString;
+    return new Intl.DateTimeFormat(lang, {
+      timeZone: 'Europe/Bratislava',
+      month: 'numeric',
+      day: 'numeric',
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}

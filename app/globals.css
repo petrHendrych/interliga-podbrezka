@@ -69,6 +69,11 @@
   /* Decorative corner dots: a soft red that stays close to the white page. */
   --decor-dot: oklch(0.72 0.15 24);
   --decor-dot-opacity: 0.5;
+  /* Match chart: the payment colours are the table's emerald/red/amber-600 status text. */
+  --chart-paid: oklch(0.596 0.145 163.225);
+  --chart-unpaid: oklch(0.577 0.245 27.325);
+  --chart-partial: oklch(0.666 0.179 58.318);
+  --chart-score: oklch(0.588 0.158 241.966);
   /* Elevation shadows, tuned per theme -- see .dark for why they differ there. */
   --elevation-1:
     0 1px 2px -1px oklch(0.145 0 0 / 0.08),
@@ -122,6 +127,11 @@
   /* Decorative corner dots: lifted off the background, same blue cast. */
   --decor-dot: oklch(0.68 0.055 265.755);
   --decor-dot-opacity: 0.45;
+  /* Match chart: the table's dark-mode emerald/red/amber-400 status text. */
+  --chart-paid: oklch(0.765 0.177 163.223);
+  --chart-unpaid: oklch(0.704 0.191 22.216);
+  --chart-partial: oklch(0.828 0.189 84.429);
+  --chart-score: oklch(0.588 0.158 241.966);
   /* A cast shadow barely reads against a dark page, so most of the lift here
      comes from a 1px rim of light along the top edge; the shadow only anchors. */
   --elevation-1:

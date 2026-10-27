@@ -123,17 +123,23 @@ export function groupTrainerMatches(rows: TrainerPaymentRow[]): TrainerMatchRow[
 }
 
 /**
+ * A match holding a payment counts as behind us even without a score, so money that is owed
+ * or paid never ends up among the upcoming fixtures.
+ */
+export function isPastTrainerMatch(match: TrainerMatchRow): boolean {
+  return match.isPlayed || match.payments.length > 0;
+}
+
+/**
  * Same order as the player page: everything behind us newest first, then the fixtures still
- * ahead oldest first. A match holding a payment counts as behind us even without a score,
- * so money that is owed or paid never ends up among the upcoming fixtures.
+ * ahead oldest first.
  */
 export function buildTrainerMatchRows(
   matches: TrainerMatchRow[],
 ): PlayerMatchRow<TrainerMatchRow>[] {
-  const isPast = (match: TrainerMatchRow) => match.isPlayed || match.payments.length > 0;
   return buildPlayerMatchRows(
-    matches.filter(isPast),
-    matches.filter((match) => !isPast(match)),
+    matches.filter(isPastTrainerMatch),
+    matches.filter((match) => !isPastTrainerMatch(match)),
   );
 }
 

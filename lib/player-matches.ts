@@ -25,7 +25,7 @@ function timeOf(date: string | null): number {
 }
 
 /** Undated rows sort last in either direction, so a half-scraped row never jumps the list. */
-function byDate(direction: 'asc' | 'desc') {
+export function byDate(direction: 'asc' | 'desc') {
   return (a: DatedMatch, b: DatedMatch): number => {
     const aTime = timeOf(a.date);
     const bTime = timeOf(b.date);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatDateOnly,
   formatMatchDate,
+  formatShortDate,
   getStartOfBratislavaToday,
   isNextDay,
   parseUtcDate,
@@ -81,5 +82,35 @@ describe('formatMatchDate / formatDateOnly', () => {
 
   it('returns the raw string instead of throwing on an invalid locale', () => {
     expect(formatDateOnly('2026-09-12 11:00:00', 'not a locale')).toBe('2026-09-12 11:00:00');
+  });
+});
+
+describe('formatShortDate', () => {
+  it.each([
+    ['sk', '12. 9.'],
+    ['cs', '12. 9.'],
+    ['hu', '9. 12.'],
+    ['sr', '12. 9.'],
+  ])('renders day and month only in %s', (lang, expected) => {
+    expect(formatShortDate('2026-09-12 11:00:00', lang)).toBe(expected);
+  });
+
+  // 2026 switches to summer time on 29 March and back on 25 October; each timestamp is
+  // 00:30 in Bratislava, so a wrong offset lands on the previous day.
+  it.each([
+    ['2026-03-28 23:30:00', '29. 3.'],
+    ['2026-03-29 22:30:00', '30. 3.'],
+    ['2026-10-24 22:30:00', '25. 10.'],
+    ['2026-10-25 23:30:00', '26. 10.'],
+  ])('puts %s on the Bratislava calendar day across the DST switch', (date, expected) => {
+    expect(formatShortDate(date, 'sk')).toBe(expected);
+  });
+
+  it('returns the raw string when the date cannot be parsed', () => {
+    expect(formatShortDate('nonsense', 'sk')).toBe('nonsense');
+  });
+
+  it('returns the raw string instead of throwing on an invalid locale', () => {
+    expect(formatShortDate('2026-09-12 11:00:00', 'not a locale')).toBe('2026-09-12 11:00:00');
   });
 });

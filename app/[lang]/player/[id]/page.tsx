@@ -8,8 +8,10 @@ import { buildPlayerMatchRows } from '@/lib/player-matches';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG, getTeamScoreLimit } from '@/lib/season-config';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
-import { formatDateOnly } from '@/lib/home-helpers';
+import { formatDateOnly, formatShortDate } from '@/lib/home-helpers';
+import { buildFineChartPoints } from '@/lib/player-fine-chart';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { PlayerFineChart } from '@/components/player/PlayerFineChart';
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
@@ -65,6 +67,13 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
         ? interpolate(dict.playerDetail.matchHome, { opponent })
         : interpolate(dict.playerDetail.matchAway, { opponent });
     };
+
+    const finePoints = buildFineChartPoints(matchFines ?? [], {
+      date: (iso) => formatDateOnly(iso, lang),
+      shortDate: (iso) => formatShortDate(iso, lang),
+      match: (r) => matchLabel(r.opponent, r.isHome),
+      league: (r) => leagueLabelForId(r.leagueId, r.leagueName, dict),
+    });
 
     const fineLabels = {
       paidStatus: dict.playerDetail.paidStatus,
@@ -173,6 +182,28 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
             }}
           />
         </div>
+
+        {finePoints.length > 0 ? (
+          <PlayerFineChart
+            points={finePoints}
+            labels={{
+              paidStatus: dict.playerDetail.paidStatus,
+              unpaidStatus: dict.playerDetail.unpaidStatus,
+              noFine: dict.playerDetail.noFine,
+              substitution: dict.playerDetail.substitution,
+              score: dict.playerDetail.total,
+            }}
+            chartLabels={{
+              view: dict.playerDetail.chartView,
+              views: {
+                amount: dict.playerDetail.chartFines,
+                score: dict.playerDetail.chartScore,
+              },
+              paid: dict.playerDetail.paidStatus,
+              unpaid: dict.playerDetail.unpaidStatus,
+            }}
+          />
+        ) : null}
 
         <Card>
           <CardHeader>
