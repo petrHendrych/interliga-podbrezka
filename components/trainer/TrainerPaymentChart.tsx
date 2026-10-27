@@ -1,25 +1,25 @@
 'use client';
 
-import { MatchAmountChart } from '@/components/charts/MatchAmountChart';
-import type { TrainerMatchPaymentLabels } from '@/components/money/TrainerMatchPayment';
-import { TrainerChartTooltip } from '@/components/trainer/TrainerChartTooltip';
+import { MatchAmountChart, type MatchChartLabels } from '@/components/charts/MatchAmountChart';
+import {
+  TrainerChartTooltip,
+  type TrainerChartTooltipLabels,
+} from '@/components/trainer/TrainerChartTooltip';
 import type { TrainerChartPoint } from '@/lib/trainer-payment-chart';
-
-export interface TrainerPaymentChartLabels extends TrainerMatchPaymentLabels {
-  title: string;
-}
 
 export function TrainerPaymentChart({
   points,
   labels,
+  chartLabels,
 }: {
   points: TrainerChartPoint[];
-  labels: TrainerPaymentChartLabels;
+  labels: TrainerChartTooltipLabels;
+  chartLabels: MatchChartLabels;
 }) {
   return (
     <MatchAmountChart
-      title={labels.title}
       points={points}
+      labels={chartLabels}
       renderTooltip={(point) => <TrainerChartTooltip point={point} labels={labels} />}
     />
   );

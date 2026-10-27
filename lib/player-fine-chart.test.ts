@@ -13,6 +13,7 @@ function row(overrides: Partial<Row> & Pick<Row, 'matchId'>): Row {
     streakFine: 0,
     isPaid: false,
     substitutionRole: null,
+    total: 600,
     opponent: `Opponent ${overrides.matchId}`,
     ...overrides,
   };
@@ -74,6 +75,27 @@ describe('buildFineChartPoints', () => {
     expect(point.isSubstitution).toBe(isSubstitution);
   });
 
+  it.each<[Partial<Row>, number | null]>([
+    [{ total: 612 }, 612],
+    [{ total: 599 }, 599],
+    [{ total: 0 }, null],
+    [{ total: 980, substitutionRole: 'major' }, 980],
+    [{ total: 290, substitutionRole: 'minor' }, null],
+  ])('scores %j as %s', (overrides, score) => {
+    const [point] = buildFineChartPoints([row({ matchId: 1, ...overrides })], format);
+    expect(point.score).toBe(score);
+  });
+
+  it.each<[number, boolean, string]>([
+    [5, false, 'unpaid'],
+    [5, true, 'paid'],
+    [0.34, false, 'unpaid'],
+    [0, false, 'paid'],
+  ])('colours a %s € match with isPaid %s as %s', (calculatedFine, isPaid, paymentState) => {
+    const [point] = buildFineChartPoints([row({ matchId: 1, calculatedFine, isPaid })], format);
+    expect(point.paymentState).toBe(paymentState);
+  });
+
   it.each([true, false])('passes isPaid %s through', (isPaid) => {
     const [point] = buildFineChartPoints([row({ matchId: 1, isPaid })], format);
     expect(point.isPaid).toBe(isPaid);
@@ -84,6 +106,8 @@ describe('buildFineChartPoints', () => {
     expect(point).toEqual({
       matchId: 4,
       amount: 0,
+      score: 600,
+      paymentState: 'paid',
       isPaid: false,
       isSubstitution: false,
       dateLabel: 'date:2026-09-12T10:00:00.000Z',

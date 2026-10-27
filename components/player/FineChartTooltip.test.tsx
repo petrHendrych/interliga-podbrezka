@@ -9,12 +9,15 @@ const labels = {
   unpaidStatus: sk.playerDetail.unpaidStatus,
   noFine: sk.playerDetail.noFine,
   substitution: sk.playerDetail.substitution,
+  score: sk.playerDetail.total,
 };
 
 function renderTooltip(overrides: Partial<FineChartPoint> = {}) {
   const point: FineChartPoint = {
     matchId: 1,
     amount: 5,
+    score: null,
+    paymentState: 'unpaid',
     isPaid: false,
     isSubstitution: false,
     dateLabel: '12. 9. 2026',
@@ -62,6 +65,16 @@ describe('FineChartTooltip', () => {
     expect(screen.getByText(sk.playerDetail.noFine)).toBeInTheDocument();
     expect(screen.queryByText(`(${sk.playerDetail.unpaidStatus})`)).not.toBeInTheDocument();
     expect(screen.queryByText(`(${sk.playerDetail.paidStatus})`)).not.toBeInTheDocument();
+  });
+
+  it('shows the player\'s total for the match', () => {
+    renderTooltip({ score: 612 });
+    expect(screen.getByText(`${sk.playerDetail.total}: 612`)).toBeInTheDocument();
+  });
+
+  it('shows no total when the row has none', () => {
+    renderTooltip({ score: null });
+    expect(screen.queryByText(new RegExp(`^${sk.playerDetail.total}:`))).not.toBeInTheDocument();
   });
 
   it('marks a substitute\'s row', () => {

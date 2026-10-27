@@ -137,7 +137,17 @@ export default async function TrainerDetailPage({ params, searchParams }: PagePr
       {chartPoints.length > 0 ? (
         <TrainerPaymentChart
           points={chartPoints}
-          labels={{ ...paymentLabels, title: dict.trainerDetail.paymentChartTitle }}
+          labels={{ ...paymentLabels, score: dict.trainerDetail.teamTotal }}
+          chartLabels={{
+            view: dict.playerDetail.chartView,
+            views: {
+              amount: dict.trainerDetail.chartPayments,
+              score: dict.trainerDetail.chartScore,
+            },
+            paid: dict.playerDetail.paidStatus,
+            unpaid: dict.playerDetail.unpaidStatus,
+            partial: dict.trainerDetail.partlyPaid,
+          }}
         />
       ) : null}
 

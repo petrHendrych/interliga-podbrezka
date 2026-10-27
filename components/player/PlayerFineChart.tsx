@@ -1,24 +1,22 @@
 'use client';
 
-import { MatchAmountChart } from '@/components/charts/MatchAmountChart';
+import { MatchAmountChart, type MatchChartLabels } from '@/components/charts/MatchAmountChart';
 import { FineChartTooltip, type FineChartTooltipLabels } from '@/components/player/FineChartTooltip';
 import type { FineChartPoint } from '@/lib/player-fine-chart';
-
-export interface PlayerFineChartLabels extends FineChartTooltipLabels {
-  title: string;
-}
 
 export function PlayerFineChart({
   points,
   labels,
+  chartLabels,
 }: {
   points: FineChartPoint[];
-  labels: PlayerFineChartLabels;
+  labels: FineChartTooltipLabels;
+  chartLabels: MatchChartLabels;
 }) {
   return (
     <MatchAmountChart
-      title={labels.title}
       points={points}
+      labels={chartLabels}
       renderTooltip={(point) => <FineChartTooltip point={point} labels={labels} />}
     />
   );

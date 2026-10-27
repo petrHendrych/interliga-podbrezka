@@ -5,6 +5,7 @@ export interface FineChartTooltipLabels {
   unpaidStatus: string;
   noFine: string;
   substitution: string;
+  score: string;
 }
 
 export function FineChartTooltip({
@@ -25,6 +26,9 @@ export function FineChartTooltip({
           </span>
         ) : null}
       </div>
+      {point.score !== null ? (
+        <p className="text-muted-foreground tabular-nums">{`${labels.score}: ${point.score}`}</p>
+      ) : null}
       {point.amount > 0 ? (
         <div className="flex items-center gap-1.5">
           <span className="font-mono font-semibold tabular-nums">{`${point.amount} €`}</span>

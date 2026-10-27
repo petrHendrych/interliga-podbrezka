@@ -10,12 +10,15 @@ const labels = {
   unpaidStatus: sk.playerDetail.unpaidStatus,
   partialStatus: sk.trainerDetail.partialStatus,
   conditions: sk.money.conditions,
+  score: sk.trainerDetail.teamTotal,
 };
 
 function renderTooltip(overrides: Partial<TrainerChartPoint> = {}) {
   const point: TrainerChartPoint = {
     matchId: 1,
     amount: 0,
+    score: null,
+    paymentState: 'paid',
     status: 'none',
     unpaid: 0,
     payments: [],
@@ -33,6 +36,16 @@ describe('TrainerChartTooltip', () => {
     renderTooltip();
     expect(screen.getByText('12. 9. 2026 · Interliga')).toBeInTheDocument();
     expect(screen.getByText('vs Brezno (doma)')).toBeInTheDocument();
+  });
+
+  it('shows the team total for the match', () => {
+    renderTooltip({ score: 3912 });
+    expect(screen.getByText(`${sk.trainerDetail.teamTotal}: 3912`)).toBeInTheDocument();
+  });
+
+  it('shows no team total when the match has none', () => {
+    renderTooltip({ score: null });
+    expect(screen.queryByText(new RegExp(`^${sk.trainerDetail.teamTotal}:`))).not.toBeInTheDocument();
   });
 
   it('shows a match without a payment as 0 € with no status', () => {

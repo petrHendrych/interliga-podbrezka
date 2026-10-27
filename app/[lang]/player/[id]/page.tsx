@@ -187,11 +187,20 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
           <PlayerFineChart
             points={finePoints}
             labels={{
-              title: dict.playerDetail.fineChartTitle,
               paidStatus: dict.playerDetail.paidStatus,
               unpaidStatus: dict.playerDetail.unpaidStatus,
               noFine: dict.playerDetail.noFine,
               substitution: dict.playerDetail.substitution,
+              score: dict.playerDetail.total,
+            }}
+            chartLabels={{
+              view: dict.playerDetail.chartView,
+              views: {
+                amount: dict.playerDetail.chartFines,
+                score: dict.playerDetail.chartScore,
+              },
+              paid: dict.playerDetail.paidStatus,
+              unpaid: dict.playerDetail.unpaidStatus,
             }}
           />
         ) : null}

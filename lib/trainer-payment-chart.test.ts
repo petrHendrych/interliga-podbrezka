@@ -70,6 +70,30 @@ describe('buildTrainerChartPoints', () => {
     expect(point.unpaid).toBe(unpaid);
   });
 
+  it.each<[number | null, number | null]>([
+    [3912, 3912],
+    [3700, 3700],
+    [null, null],
+    [0, null],
+  ])('scores a team total of %s as %s', (teamTotalScore, score) => {
+    const [point] = points([row(1, { teamTotalScore })]);
+    expect(point.score).toBe(score);
+  });
+
+  it.each([
+    ['nothing owed', [], 'paid'],
+    ['all paid', [true, true], 'paid'],
+    ['nothing paid', [false, false], 'unpaid'],
+    ['partly paid', [true, false], 'partial'],
+  ] as const)('colours a match with %s as %s', (_name, paidFlags, paymentState) => {
+    const conditions = ['score_bonus', 'zero_faults'] as const;
+    const rows = paidFlags.length > 0
+      ? paidFlags.map((isPaid, i) => row(1, { conditionType: conditions[i], amount: 10, isPaid }))
+      : [row(1)];
+    const [point] = points(rows);
+    expect(point.paymentState).toBe(paymentState);
+  });
+
   it('leaves out the fixtures still ahead', () => {
     const result = points([
       row(1),
@@ -100,6 +124,8 @@ describe('buildTrainerChartPoints', () => {
     expect(point).toEqual({
       matchId: 4,
       amount: 0,
+      score: 3850,
+      paymentState: 'paid',
       status: 'none',
       unpaid: 0,
       payments: [],

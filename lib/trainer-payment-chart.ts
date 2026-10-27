@@ -1,7 +1,9 @@
 import {
   datedOldestFirst,
+  scoreOrNull,
   type MatchChartFormatters,
   type MatchChartPoint,
+  type MatchPaymentState,
 } from '@/lib/match-chart';
 import {
   isPastTrainerMatch,
@@ -9,6 +11,13 @@ import {
   type TrainerMatchRow,
   type TrainerMatchStatus,
 } from '@/lib/trainer-matches';
+
+const PAYMENT_STATE: Record<TrainerMatchStatus, MatchPaymentState> = {
+  none: 'paid',
+  paid: 'paid',
+  unpaid: 'unpaid',
+  partial: 'partial',
+};
 
 export interface TrainerChartPoint extends MatchChartPoint {
   status: TrainerMatchStatus;
@@ -27,6 +36,8 @@ export function buildTrainerChartPoints(
   return datedOldestFirst(matches.filter(isPastTrainerMatch)).map((m) => ({
     matchId: m.matchId,
     amount: m.total,
+    score: scoreOrNull(m.teamTotalScore),
+    paymentState: PAYMENT_STATE[m.status],
     status: m.status,
     unpaid: m.unpaid,
     payments: m.payments,
