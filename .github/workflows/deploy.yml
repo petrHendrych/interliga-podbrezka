@@ -24,9 +24,27 @@ jobs:
         run: npx --yes vercel@latest deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
 
       # The production domain, not the deployment URL: that one sits behind Vercel Authentication.
+      # For a moment after the alias moves, the previous build can still answer; one without this
+      # route redirects it to /sk/api/release (307 "Redirecting..."), which curl alone counts as
+      # success. So only a 200 passes, and a redirect is retried until the new build answers.
       # Safe to re-run on its own; with nothing new it creates nothing and sends nothing.
       - name: Cut changelog release
+        env:
+          RELEASE_URL: ${{ vars.PRODUCTION_URL }}/api/release
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl --fail-with-body --silent --show-error -X POST \
-            "${{ vars.PRODUCTION_URL }}/api/release" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          for attempt in 1 2 3 4 5 6; do
+            status=$(curl --silent --show-error --output response.txt --write-out '%{http_code}' \
+              -X POST "$RELEASE_URL" -H "Authorization: Bearer $CRON_SECRET")
+            cat response.txt
+            echo
+            case "$status" in
+              200) exit 0 ;;
+              3??) echo "Attempt $attempt: HTTP $status, the previous build still answers; retrying in 10 s"
+                   sleep 10 ;;
+              *) echo "The release failed with HTTP $status"
+                 exit 1 ;;
+            esac
+          done
+          echo "Production still redirects after $attempt attempts"
+          exit 1
