@@ -30,6 +30,10 @@ import {
 import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { logPageView } from '@/lib/activity-log';
+import { getSession } from '@/lib/session';
+import { getTrainerSettlement } from '@/lib/settle-up';
+import type { TrainerSettlement } from '@/lib/settle-up-summary';
+import { SettleUpButton } from '@/components/money/SettleUpButton';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
@@ -50,10 +54,14 @@ export default async function TrainerDetailPage({ params, searchParams }: PagePr
 
   let trainer: TrainerProfile | null;
   let paymentRows: TrainerPaymentRow[];
+  let settlement: TrainerSettlement | null = null;
   try {
-    [trainer, paymentRows] = await Promise.all([
+    const session = await getSession();
+    [trainer, paymentRows, settlement] = await Promise.all([
       getCachedTrainer(id),
       getCachedTrainerPaymentRows(id, selectedSeasonId, selectedLeagueKey),
+      // Uncached: the dialog must show exactly what the confirm will settle.
+      session?.user.role === 'admin' ? getTrainerSettlement(id, selectedSeasonId) : null,
     ]);
   } catch (error) {
     return (
@@ -115,6 +123,14 @@ export default async function TrainerDetailPage({ params, searchParams }: PagePr
               unpaid: dict.trainerDetail.unpaid,
             }}
           />
+          {settlement && settlement.paymentIds.length > 0 ? (
+            <SettleUpButton
+              target={{ kind: 'trainer', trainerId: trainer.id, settlement }}
+              seasonId={selectedSeasonId}
+              lang={lang}
+              labels={{ ...dict.settleUp, matches: dict.home.matchesPlayed }}
+            />
+          ) : null}
         </div>
       </div>
 

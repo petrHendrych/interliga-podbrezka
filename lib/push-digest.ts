@@ -65,7 +65,11 @@ export type PersonalPushEvent =
   | 'streakWarning'
   | 'finePaid'
   | 'bonusPaid'
-  | 'trainerPaid';
+  | 'trainerPaid'
+  | 'moneySettled'
+  | 'finesSettled'
+  | 'bonusesSettled'
+  | 'trainerSettled';
 
 export interface PersonalPush {
   userId: string;
@@ -224,6 +228,7 @@ export function deriveSettlementPushes(
 
 const PERSONAL_PUSH_EVENTS: PersonalPushEvent[] = [
   'bonusEarned', 'fineAdded', 'streakWarning', 'finePaid', 'bonusPaid', 'trainerPaid',
+  'moneySettled', 'finesSettled', 'bonusesSettled', 'trainerSettled',
 ];
 
 /**

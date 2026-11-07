@@ -77,6 +77,14 @@ describe('buildPushPayload', () => {
     expect(buildPushPayload('matchResult', 'sk', push).body).toBe('Dlhuješ {amount} €');
   });
 
+  it.each(DICTIONARIES)('fills both settled amounts into the %s settlement push', (lang, push) => {
+    const { body } = buildPushPayload('moneySettled', lang, push, { fines: 12, bonuses: 40 });
+
+    expect(body).toContain('12 €');
+    expect(body).toContain('40 €');
+    expect(body).not.toMatch(/\{\w+\}/);
+  });
+
   it('carries a counted noun built with pluralize, which the caller passes in', () => {
     const forms = { one: '{count} zápas', few: '{count} zápasy', other: '{count} zápasov' };
     const push = {
@@ -101,6 +109,7 @@ const MATCH_EVENTS: PushEvent[] = [
 ];
 const MONEY_LIST_EVENTS: PushEvent[] = [
   'moneyUpdated', 'fineAdded', 'bonusEarned', 'streakWarning', 'debtReminder',
+  'moneySettled', 'finesSettled', 'bonusesSettled', 'trainerSettled',
 ];
 
 describe('buildPushPayload deep links', () => {

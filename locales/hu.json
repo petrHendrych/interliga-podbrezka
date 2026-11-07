@@ -537,6 +537,22 @@
         "title": "Befizetés rögzítve",
         "body": "A {opponent} elleni meccs {amount} € befizetése kifizetettként rögzítve."
       },
+      "moneySettled": {
+        "title": "Rendezve",
+        "body": "A {fines} € büntetésed ki van fizetve, és megkaptad a {bonuses} € bónuszt."
+      },
+      "finesSettled": {
+        "title": "Rendezve",
+        "body": "Összesen {fines} € büntetésed ki van fizetve."
+      },
+      "bonusesSettled": {
+        "title": "Rendezve",
+        "body": "Összesen {bonuses} € bónuszt fizettek ki neked."
+      },
+      "trainerSettled": {
+        "title": "Rendezve",
+        "body": "Összesen {amount} € befizetésed kifizetettként rögzítve."
+      },
       "debtReminder": {
         "title": "Ne feledkezz meg a tartozásról",
         "body": "{days} nap múlva hazai meccs. {amount} €-val tartozol a kasszának."
@@ -640,5 +656,29 @@
     "pageTitle": "Változásnapló",
     "pageDescription": "Mi került be és mit javítottunk az alkalmazás egyes verzióiban.",
     "empty": "Még nincsenek változások."
+  },
+  "settleUp": {
+    "button": "Kifizetés",
+    "title": "Kifizetetlen meccsek rendezése",
+    "playerDescription": "A szezon összes kifizetetlen büntetése és bónusza rendezettként lesz megjelölve.",
+    "trainerDescription": "A szezon összes kifizetetlen befizetése kifizetettként lesz megjelölve.",
+    "fines": "Büntetések: {amount} € ({matches})",
+    "bonuses": "Bónuszok: {amount} € ({matches})",
+    "payments": "Befizetések: {amount} € ({matches})",
+    "netPays": "A játékos fizet: {amount} €",
+    "netReceives": "A játékos kap: {amount} €",
+    "netEven": "Rendezve, senki nem tartozik senkinek",
+    "pendingSplit": "A {opponent} elleni meccsen még szét kell osztani a csere hibáit.",
+    "openMatch": "Meccs megnyitása",
+    "confirm": "Megerősítés",
+    "cancel": "Mégse",
+    "errors": {
+      "unauthorized": "Ehhez a művelethez nincs jogosultságod.",
+      "notFound": "A játékos vagy az edző nem található.",
+      "invalid": "Érvénytelen adatok.",
+      "pendingSplit": "Előbb oszd szét a csere hibáit.",
+      "nothingToSettle": "Nincs mit rendezni, minden ki van fizetve.",
+      "unknown": "Hiba történt, próbáld újra."
+    }
   }
 }
