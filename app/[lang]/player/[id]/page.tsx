@@ -23,6 +23,9 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 import { MatchFineTooltip } from '@/components/MatchFineTooltip';
 import { Tooltip } from '@/components/ui/tooltip';
 import { logPageView } from '@/lib/activity-log';
+import { getSession } from '@/lib/session';
+import { getPlayerSettlement } from '@/lib/settle-up';
+import { SettleUpButton } from '@/components/money/SettleUpButton';
 
 interface PageProps {
   params: Promise<{ id: string; lang: string }>;
@@ -42,12 +45,21 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
 
   try {
     // Fetch data from database instead of directly from API
-    const [player, balance, matchFines, missingMatches] = await Promise.all([
+    const [player, balance, matchFines, missingMatches, session] = await Promise.all([
       getCachedPlayerName(playerId),
       getCachedPlayerBalance(playerId, selectedSeasonId, selectedLeagueKey),
       getCachedPlayerMatchResults(playerId, selectedSeasonId, selectedLeagueKey),
       getCachedPlayerMissingMatches(playerId, selectedSeasonId, selectedLeagueKey),
+      getSession(),
     ]);
+    // Uncached: the dialog must show exactly what the confirm will settle.
+    const settlement = session?.user.role === 'admin'
+      ? await getPlayerSettlement(playerId, selectedSeasonId)
+      : null;
+    const openSettlement = settlement
+      && settlement.fineMatchIds.length + settlement.bonusMatchIds.length > 0
+      ? settlement
+      : null;
 
     if (!player) {
       throw new Error(`Player data for ID ${playerId} not found in database. Please run the scraping job.`);
@@ -164,6 +176,16 @@ export default async function PlayerDetailPage({ params, searchParams }: PagePro
                 ) : null}
               </p>
             </div>
+            {openSettlement ? (
+              <div className="mt-4">
+                <SettleUpButton
+                  target={{ kind: 'player', externalPlayerId: playerId, settlement: openSettlement }}
+                  seasonId={selectedSeasonId}
+                  lang={lang}
+                  labels={{ ...dict.settleUp, matches: dict.home.matchesPlayed }}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
 

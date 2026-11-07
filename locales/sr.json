@@ -537,6 +537,22 @@
         "title": "Uplata zabeležena",
         "body": "Tvoja uplata {amount} € za utakmicu sa {opponent} je zabeležena kao plaćena."
       },
+      "moneySettled": {
+        "title": "Izmireno",
+        "body": "Tvoje kazne od {fines} € su plaćene, a bonusi od {bonuses} € su ti isplaćeni."
+      },
+      "finesSettled": {
+        "title": "Izmireno",
+        "body": "Tvoje kazne ukupno {fines} € su plaćene."
+      },
+      "bonusesSettled": {
+        "title": "Izmireno",
+        "body": "Bonusi ukupno {bonuses} € su ti isplaćeni."
+      },
+      "trainerSettled": {
+        "title": "Izmireno",
+        "body": "Tvoje uplate ukupno {amount} € su zabeležene kao plaćene."
+      },
       "debtReminder": {
         "title": "Ne zaboravi na dug",
         "body": "Do domaće utakmice su {days} dana. Duguješ {amount} € banci."
@@ -640,5 +656,29 @@
     "pageTitle": "Pregled promena",
     "pageDescription": "Šta je dodato i šta smo popravili u pojedinim verzijama aplikacije.",
     "empty": "Još nema promena."
+  },
+  "settleUp": {
+    "button": "Plati",
+    "title": "Izmiri celu sezonu",
+    "playerDescription": "Sve neplaćene kazne i bonusi u ovoj sezoni biće označeni kao izmireni.",
+    "trainerDescription": "Sve neplaćene uplate u ovoj sezoni biće označene kao plaćene.",
+    "fines": "Kazne: {amount} € ({matches})",
+    "bonuses": "Bonusi: {amount} € ({matches})",
+    "payments": "Uplate: {amount} € ({matches})",
+    "netPays": "Igrač plaća {amount} €",
+    "netReceives": "Igrač dobija {amount} €",
+    "netEven": "Izmireno, niko nikome ništa ne duguje",
+    "pendingSplit": "Utakmica sa {opponent} čeka na podelu grešaka pri izmeni.",
+    "openMatch": "Otvori utakmicu",
+    "confirm": "Potvrdi",
+    "cancel": "Otkaži",
+    "errors": {
+      "unauthorized": "Nemaš dozvolu za ovu akciju.",
+      "notFound": "Igrač ili trener nisu pronađeni.",
+      "invalid": "Neispravni podaci.",
+      "pendingSplit": "Prvo podeli greške pri izmeni.",
+      "nothingToSettle": "Nema šta da se izmiri, sve je već plaćeno.",
+      "unknown": "Došlo je do greške, pokušaj ponovo."
+    }
   }
 }

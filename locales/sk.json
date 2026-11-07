@@ -537,6 +537,22 @@
         "title": "Platba zapísaná",
         "body": "Tvoja platba {amount} € za zápas s {opponent} je zapísaná ako zaplatená."
       },
+      "moneySettled": {
+        "title": "Vyrovnané",
+        "body": "Tvoje pokuty {fines} € sú zaplatené a bonusy {bonuses} € ti boli vyplatené."
+      },
+      "finesSettled": {
+        "title": "Vyrovnané",
+        "body": "Tvoje pokuty spolu {fines} € sú zaplatené."
+      },
+      "bonusesSettled": {
+        "title": "Vyrovnané",
+        "body": "Bonusy spolu {bonuses} € ti boli vyplatené."
+      },
+      "trainerSettled": {
+        "title": "Vyrovnané",
+        "body": "Tvoje platby spolu {amount} € sú zapísané ako zaplatené."
+      },
       "debtReminder": {
         "title": "Nezabudni na dlh",
         "body": "Do domáceho zápasu ostávajú {days} dni. Dlhuješ {amount} € do banky."
@@ -640,5 +656,29 @@
     "pageTitle": "Prehľad zmien",
     "pageDescription": "Čo pribudlo a čo sme opravili v jednotlivých verziách aplikácie.",
     "empty": "Zatiaľ tu nie sú žiadne zmeny."
+  },
+  "settleUp": {
+    "button": "Zaplatiť",
+    "title": "Vyrovnať celú sezónu",
+    "playerDescription": "Všetky nezaplatené pokuty a bonusy v tejto sezóne sa označia ako vyrovnané.",
+    "trainerDescription": "Všetky nezaplatené platby v tejto sezóne sa označia ako zaplatené.",
+    "fines": "Pokuty: {amount} € ({matches})",
+    "bonuses": "Bonusy: {amount} € ({matches})",
+    "payments": "Platby: {amount} € ({matches})",
+    "netPays": "Hráč zaplatí {amount} €",
+    "netReceives": "Hráč dostane {amount} €",
+    "netEven": "Vyrovnané, nikto nikomu nič nedlhuje",
+    "pendingSplit": "Zápas s {opponent} čaká na rozdelenie chýb pri striedaní.",
+    "openMatch": "Otvoriť zápas",
+    "confirm": "Potvrdiť",
+    "cancel": "Zrušiť",
+    "errors": {
+      "unauthorized": "Na túto akciu nemáš oprávnenie.",
+      "notFound": "Hráč alebo tréner sa nenašiel.",
+      "invalid": "Neplatné údaje.",
+      "pendingSplit": "Najprv rozdeľ chyby pri striedaní.",
+      "nothingToSettle": "Nie je čo vyrovnať, všetko je už zaplatené.",
+      "unknown": "Niekde sa stala chyba, skús to znova."
+    }
   }
 }
