@@ -16,6 +16,20 @@ export function unreleasedEntryIds(
   return entries.map((entry) => entry.id).filter((id) => !releasedIds.has(id));
 }
 
+function deploymentHost(url: string): string {
+  return url.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+}
+
+/**
+ * Right after a deploy the previous build can still answer on the production domain, and it
+ * would find none of the new entries — a green step that cut nothing. The workflow names the
+ * deployment it just made; a call that names none (a manual cut) is let through.
+ */
+export function isExpectedBuild(expected: string | null, actual: string | undefined): boolean {
+  if (!expected?.trim()) return true;
+  return actual !== undefined && deploymentHost(expected) === deploymentHost(actual);
+}
+
 /** Who hears about a release: players only when at least one item is for them. */
 export function releaseAudience(entries: ChangelogEntry[]): ChangelogAudience | null {
   if (entries.length === 0) return null;

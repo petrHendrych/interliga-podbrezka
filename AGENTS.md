@@ -461,6 +461,7 @@ Rules distilled from the code. Break one and the data or the money goes wrong.
 
 ### Changelog
 - `app_releases` is written only by `cutRelease()` (`lib/changelog/releases.ts`), reached only through `POST /api/release`, which refuses outside `VERCEL_ENV=production` because preview deployments share the production database.
+- The Deploy workflow names the deployment it just made in `X-Expected-Deployment`; the route answers 503 when its own `VERCEL_URL` differs (`isExpectedBuild()` in `release-logic.ts`) and the workflow retries. Right after a deploy the previous build can still answer on the production domain, and it would return 200 `{"created":false}` because it does not know the new entries.
 - Entry texts live in the code, never in the database; a release stores only entry ids. Ids missing from the running code (after a rollback) are silently dropped from what users see.
 - `users.last_seen_release_id` only moves up (`GREATEST` in `markChangelogSeen()`), so a stale tab cannot bring old releases back.
 - A user never sees releases cut before their account was created (`released_at > users.created_at`), so no user-insert path has to set anything.
