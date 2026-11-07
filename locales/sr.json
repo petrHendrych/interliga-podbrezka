@@ -659,7 +659,7 @@
   },
   "settleUp": {
     "button": "Plati",
-    "title": "Izmiri celu sezonu",
+    "title": "Izmiri neplaćene utakmice",
     "playerDescription": "Sve neplaćene kazne i bonusi u ovoj sezoni biće označeni kao izmireni.",
     "trainerDescription": "Sve neplaćene uplate u ovoj sezoni biće označene kao plaćene.",
     "fines": "Kazne: {amount} € ({matches})",

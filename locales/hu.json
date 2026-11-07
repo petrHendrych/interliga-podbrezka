@@ -659,7 +659,7 @@
   },
   "settleUp": {
     "button": "Kifizetés",
-    "title": "Az egész szezon rendezése",
+    "title": "Kifizetetlen meccsek rendezése",
     "playerDescription": "A szezon összes kifizetetlen büntetése és bónusza rendezettként lesz megjelölve.",
     "trainerDescription": "A szezon összes kifizetetlen befizetése kifizetettként lesz megjelölve.",
     "fines": "Büntetések: {amount} € ({matches})",

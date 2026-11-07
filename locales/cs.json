@@ -659,7 +659,7 @@
   },
   "settleUp": {
     "button": "Zaplatit",
-    "title": "Vyrovnat celou sezónu",
+    "title": "Vyrovnat nezaplacené zápasy",
     "playerDescription": "Všechny nezaplacené pokuty a bonusy v této sezóně se označí jako vyrovnané.",
     "trainerDescription": "Všechny nezaplacené platby v této sezóně se označí jako zaplacené.",
     "fines": "Pokuty: {amount} € ({matches})",
