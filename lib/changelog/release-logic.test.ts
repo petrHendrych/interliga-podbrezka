@@ -3,6 +3,7 @@ import {
   buildReleaseViews,
   CHANGELOG_DIALOG_LIMIT,
   dialogReleaseViews,
+  isExpectedBuild,
   releaseAudience,
   unreleasedEntryIds,
   unseenReleases,
@@ -154,5 +155,34 @@ describe('dialogReleaseViews', () => {
     ];
     const ids = dialogReleaseViews(releases, entries, reader).map((view) => view.id);
     expect(ids).toEqual([5, 4, 3, 2, 1]);
+  });
+});
+
+describe('isExpectedBuild', () => {
+  const NEW_BUILD = 'interliga-podbrezka-g4mwkyw50-petrhendrychs-projects.vercel.app';
+
+  it('accepts the build the workflow just deployed', () => {
+    expect(isExpectedBuild(NEW_BUILD, NEW_BUILD)).toBe(true);
+  });
+
+  it.each([
+    [`https://${NEW_BUILD}`],
+    [`https://${NEW_BUILD}/`],
+    [` ${NEW_BUILD.toUpperCase()} `],
+  ])('reads the deploy output %s as the same build', (expected) => {
+    expect(isExpectedBuild(expected, NEW_BUILD)).toBe(true);
+  });
+
+  it('refuses the previous build still answering on the production domain', () => {
+    expect(isExpectedBuild(NEW_BUILD, 'interliga-podbrezka-7xk2pq1ab-petrhendrychs-projects.vercel.app'))
+      .toBe(false);
+  });
+
+  it('refuses when the running build cannot say which one it is', () => {
+    expect(isExpectedBuild(NEW_BUILD, undefined)).toBe(false);
+  });
+
+  it.each([[null], [''], ['  ']])('lets a call that names no build (%o) through, as a manual cut does', (expected) => {
+    expect(isExpectedBuild(expected, undefined)).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cutRelease } from '@/lib/changelog/releases';
+import { isExpectedBuild } from '@/lib/changelog/release-logic';
 
 /**
  * Cuts a changelog release and announces it. Called by `.github/workflows/deploy.yml` once
@@ -18,6 +19,10 @@ export async function POST(request: Request) {
   // Preview deployments share the production database, so they must never cut a release.
   if (process.env.VERCEL_ENV !== 'production') {
     return new Response('Releases are cut from production only', { status: 409 });
+  }
+
+  if (!isExpectedBuild(request.headers.get('x-expected-deployment'), process.env.VERCEL_URL)) {
+    return new Response('A different build answered; retry until the new one does', { status: 503 });
   }
 
   try {
