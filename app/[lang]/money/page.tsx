@@ -4,10 +4,12 @@ import { Locale, interpolate } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { DEFAULT_SEASON_ID, SEASONS_CONFIG } from '@/lib/season-config';
 import { getPlayedMatchMoneySummaries } from '@/lib/match-money';
-import { formatDateOnly } from '@/lib/home-helpers';
+import { formatDateOnly, formatShortDate } from '@/lib/home-helpers';
 import { leagueLabelForId } from '@/lib/i18n/league-labels';
+import { buildMoneyChartPoints } from '@/lib/match-money-chart';
 import { SeasonLeagueFilter } from '@/components/dashboard/SeasonLeagueFilter';
 import { SettlementChip } from '@/components/money/SettlementChip';
+import { MatchMoneyChart } from '@/components/money/MatchMoneyChart';
 import { logPageView } from '@/lib/activity-log';
 import { getSession } from '@/lib/session';
 
@@ -44,6 +46,16 @@ export default async function MoneyPage({ params, searchParams }: PageProps) {
     ? interpolate(dict.playerDetail.matchHome, { opponent: opponent ?? '—' })
     : interpolate(dict.playerDetail.matchAway, { opponent: opponent ?? '—' }));
 
+  const chartPoints = buildMoneyChartPoints(
+    matches.map((match) => ({ ...match, matchId: match.externalId })),
+    {
+      date: (iso) => formatDateOnly(iso, lang),
+      shortDate: (iso) => formatShortDate(iso, lang),
+      match: (match) => matchLabel(match.opponent, match.isHome),
+      league: (match) => leagueLabelForId(match.leagueId, match.leagueName, dict),
+    },
+  );
+
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <div>
@@ -65,6 +77,25 @@ export default async function MoneyPage({ params, searchParams }: PageProps) {
           }}
         />
       </div>
+
+      {chartPoints.length > 0 ? (
+        <MatchMoneyChart
+          points={chartPoints}
+          labels={{
+            view: dict.playerDetail.chartView,
+            views: {
+              amount: dict.trainerDetail.chartPayments,
+              score: dict.trainerDetail.chartScore,
+            },
+            players: t.playersTitle,
+            trainer: t.trainerTitle,
+            team: t.chartTeam,
+            opponent: dict.admin.matches.opponent,
+            paid: t.paid,
+            unpaid: t.unpaid,
+          }}
+        />
+      ) : null}
 
       <section className={SECTION}>
         <div className="flex items-start justify-between gap-3">
