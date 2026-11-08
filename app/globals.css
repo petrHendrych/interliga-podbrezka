@@ -74,6 +74,9 @@
   --chart-unpaid: oklch(0.577 0.245 27.325);
   --chart-partial: oklch(0.666 0.179 58.318);
   --chart-score: oklch(0.588 0.158 241.966);
+  /* Money chart series: a colour-blind-safe pair, apart from the paid/unpaid hues. */
+  --chart-players: #2a78d6;
+  --chart-trainers: #eb6834;
   /* Elevation shadows, tuned per theme -- see .dark for why they differ there. */
   --elevation-1:
     0 1px 2px -1px oklch(0.145 0 0 / 0.08),
@@ -132,6 +135,8 @@
   --chart-unpaid: oklch(0.704 0.191 22.216);
   --chart-partial: oklch(0.828 0.189 84.429);
   --chart-score: oklch(0.588 0.158 241.966);
+  --chart-players: #3987e5;
+  --chart-trainers: #d95926;
   /* A cast shadow barely reads against a dark page, so most of the lift here
      comes from a 1px rim of light along the top edge; the shadow only anchors. */
   --elevation-1:

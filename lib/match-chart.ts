@@ -6,14 +6,18 @@ export type MatchPaymentState = 'paid' | 'unpaid' | 'partial';
 /** The two things the match chart can plot. */
 export type MatchChartView = 'amount' | 'score';
 
-/** What the shared match chart plots: one match, its amount and score, one X axis tick. */
-export interface MatchChartPoint {
+/** One match on the shared chart's X axis. */
+export interface MatchChartAxisPoint {
   matchId: number;
+  shortDateLabel: string;
+}
+
+/** What the payment-state chart plots: one match, its amount and score. */
+export interface MatchChartPoint extends MatchChartAxisPoint {
   amount: number;
   /** `null` leaves a gap the score line bridges. */
   score: number | null;
   paymentState: MatchPaymentState;
-  shortDateLabel: string;
 }
 
 /** A stretch of the amount line in one colour, as fractions of the first-to-last match span. */
