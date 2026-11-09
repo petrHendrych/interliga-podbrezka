@@ -17,7 +17,7 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Built remotely on Vercel, so next.config.ts counts deployments with the project's env.
       # stdout carries only the new deployment's URL; the progress goes to stderr.

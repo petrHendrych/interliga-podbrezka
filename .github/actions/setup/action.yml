@@ -6,10 +6,10 @@ runs:
   steps:
     # No version here: the action reads packageManager from package.json, and
     # specifying both is an error.
-    - uses: pnpm/action-setup@v4
+    - uses: pnpm/action-setup@v6
 
     # jsdom needs Node 24.15+, which is what .nvmrc pins.
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v7
       with:
         node-version-file: .nvmrc
         cache: pnpm
