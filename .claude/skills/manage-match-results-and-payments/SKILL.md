@@ -94,11 +94,20 @@ the one `apply` of a match, never on a `--dry-run`.
    `needs_fault_split` (or a split the user wants to change), the substitute's share
    of that lane's misses — e.g. `Magala 1 full; Bína 1 2nd; Dubrava 2 of 5`. Do
    not iterate player by player.
-4. **Apply them in one call** with `--notify`: `fullFaults` / `secondToLastFaults`
+4. **Build the payload and dry-run it.** `fullFaults` / `secondToLastFaults`
    fields under `players`, and `{ id, substituteLaneFaults }` under `substitutions`.
    A substitute's special misses go on the substitute's own row (`user_id` of the
-   `minor` or `major` row), never on the starter's.
-5. **Summarize** from the returned `changes` array: each player's misses and fine
+   `minor` or `major` row), never on the starter's. Run `apply --dry-run` (without
+   `--notify`) to check that every `userId` and substitution id resolves.
+5. **Get approval before writing.** The user's reply in step 3 is input, not
+   approval. Show the planned changes: each player's misses before → after with
+   the expected fine change (+5 € per added special miss), each substitution split,
+   the expected new match fine total, and who gets a push. Then ask through
+   `AskUserQuestion` (Apply / Change). Never run the real `apply` — and so never
+   trigger a recalculation or a notification — before the user picks Apply. On
+   Change, take the corrections and go back to step 4.
+6. **Apply in one call** with `--notify`, using exactly the approved payload.
+7. **Summarize** from the returned `changes` array: each player's misses and fine
    before → after, each substitution split, and the match's new fine total.
 
 ## Money rules that decide the questions
